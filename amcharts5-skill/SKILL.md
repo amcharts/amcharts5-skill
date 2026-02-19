@@ -1,8 +1,13 @@
 ---
 name: amcharts
 description: This skill generates amCharts 5 chart code. It should be used when the user asks to 'create a chart', 'build a pie chart', 'make a donut chart', 'generate a visualization', or mentions 'amCharts'.
-author: amCharts
-version: 1.0.0-beta.1
+metadata:
+	author: amCharts
+	version: 1.0.0-beta.1
+	category: code
+	tags: [charts, maps]
+	documentation: https://amcharts.com/docs/v5
+	support: contact@amcharts.com
 ---
 
 # amCharts 5 Chart Builder
