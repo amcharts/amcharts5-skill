@@ -30,6 +30,8 @@ Always load the root element reference first (applies to all chart types):
 - Root element, themes, animations: [references/root.md](references/root.md)
 - Settings API (set, setAll, get): [references/settings.md](references/settings.md)
 - Template fields (per-item setting overrides from data): [references/template-fields.md](references/template-fields.md)
+- Adapters (dynamic setting values via functions): [references/adapters.md](references/adapters.md)
+- Heat rules (value-dependent settings on series elements): [references/heat-rules.md](references/heat-rules.md)
 
 Then load the chart-type-specific reference and example files:
 
