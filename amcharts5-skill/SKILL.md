@@ -28,6 +28,8 @@ If the chart type is not listed above, use your own knowledge to build the reque
 
 Always load the root element reference first (applies to all chart types):
 - Root element, themes, animations: [references/root.md](references/root.md)
+- Settings API (set, setAll, get): [references/settings.md](references/settings.md)
+- Template fields (per-item setting overrides from data): [references/template-fields.md](references/template-fields.md)
 
 Then load the chart-type-specific reference and example files:
 
