@@ -33,6 +33,8 @@ Always load the root element reference first (applies to all chart types):
 - Template fields (per-item setting overrides from data): [references/template-fields.md](references/template-fields.md)
 - Adapters (dynamic setting values via functions): [references/adapters.md](references/adapters.md)
 - Heat rules (value-dependent settings on series elements): [references/heat-rules.md](references/heat-rules.md)
+- Events (click/hover handlers, settings watchers, debounced events): [references/events.md](references/events.md)
+- Responsive (breakpoint-based setting overrides): [references/responsive.md](references/responsive.md)
 
 Then load the chart-type-specific reference and example files:
 
