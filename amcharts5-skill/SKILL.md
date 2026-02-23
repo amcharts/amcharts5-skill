@@ -27,7 +27,8 @@ If the chart type is not listed above, use your own knowledge to build the reque
 ## Step 2: Load Reference Material
 
 Always load the root element reference first (applies to all chart types):
-- Root element, themes, animations: [references/root.md](references/root.md)
+- Root element, animations: [references/root.md](references/root.md)
+- Themes (built-in list, ordering, custom themes, default themes): [references/themes.md](references/themes.md)
 - Settings API (set, setAll, get): [references/settings.md](references/settings.md)
 - Template fields (per-item setting overrides from data): [references/template-fields.md](references/template-fields.md)
 - Adapters (dynamic setting values via functions): [references/adapters.md](references/adapters.md)

@@ -56,28 +56,7 @@ root.setThemes([
 ]);
 ```
 
-Multiple themes can be applied simultaneously:
-
-```javascript
-root.setThemes([
-  am5themes_Animated.new(root),
-  am5themes_Dark.new(root)
-]);
-```
-
-### Available Built-in Themes
-
-| Theme | Import (ES module) | Script (CDN) | Purpose |
-|---|---|---|---|
-| Animated | `@amcharts/amcharts5/themes/Animated` | `themes/Animated.js` | Enables animations |
-| Dark | `@amcharts/amcharts5/themes/Dark` | `themes/Dark.js` | Dark color scheme |
-| Frozen | `@amcharts/amcharts5/themes/Frozen` | `themes/Frozen.js` | Cool blue tones |
-| Dataviz | `@amcharts/amcharts5/themes/Dataviz` | `themes/Dataviz.js` | Data visualization palette |
-| Kelly | `@amcharts/amcharts5/themes/Kelly` | `themes/Kelly.js` | Kelly's 22 colors of max contrast |
-| Material | `@amcharts/amcharts5/themes/Material` | `themes/Material.js` | Material Design colors |
-| Micro | `@amcharts/amcharts5/themes/Micro` | `themes/Micro.js` | Sparkline-sized charts |
-| Moonrise | `@amcharts/amcharts5/themes/Moonrise` | `themes/Moonrise.js` | Dark purple tones |
-| Spirited | `@amcharts/amcharts5/themes/Spirited` | `themes/Spirited.js` | Vivid colors |
+Multiple themes can be applied simultaneously. See [references/themes.md](themes.md) for the full theme list, ordering rules, and how to create custom themes.
 
 ## Animations
 <!-- https://www.amcharts.com/docs/v5/concepts/animations/ -->
