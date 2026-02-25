@@ -1,0 +1,427 @@
+# amCharts 5 – AI coding rules
+# Drop this file in your project root as .cursorrules (Cursor),
+# .windsurfrules (Windsurf), or .github/copilot-instructions.md (VS Code + Copilot)
+# Docs: https://www.amcharts.com/docs/v5/
+
+## Version
+
+Always use **amCharts 5** (not v3 or v4). The APIs are completely different.
+amCharts 5 uses Canvas rendering (not SVG like v4).
+
+## Object creation
+
+amCharts 5 does NOT use `new ClassName()`. Always use the static `.new()` factory:
+
+```
+// ✅ CORRECT
+const root = am5.Root.new("chartdiv");
+const chart = root.container.children.push(am5xy.XYChart.new(root, { ... }));
+
+// ❌ WRONG – never use `new` keyword
+const root = new am5.Root("chartdiv");
+const chart = new am5xy.XYChart(root, { ... });
+```
+
+Every `.new()` call takes `root` as the first argument (except Root itself which takes the div ID).
+
+## Core setup pattern
+
+Every chart follows this structure:
+
+```js
+// 1. Create root
+const root = am5.Root.new("chartdiv");
+
+// 2. Apply theme(s)
+root.setThemes([am5themes_Animated.new(root)]);
+
+// 3. Create chart
+const chart = root.container.children.push(
+  am5xy.XYChart.new(root, { layout: root.verticalLayout })
+);
+
+// 4. Create axes, series, etc.
+// 5. Set data LAST (important!)
+series.data.setAll([...]);
+
+// 6. Play animations
+series.appear(1000);
+chart.appear(1000, 100);
+```
+
+**CRITICAL:** Always set data as late as possible. Once data is set, related objects are created — configuration applied afterward may not take effect.
+
+## Packages and imports
+
+### ES modules / TypeScript
+```ts
+import * as am5 from "@amcharts/amcharts5";
+import * as am5xy from "@amcharts/amcharts5/xy";
+import * as am5percent from "@amcharts/amcharts5/percent";
+import * as am5map from "@amcharts/amcharts5/map";
+import * as am5hierarchy from "@amcharts/amcharts5/hierarchy";
+import * as am5flow from "@amcharts/amcharts5/flow";
+import * as am5radar from "@amcharts/amcharts5/radar";
+import * as am5stock from "@amcharts/amcharts5/stock";
+import * as am5wc from "@amcharts/amcharts5/wc";
+import * as am5venn from "@amcharts/amcharts5/venn";
+import * as am5gantt from "@amcharts/amcharts5/gantt";
+import * as am5timeline from "@amcharts/amcharts5/timeline";
+import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import am5themes_Dark from "@amcharts/amcharts5/themes/Dark";
+
+// Map geodata (example)
+import am5geodata_worldLow from "@amcharts/amcharts5-geodata/worldLow";
+```
+
+### CDN / script tags
+```html
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<!-- Geodata for maps -->
+<script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
+```
+
+CDN script objects use `am5` (core), `am5xy`, `am5percent`, `am5map`, `am5hierarchy`, `am5flow`, `am5radar`, `am5stock`, `am5timeline`, `am5wc`, `am5venn`, `am5gantt` namespaces.
+Themes: `am5themes_Animated`, `am5themes_Dark`, etc.
+Geodata: `am5geodata_worldLow`, `am5geodata_usaLow`, etc.
+
+### Package → chart type mapping
+
+| You need | Import package |
+|----------|---------------|
+| XY chart (line, bar, column, area, candlestick) | `@amcharts/amcharts5/xy` |
+| Pie, donut, funnel, pyramid | `@amcharts/amcharts5/percent` |
+| Map / choropleth | `@amcharts/amcharts5/map` + geodata |
+| Radar / gauge | `@amcharts/amcharts5/radar` (also needs xy) |
+| Treemap, sunburst, force-directed, pack | `@amcharts/amcharts5/hierarchy` |
+| Sankey, chord, arc diagram | `@amcharts/amcharts5/flow` |
+| Stock chart | `@amcharts/amcharts5/stock` |
+| Word cloud | `@amcharts/amcharts5/wc` |
+| Venn diagram | `@amcharts/amcharts5/venn` |
+| Timeline (serpentine, spiral, curve) | `@amcharts/amcharts5/timeline` (also needs xy) |
+| Gantt chart | `@amcharts/amcharts5/gantt` (also needs xy) |
+
+## Settings pattern
+
+amCharts 5 uses `.set()`, `.setAll()`, and `.get()` — not direct property assignment:
+
+```js
+// ✅ CORRECT
+series.set("valueField", "value");
+series.setAll({ valueField: "value", categoryField: "category" });
+const val = series.get("valueField");
+
+// ❌ WRONG
+series.valueField = "value";
+```
+
+Settings are passed in the second argument of `.new()`:
+```js
+am5xy.LineSeries.new(root, {
+  xAxis: xAxis,
+  yAxis: yAxis,
+  valueYField: "value",
+  valueXField: "date"
+})
+```
+
+## Common chart recipes
+
+### XY chart with category axis (bar/column)
+```js
+const xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+  categoryField: "category",
+  renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 30 })
+}));
+
+const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererY.new(root, {})
+}));
+
+const series = chart.series.push(am5xy.ColumnSeries.new(root, {
+  xAxis: xAxis,
+  yAxis: yAxis,
+  valueYField: "value",
+  categoryXField: "category"
+}));
+
+xAxis.data.setAll(data);  // CategoryAxis needs data too!
+series.data.setAll(data);
+```
+
+### XY chart with date axis (time series)
+```js
+const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
+  baseInterval: { timeUnit: "day", count: 1 },
+  renderer: am5xy.AxisRendererX.new(root, { minGridDistance: 50 })
+}));
+
+const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererY.new(root, {})
+}));
+
+const series = chart.series.push(am5xy.LineSeries.new(root, {
+  xAxis: xAxis,
+  yAxis: yAxis,
+  valueYField: "value",
+  valueXField: "date"
+}));
+
+// Date values must be timestamps (milliseconds)
+series.data.setAll([
+  { date: new Date(2024, 0, 1).getTime(), value: 100 },
+  { date: new Date(2024, 1, 1).getTime(), value: 120 }
+]);
+```
+
+### Pie / Donut chart
+```js
+const chart = root.container.children.push(
+  am5percent.PieChart.new(root, {
+    innerRadius: am5.percent(50),  // 0 for pie, >0 for donut
+    layout: root.verticalLayout
+  })
+);
+
+const series = chart.series.push(am5percent.PieSeries.new(root, {
+  valueField: "value",
+  categoryField: "category"
+}));
+
+series.data.setAll([
+  { category: "A", value: 10 },
+  { category: "B", value: 7 },
+  { category: "C", value: 3 }
+]);
+```
+
+### Map chart (choropleth)
+```js
+const chart = root.container.children.push(
+  am5map.MapChart.new(root, {
+    panX: "rotateX",
+    projection: am5map.geoMercator()
+  })
+);
+
+const polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
+  geoJSON: am5geodata_worldLow,
+  valueField: "value",
+  calculateAggregates: true
+}));
+```
+
+### Funnel chart
+```js
+const chart = root.container.children.push(
+  am5percent.SlicedChart.new(root, { layout: root.verticalLayout })
+);
+
+const series = chart.series.push(am5percent.FunnelSeries.new(root, {
+  name: "Funnel",
+  valueField: "value",
+  categoryField: "stage",
+  orientation: "vertical",
+  bottomRatio: 1
+}));
+
+series.data.setAll([
+  { stage: "Visits", value: 10000 },
+  { stage: "Signups", value: 5200 },
+  { stage: "Paid", value: 1400 }
+]);
+```
+
+### Stock chart (candlestick with toolbar)
+```js
+// Requires: index.js, xy.js, stock.js
+// HTML: <div id="chartcontrols"></div> <div id="chartdiv"></div>
+const stockChart = root.container.children.push(
+  am5stock.StockChart.new(root, {})
+);
+
+const mainPanel = stockChart.panels.push(
+  am5stock.StockPanel.new(root, { wheelY: "zoomX", panX: true, panY: true })
+);
+
+const dateAxis = mainPanel.xAxes.push(am5xy.DateAxis.new(root, {
+  baseInterval: { timeUnit: "day", count: 1 },
+  renderer: am5xy.AxisRendererX.new(root, {})
+}));
+
+const valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererY.new(root, {})
+}));
+
+const valueSeries = mainPanel.series.push(am5xy.CandlestickSeries.new(root, {
+  name: "STCK",
+  xAxis: dateAxis, yAxis: valueAxis,
+  valueXField: "Date", valueYField: "Close",
+  highValueYField: "High", lowValueYField: "Low",
+  openValueYField: "Open", calculateAggregates: true
+}));
+
+stockChart.set("stockSeries", valueSeries);  // CRITICAL: register main series
+valueSeries.data.setAll(data);
+```
+
+### Serpentine timeline
+```js
+const chart = root.container.children.push(am5timeline.SerpentineChart.new(root, {
+  orientation: "vertical", levelCount: 3,
+  yAxisRadius: am5.percent(25), yAxisInnerRadius: -25
+}));
+const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
+  baseInterval: { timeUnit: "day", count: 1 },
+  renderer: am5timeline.AxisRendererCurveX.new(root, {}) // NOT AxisRendererX
+}));
+const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5timeline.AxisRendererCurveY.new(root, {}) // NOT AxisRendererY
+}));
+const series = chart.series.push(am5timeline.CurveLineSeries.new(root, { // NOT LineSeries
+  xAxis, yAxis, valueYField: "value", valueXField: "date"
+}));
+series.data.setAll(data); // timestamps for DateAxis
+```
+
+### Word cloud
+```js
+// Requires: index.js, wc.js
+const series = root.container.children.push(am5wc.WordCloud.new(root, {
+  categoryField: "tag",
+  valueField: "weight",
+  maxFontSize: am5.percent(15),
+  minFontSize: am5.percent(3)
+}));
+
+series.labels.template.setAll({ tooltipText: "{category}: {value}" });
+
+series.data.setAll([
+  { tag: "JavaScript", weight: 64 },
+  { tag: "Python", weight: 48 },
+  { tag: "React", weight: 28 }
+]);
+```
+
+### Venn diagram
+```js
+// Requires: index.js, venn.js
+const chart = root.container.children.push(am5venn.VennDiagram.new(root, {}));
+const series = chart.series.push(am5venn.Venn.new(root, {
+  categoryField: "name",
+  valueField: "value",
+  intersectionsField: "sets"
+}));
+
+series.data.setAll([
+  { name: "A", value: 100 },
+  { name: "B", value: 80 },
+  { name: "A∩B", value: 30, sets: ["A", "B"] }
+]);
+```
+
+### Gantt chart
+```js
+// Requires: index.js, xy.js, gantt.js
+const chart = root.container.children.push(am5gantt.Gantt.new(root, {
+  editable: true,
+  durationUnit: "day"
+}));
+
+chart.data.setAll([{
+  name: "Phase 1",
+  start: new Date(2024, 0, 1).getTime(),
+  duration: 10,
+  progress: 100,
+  children: [
+    { name: "Task A", start: new Date(2024, 0, 1).getTime(), duration: 5, progress: 100 },
+    { name: "Task B", start: new Date(2024, 0, 6).getTime(), duration: 5, progress: 80 }
+  ]
+}]);
+```
+
+## Common components
+
+### Legend
+```js
+const legend = chart.children.push(am5.Legend.new(root, {
+  centerX: am5.percent(50),
+  x: am5.percent(50)
+}));
+legend.data.setAll(chart.series.values);
+```
+
+### Cursor (XY charts)
+```js
+chart.set("cursor", am5xy.XYCursor.new(root, {
+  behavior: "none"  // "zoomX", "zoomY", "zoomXY", "selectX", "selectXY", "none"
+}));
+```
+
+### Scrollbar (XY charts)
+```js
+chart.set("scrollbarX", am5.Scrollbar.new(root, {
+  orientation: "horizontal"
+}));
+```
+
+### Tooltip
+```js
+series.set("tooltip", am5.Tooltip.new(root, {
+  labelText: "{categoryX}: {valueY}"
+}));
+```
+
+## Key differences from amCharts 4 (common AI mistakes)
+
+| amCharts 4 (WRONG) | amCharts 5 (CORRECT) |
+|---------------------|----------------------|
+| `am4core.create("div", am4charts.XYChart)` | `am5.Root.new("div")` then `am5xy.XYChart.new(root, {})` |
+| `new am4charts.CategoryAxis()` | `am5xy.CategoryAxis.new(root, { ... })` |
+| `chart.data = [...]` | `series.data.setAll([...])` |
+| `series.dataFields.valueY = "v"` | `valueYField: "v"` in `.new()` settings |
+| `am4core.color("#f00")` | `am5.color(0xff0000)` or `am5.color("#f00")` |
+| `new am4charts.Legend()` | `am5.Legend.new(root, {})` |
+| `chart.cursor = new am4charts.XYCursor()` | `chart.set("cursor", am5xy.XYCursor.new(root, {}))` |
+| SVG-based rendering | Canvas-based rendering |
+| `am4core.useTheme(am4themes_animated)` | `root.setThemes([am5themes_Animated.new(root)])` |
+
+## Common pitfalls
+
+1. **CategoryAxis needs data too** — Unlike ValueAxis, CategoryAxis must receive data: `xAxis.data.setAll(data)` in addition to `series.data.setAll(data)`.
+
+2. **Date values must be timestamps** — DateAxis expects numbers (ms since epoch), not Date objects or strings. Use `new Date(...).getTime()`.
+
+3. **Renderer is required for every axis** — Always pass a `renderer` when creating an axis: `am5xy.AxisRendererX.new(root, {})`.
+
+4. **Don't forget `root` in `.new()` calls** — Every `.new()` call (except Root itself) takes `root` as the first arg.
+
+5. **Dispose via root** — To clean up, call `root.dispose()`, not `chart.dispose()`.
+
+6. **Colors** — Use `am5.color(0xFF0000)` or `am5.color("#ff0000")`. For color sets, access `chart.get("colors")`.
+
+7. **Percent values** — Use `am5.percent(50)` not plain `50` or `"50%"` when a setting expects a Percent value.
+
+8. **children.push()** — Adding elements to containers uses `.children.push()` which returns the element. Always capture the return value.
+
+9. **No CSS styling** — amCharts 5 renders to Canvas, not DOM/SVG. You cannot style chart elements with CSS. Use themes or `.set()`/`.setAll()`.
+
+10. **Hierarchy charts are chart-less** — Treemap, force-directed, etc. add series directly to `root.container` (or a wrapper Container), not to a chart object.
+
+## Disposal (SPA / React / Angular / Vue)
+
+Always dispose the root when the component unmounts:
+```js
+// In cleanup / unmount / onDestroy:
+root.dispose();
+```
+
+For React, use `useLayoutEffect` with cleanup. For Angular, use `ngOnDestroy`. For Vue, use `onUnmounted`.
+
+## Documentation reference
+
+Full docs: https://www.amcharts.com/docs/v5/
+Demos: https://www.amcharts.com/demos/
+Class reference: https://www.amcharts.com/docs/v5/reference/
