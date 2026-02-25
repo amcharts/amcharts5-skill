@@ -12,6 +12,13 @@ description: >
   setup. Also use when the user mentions chart types that amCharts supports, even
   if they don't say "amCharts" explicitly, if amCharts is already present in the
   project or was discussed in the conversation.
+metadata:
+  author: amCharts
+  version: 1.0.0
+  category: code
+  tags: [charts, maps]
+  documentation: https://amcharts.com/docs/v5
+  support: contact@amcharts.com
 ---
 
 # amCharts 5
