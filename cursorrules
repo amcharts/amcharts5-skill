@@ -342,6 +342,79 @@ chart.data.setAll([{
 }]);
 ```
 
+## Events
+
+```js
+// Click on elements
+series.columns.template.events.on("click", function(ev) {
+  console.log("Clicked:", ev.target.dataItem.dataContext);
+});
+
+// Lifecycle
+series.events.on("datavalidated", function() { /* data ready */ });
+
+// One-time listener
+series.events.once("datavalidated", function() { /* runs once */ });
+
+// Setting change watch
+sprite.on("width", function(width) { console.log("Width:", width); });
+
+// Remove listener
+var disposer = sprite.events.on("click", handler);
+disposer.dispose();
+
+// Common events: click, pointerover, pointerout, pointerdown, globalpointermove
+```
+
+## Adapters
+
+Dynamically modify a setting value before it's applied:
+
+```js
+series.columns.template.adapters.add("fill", function(fill, target) {
+  return target.dataItem.get("valueY") > 100
+    ? am5.color(0x00cc00)
+    : am5.color(0xcc0000);
+});
+```
+
+## States
+
+```js
+series.columns.template.states.create("hover", {
+  fillOpacity: 0.8,
+  scale: 1.05
+});
+// Built-in states: "hover", "active", "disabled", "hidden"
+```
+
+## Dynamic data
+
+```js
+series.data.setAll(newData);              // replace all
+series.data.push({ cat: "X", val: 1 });  // add
+series.data.setIndex(0, newItem);         // update at index (animates)
+series.data.removeIndex(2);               // remove at index
+series.data.insertIndex(1, newItem);      // insert at index
+
+// IMPORTANT: series.dataItems is a plain array, NOT a List
+// ❌ series.dataItems.each(fn)           — will throw
+// ✅ series.dataItems.forEach(fn)        — standard JS
+// ✅ am5.array.each(series.dataItems, function(dataItem) {})
+```
+
+## Data processor (for external/API data)
+
+```js
+series.data.processor = am5.DataProcessor.new(root, {
+  dateFields: ["date"],
+  dateFormat: "yyyy-MM-dd",
+  numericFields: ["value"],
+  emptyAs: 0
+});
+// Configure BEFORE setting data
+```
+
 ## Common components
 
 ### Legend
@@ -409,6 +482,8 @@ series.set("tooltip", am5.Tooltip.new(root, {
 9. **No CSS styling** — amCharts 5 renders to Canvas, not DOM/SVG. You cannot style chart elements with CSS. Use themes or `.set()`/`.setAll()`.
 
 10. **Hierarchy charts are chart-less** — Treemap, force-directed, etc. add series directly to `root.container` (or a wrapper Container), not to a chart object.
+
+11. **`dataItems` is a plain array** — `series.dataItems` does NOT have `.each()`. Use `series.dataItems.forEach(fn)` or `am5.array.each(series.dataItems, fn)`. Only `series.data` (the ListData object) has `.each()`.
 
 ## Disposal (SPA / React / Angular / Vue)
 
