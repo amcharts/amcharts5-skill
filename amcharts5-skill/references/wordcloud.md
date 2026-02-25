@@ -66,6 +66,18 @@ series.appear(1000);
 | `excludeWords` | string[] | `[]` | Words to exclude |
 | `colors` | ColorSet | — | Color set for words |
 
+### excludeWords example
+
+```js
+am5wc.WordCloud.new(root, {
+  categoryField: "word",
+  valueField: "count",
+  excludeWords: ["the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "is", "it"]
+});
+```
+
+**Note:** amCharts WordCloud does not support mask/shape rendering (words constrained to a custom shape). Words are arranged in a rectangular area.
+
 ## Customizing labels
 
 ```js
@@ -219,6 +231,106 @@ series.data.removeIndex(0);
       { tag: "Kubernetes", weight: 14 }
     ]);
 
+    series.appear(1000);
+  </script>
+</body>
+</html>
+```
+
+## Example 2: Sentence cloud with excludeWords and dynamic update
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Sentence Cloud</title>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/wc.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <style>
+    #chartdiv { width: 100%; height: 450px; }
+    button { margin: 5px; padding: 8px 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div>
+    <button onclick="showTech()">Tech Skills</button>
+    <button onclick="showBusiness()">Business Skills</button>
+  </div>
+  <div id="chartdiv"></div>
+  <script>
+    var root = am5.Root.new("chartdiv");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    var series = root.container.children.push(
+      am5wc.WordCloud.new(root, {
+        categoryField: "phrase",
+        valueField: "weight",
+        maxFontSize: am5.percent(12),
+        minFontSize: am5.percent(3),
+        angles: [0, -45, 45],
+        randomness: 0.4,
+        minWordLength: 2,
+        excludeWords: ["and", "the", "with", "for"]
+      })
+    );
+
+    // Custom color set
+    series.set("colors", am5.ColorSet.new(root, {
+      colors: [
+        am5.color(0x1a535c),
+        am5.color(0x4ecdc4),
+        am5.color(0xf7fff7),
+        am5.color(0xff6b6b),
+        am5.color(0xffe66d)
+      ]
+    }));
+
+    series.labels.template.setAll({
+      fontFamily: "Georgia, serif",
+      tooltipText: "{category}: [bold]{value}[/]",
+      cursorOverStyle: "pointer"
+    });
+
+    var techData = [
+      { phrase: "Machine Learning", weight: 50 },
+      { phrase: "Cloud Computing", weight: 45 },
+      { phrase: "Data Engineering", weight: 40 },
+      { phrase: "DevOps", weight: 35 },
+      { phrase: "Cybersecurity", weight: 33 },
+      { phrase: "API Design", weight: 28 },
+      { phrase: "Microservices", weight: 25 },
+      { phrase: "Containerization", weight: 22 },
+      { phrase: "CI/CD Pipelines", weight: 20 },
+      { phrase: "Edge Computing", weight: 18 },
+      { phrase: "Serverless", weight: 16 },
+      { phrase: "GraphQL", weight: 14 },
+      { phrase: "WebAssembly", weight: 12 },
+      { phrase: "Blockchain", weight: 10 }
+    ];
+
+    var businessData = [
+      { phrase: "Product Strategy", weight: 48 },
+      { phrase: "User Research", weight: 42 },
+      { phrase: "Agile Management", weight: 38 },
+      { phrase: "Stakeholder Communication", weight: 35 },
+      { phrase: "OKR Planning", weight: 30 },
+      { phrase: "Risk Assessment", weight: 27 },
+      { phrase: "Customer Journey", weight: 24 },
+      { phrase: "Market Analysis", weight: 22 },
+      { phrase: "Revenue Modeling", weight: 20 },
+      { phrase: "Team Leadership", weight: 18 },
+      { phrase: "Design Thinking", weight: 16 },
+      { phrase: "Data-Driven Decisions", weight: 14 }
+    ];
+
+    // Dynamic data swap functions
+    window.showTech = function() { series.data.setAll(techData); };
+    window.showBusiness = function() { series.data.setAll(businessData); };
+
+    // Initial data
+    series.data.setAll(techData);
     series.appear(1000);
   </script>
 </body>

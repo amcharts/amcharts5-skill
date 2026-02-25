@@ -139,6 +139,25 @@ am5gantt.Gantt.new(root, {
 })
 ```
 
+## Today marker / current date line
+
+```js
+// Add a vertical line at today's date using axis ranges
+var today = new Date().getTime();
+var rangeDataItem = xAxis.makeDataItem({ value: today });
+xAxis.createAxisRange(rangeDataItem);
+rangeDataItem.get("grid").setAll({
+  stroke: am5.color(0xff0000),
+  strokeWidth: 2,
+  strokeOpacity: 1
+});
+rangeDataItem.get("label").setAll({
+  text: "Today",
+  fill: am5.color(0xff0000),
+  location: 0
+});
+```
+
 ## Simulated Gantt with XY (limited alternative)
 
 If you don't have the Gantt license, you can simulate a basic Gantt using XY charts. This approach lacks editing, task linking, and hierarchy but works for simple display:
@@ -163,11 +182,46 @@ const series = chart.series.push(am5xy.ColumnSeries.new(root, {
   categoryYField: "task",
   tooltip: am5.Tooltip.new(root, { labelText: "{task}" })
 }));
+
+// Color by task status
+series.columns.template.adapters.add("fill", function(fill, target) {
+  var dc = target.dataItem.dataContext;
+  if (dc.progress >= 1) return am5.color(0x4caf50);    // done
+  if (dc.progress > 0) return am5.color(0xff9800);      // in progress
+  return am5.color(0x2196f3);                             // not started
+});
+
+yAxis.data.setAll(data);
+series.data.setAll(data);
+```
+
+## Events on Gantt elements
+
+```js
+// For the dedicated am5gantt.Gantt class, editing events are handled
+// internally (drag, resize, add, delete). Access updated data via:
+chart.events.on("datavalidated", function() {
+  console.log("Data changed — tasks:", chart.data.values);
+});
+
+// For simulated XY Gantt, use standard XY events:
+series.columns.template.events.on("click", function(ev) {
+  var task = ev.target.dataItem.dataContext;
+  console.log("Clicked:", task.task, "Progress:", task.progress);
+});
+
+series.columns.template.events.on("pointerover", function(ev) {
+  ev.target.set("fillOpacity", 1);
+});
+
+series.columns.template.events.on("pointerout", function(ev) {
+  ev.target.set("fillOpacity", 0.8);
+});
 ```
 
 ---
 
-## Example: Full Gantt chart
+## Example 1: Full Gantt chart
 
 ```html
 <!DOCTYPE html>
@@ -241,6 +295,109 @@ const series = chart.series.push(am5xy.ColumnSeries.new(root, {
       }
     ]);
 
+    chart.appear(1000, 100);
+  </script>
+</body>
+</html>
+```
+
+## Example 2: Simulated Gantt with XY chart (no Gantt license needed)
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Simulated Gantt (XY)</title>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <style>
+    #chartdiv { width: 100%; height: 400px; }
+  </style>
+</head>
+<body>
+  <div id="chartdiv"></div>
+  <script>
+    var root = am5.Root.new("chartdiv");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    var chart = root.container.children.push(am5xy.XYChart.new(root, {
+      panX: false,
+      panY: false,
+      layout: root.verticalLayout
+    }));
+
+    var data = [
+      { task: "Research",     start: new Date(2024, 0, 1).getTime(),  end: new Date(2024, 0, 12).getTime(), progress: 1 },
+      { task: "Design",       start: new Date(2024, 0, 8).getTime(),  end: new Date(2024, 0, 22).getTime(), progress: 1 },
+      { task: "Frontend",     start: new Date(2024, 0, 15).getTime(), end: new Date(2024, 1, 10).getTime(), progress: 0.7 },
+      { task: "Backend",      start: new Date(2024, 0, 20).getTime(), end: new Date(2024, 1, 15).getTime(), progress: 0.5 },
+      { task: "Testing",      start: new Date(2024, 1, 5).getTime(),  end: new Date(2024, 1, 20).getTime(), progress: 0.2 },
+      { task: "Deployment",   start: new Date(2024, 1, 18).getTime(), end: new Date(2024, 1, 25).getTime(), progress: 0 }
+    ];
+
+    // Category Y axis (tasks) — inversed so first task is at top
+    var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+      categoryField: "task",
+      renderer: am5xy.AxisRendererY.new(root, { inversed: true, minGridDistance: 20 })
+    }));
+
+    // Date X axis (time)
+    var xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
+      baseInterval: { timeUnit: "day", count: 1 },
+      renderer: am5xy.AxisRendererX.new(root, {})
+    }));
+
+    // Column series with open/close values for task bars
+    var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+      xAxis: xAxis,
+      yAxis: yAxis,
+      openValueXField: "start",
+      valueXField: "end",
+      categoryYField: "task",
+      tooltip: am5.Tooltip.new(root, {
+        labelText: "{task}\n{openValueX.formatDate('MMM dd')} – {valueX.formatDate('MMM dd')}"
+      })
+    }));
+
+    series.columns.template.setAll({
+      height: am5.percent(60),
+      cornerRadiusBR: 4,
+      cornerRadiusTR: 4,
+      cornerRadiusBL: 4,
+      cornerRadiusTL: 4,
+      strokeOpacity: 0
+    });
+
+    // Color by progress
+    series.columns.template.adapters.add("fill", function(fill, target) {
+      var p = target.dataItem.dataContext.progress;
+      if (p >= 1) return am5.color(0x4caf50);
+      if (p > 0)  return am5.color(0xff9800);
+      return am5.color(0x2196f3);
+    });
+    series.columns.template.adapters.add("stroke", function(stroke, target) {
+      var p = target.dataItem.dataContext.progress;
+      if (p >= 1) return am5.color(0x4caf50);
+      if (p > 0)  return am5.color(0xff9800);
+      return am5.color(0x2196f3);
+    });
+
+    // Today marker
+    var today = new Date().getTime();
+    var rangeDataItem = xAxis.makeDataItem({ value: today });
+    xAxis.createAxisRange(rangeDataItem);
+    rangeDataItem.get("grid").setAll({
+      stroke: am5.color(0xff0000),
+      strokeWidth: 2,
+      strokeOpacity: 1
+    });
+
+    yAxis.data.setAll(data);
+    series.data.setAll(data);
+
+    series.appear(1000);
     chart.appear(1000, 100);
   </script>
 </body>

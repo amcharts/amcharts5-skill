@@ -191,6 +191,65 @@ series.bullets.push(function() {
 });
 ```
 
+## Event markers on timeline
+
+Use bullets with labels to show discrete events (milestones, releases) along the curve:
+
+```js
+series.bullets.push(function(root, series, dataItem) {
+  var dc = dataItem.dataContext;
+  if (dc.milestone) {
+    return am5.Bullet.new(root, {
+      sprite: am5.Container.new(root, {
+        children: [
+          am5.Circle.new(root, { radius: 8, fill: am5.color(0xff5733) }),
+          am5.Label.new(root, {
+            text: dc.label || "",
+            centerX: am5.percent(50),
+            centerY: am5.percent(100),
+            dy: -15,
+            fontSize: 11,
+            populateText: true
+          })
+        ]
+      })
+    });
+  }
+  return am5.Bullet.new(root, {
+    sprite: am5.Circle.new(root, { radius: 3, fill: series.get("fill") })
+  });
+});
+```
+
+## Events on timeline elements
+
+```js
+// Click on data points (via bullets)
+series.bullets.push(function() {
+  var circle = am5.Circle.new(root, {
+    radius: 5,
+    fill: series.get("fill"),
+    cursorOverStyle: "pointer"
+  });
+  circle.events.on("click", function(ev) {
+    var di = ev.target.dataItem;
+    console.log("Clicked:", di.get("valueX"), di.get("valueY"));
+  });
+  return am5.Bullet.new(root, { sprite: circle });
+});
+
+// Click on timeline columns (CurveColumnSeries)
+series.columns.template.events.on("click", function(ev) {
+  console.log("Column:", ev.target.dataItem.dataContext);
+});
+
+// Cursor position tracking
+chart.get("cursor").events.on("cursormoved", function(ev) {
+  var x = xAxis.positionToValue(xAxis.toAxisPosition(ev.target.getPrivate("positionX")));
+  console.log("Cursor at:", new Date(x));
+});
+```
+
 ---
 
 ## Example: Serpentine timeline with events

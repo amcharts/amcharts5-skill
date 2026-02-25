@@ -279,6 +279,57 @@ am5percent.PieSeries.new(root, {
 });
 ```
 
+## Nested / Multi-level pie (concentric rings)
+
+```js
+// Outer ring
+var outerSeries = chart.series.push(am5percent.PieSeries.new(root, {
+  valueField: "value",
+  categoryField: "category",
+  radius: am5.percent(95),
+  innerRadius: am5.percent(60)
+}));
+
+// Inner ring
+var innerSeries = chart.series.push(am5percent.PieSeries.new(root, {
+  valueField: "value",
+  categoryField: "category",
+  radius: am5.percent(55),
+  innerRadius: am5.percent(20)
+}));
+
+outerSeries.data.setAll(outerData);
+innerSeries.data.setAll(innerData);
+```
+
+## Data-driven slice colors (templateField)
+
+```js
+series.slices.template.set("templateField", "sliceSettings");
+
+series.data.setAll([
+  { category: "Critical", value: 40, sliceSettings: { fill: am5.color(0xff0000) } },
+  { category: "Warning", value: 35, sliceSettings: { fill: am5.color(0xffa500) } },
+  { category: "OK", value: 25, sliceSettings: { fill: am5.color(0x00cc00) } }
+]);
+```
+
+## Events on slices
+
+```js
+series.slices.template.events.on("click", function(ev) {
+  var data = ev.target.dataItem.dataContext;
+  console.log("Clicked:", data.category, data.value);
+});
+
+series.slices.template.events.on("pointerover", function(ev) {
+  ev.target.set("scale", 1.05);
+});
+series.slices.template.events.on("pointerout", function(ev) {
+  ev.target.set("scale", 1);
+});
+```
+
 ## Disposal
 
 ```js
@@ -338,7 +389,6 @@ root.dispose();
       x: am5.percent(50),
       layout: root.horizontalLayout
     }));
-    legend.data.setAll(series.dataItems);
 
     // Data LAST
     series.data.setAll([
@@ -349,10 +399,8 @@ root.dispose();
       { browser: "Other", share: 7 }
     ]);
 
-    // Wait for data before populating legend
-    series.events.on("datavalidated", function() {
-      legend.data.setAll(series.dataItems);
-    });
+    // Populate legend AFTER data is set (dataItems are empty before data.setAll)
+    legend.data.setAll(series.dataItems);
 
     series.appear(1000);
     chart.appear(1000, 100);

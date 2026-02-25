@@ -167,6 +167,23 @@ legend.data.setAll(series.dataItems.filter(function(di) {
 }));
 ```
 
+## Two-set Venn example
+
+```js
+series.data.setAll([
+  { name: "Frontend", value: 300 },
+  { name: "Backend", value: 250 },
+  { name: "Frontend", value: 80, sets: ["Frontend", "Backend"] }  // intersection
+]);
+```
+
+## Notes on sizing and positioning
+
+- Circle sizes are proportional to `value`
+- Intersection overlap is **approximate** — amCharts positions circles to visually suggest the declared intersection values, but exact area-proportional overlap is not guaranteed
+- For best results, keep intersection values smaller than either parent set value
+- Very small intersections relative to set sizes may not be visible
+
 ---
 
 ## Example: Technology skills Venn diagram
@@ -236,6 +253,99 @@ legend.data.setAll(series.dataItems.filter(function(di) {
     var legend = chart.children.push(am5.Legend.new(root, {
       centerX: am5.percent(50),
       x: am5.percent(50)
+    }));
+    legend.data.setAll(series.dataItems.filter(function(di) {
+      return !di.dataContext.sets;
+    }));
+
+    series.appear(1000);
+    chart.appear(1000, 100);
+  </script>
+</body>
+</html>
+```
+
+## Example 2: Two-set Venn with custom colors and click handler
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Two-Set Venn</title>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/venn.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <style>
+    #chartdiv { width: 100%; height: 500px; }
+  </style>
+</head>
+<body>
+  <div id="chartdiv"></div>
+  <script>
+    var root = am5.Root.new("chartdiv");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    var chart = root.container.children.push(
+      am5venn.VennDiagram.new(root, {})
+    );
+
+    var series = chart.series.push(
+      am5venn.Venn.new(root, {
+        categoryField: "name",
+        valueField: "value",
+        intersectionsField: "sets",
+        fillField: "fill"
+      })
+    );
+
+    // Styling
+    series.slices.template.setAll({
+      fillOpacity: 0.65,
+      strokeWidth: 3,
+      stroke: am5.color(0xffffff),
+      tooltipText: "{category}: {value}"
+    });
+
+    series.slices.template.states.create("hover", {
+      fillOpacity: 0.85,
+      scale: 1.03
+    });
+
+    series.labels.template.setAll({
+      text: "{category}\n[bold]{value}[/]",
+      fontSize: 15,
+      fill: am5.color(0xffffff),
+      textAlign: "center"
+    });
+
+    // Hide labels on intersection
+    series.labels.template.adapters.add("text", function(text, target) {
+      if (target.dataItem && target.dataItem.dataContext.sets) {
+        return "[bold]{value}[/]";
+      }
+      return text;
+    });
+
+    // Click handler
+    series.slices.template.events.on("click", function(ev) {
+      var di = ev.target.dataItem;
+      alert(di.get("category") + ": " + di.get("value"));
+    });
+
+    // Data
+    series.data.setAll([
+      { name: "Mobile Users", value: 450, fill: am5.color(0x2196f3) },
+      { name: "Desktop Users", value: 380, fill: am5.color(0x4caf50) },
+      { name: "Both Platforms", value: 120, sets: ["Mobile Users", "Desktop Users"], fill: am5.color(0x9c27b0) }
+    ]);
+
+    // Legend — main sets only
+    var legend = chart.children.push(am5.Legend.new(root, {
+      centerX: am5.percent(50),
+      x: am5.percent(50),
+      y: am5.percent(95),
+      centerY: am5.percent(100)
     }));
     legend.data.setAll(series.dataItems.filter(function(di) {
       return !di.dataContext.sets;

@@ -92,6 +92,7 @@ const root = am5.Root.new("chartdiv"); // div id, not a DOM element
 root.setThemes([am5themes_Animated.new(root)]);
 
 // Set locale (optional)
+import am5locales_de_DE from "@amcharts/amcharts5/locales/de_DE";
 root.locale = am5locales_de_DE;
 
 // Set date/number formats (optional)
@@ -205,6 +206,163 @@ series.appear(1000);        // duration in ms
 chart.appear(1000, 100);    // duration, delay
 ```
 
+## Events
+
+```js
+// Interaction events on elements
+series.columns.template.events.on("click", (ev) => {
+  console.log("Clicked:", ev.target.dataItem.dataContext);
+});
+
+// Common events: click, pointerover, pointerout, pointerdown, globalpointermove
+
+// Series/chart lifecycle events
+series.events.on("datavalidated", () => {
+  // Fires after data is processed — safe to read dataItems
+});
+
+// Axis zoom event
+xAxis.events.on("rangechanged", () => {
+  console.log("Zoomed/scrolled");
+});
+
+// Setting change watch
+sprite.on("width", (width) => {
+  console.log("Width changed to", width);
+});
+
+// One-time listener
+series.events.once("datavalidated", () => { /* runs once */ });
+
+// Remove listener
+const disposer = sprite.events.on("click", handler);
+disposer.dispose(); // removes the listener
+```
+
+## Settings API
+
+```js
+// Set after creation
+sprite.set("fill", am5.color(0xff0000));
+sprite.setAll({ fill: am5.color(0xff0000), strokeWidth: 2 });
+
+// Read current value
+const fill = sprite.get("fill");
+const width = sprite.getPrivate("width"); // read-only internal values
+```
+
+## Dynamic data
+
+```js
+// Replace all data (triggers full redraw)
+series.data.setAll(newData);
+
+// Add items
+series.data.push({ category: "New", value: 42 });
+
+// Update item at index (animates the change)
+series.data.setIndex(0, { category: "Updated", value: 99 });
+
+// Remove item at index
+series.data.removeIndex(2);
+
+// Insert at specific position
+series.data.insertIndex(1, { category: "Inserted", value: 50 });
+
+// Iterating dataItems — dataItems is a PLAIN ARRAY, not a List
+// ❌ series.dataItems.each(fn)                              — will throw, .each() does not exist
+// ✅ am5.array.each(series.dataItems, function(dataItem) {}) — amCharts array utility
+// ✅ series.dataItems.forEach(function(dataItem) {})         — standard JS
+```
+
+## Adapters
+
+```js
+// Dynamically modify a setting value before it's applied
+series.columns.template.adapters.add("fill", (fill, target) => {
+  return target.dataItem.get("valueY") > 100
+    ? am5.color(0x00cc00)
+    : am5.color(0xcc0000);
+});
+
+// Adapter on axis labels
+xAxis.get("renderer").labels.template.adapters.add("text", (text, target) => {
+  return text + "!";
+});
+```
+
+## States
+
+```js
+// Hover state — applied automatically on pointer over
+series.columns.template.states.create("hover", {
+  fillOpacity: 0.8,
+  scale: 1.05
+});
+
+// Active state — toggled via click
+series.columns.template.states.create("active", {
+  fill: am5.color(0xff0000)
+});
+
+// Built-in state names: "hover", "active", "disabled", "hidden"
+// State animation: stateAnimationDuration, stateAnimationEasing
+```
+
+## Custom themes
+
+```js
+const myTheme = am5.Theme.new(root);
+myTheme.rule("Label").setAll({ fontSize: 12, fill: am5.color(0x555555) });
+myTheme.rule("Grid").setAll({ stroke: am5.color(0xe0e0e0) });
+root.setThemes([am5themes_Animated.new(root), myTheme]);
+// Theme order matters: later themes override earlier ones
+```
+
+## Data processor
+
+```js
+// Auto-convert fields when loading external / API data
+series.data.processor = am5.DataProcessor.new(root, {
+  dateFields: ["date"],
+  dateFormat: "yyyy-MM-dd",
+  numericFields: ["value", "count"],
+  colorFields: ["color"],
+  emptyAs: 0  // replace null/empty with 0
+});
+// Configure processor BEFORE setting data
+```
+
+## Accessibility
+
+```js
+series.columns.template.setAll({
+  focusable: true,
+  ariaLabel: "{categoryX}: {valueY}",
+  role: "figure"
+});
+// Keyboard: TAB to navigate focusable elements, ENTER to click
+// focusableGroup: "series1" — TAB to first, arrows within group
+```
+
+## Container & Layout
+
+```js
+// Containers organize child elements
+const container = root.container.children.push(am5.Container.new(root, {
+  width: am5.percent(100),
+  height: am5.percent(100),
+  layout: root.verticalLayout  // also: horizontalLayout, gridLayout
+}));
+
+// Padding and margin
+container.setAll({
+  paddingTop: 10,
+  paddingBottom: 10,
+  marginLeft: 20
+});
+```
+
 ## Disposal (SPA frameworks)
 
 ```js
@@ -227,7 +385,7 @@ onUnmounted(() => { root.dispose(); });
 ## v4 → v5 migration pitfalls
 
 | v4 pattern (WRONG) | v5 equivalent (CORRECT) |
-|-----------|--------------
+|-----------|--------------|
 | `am4core.create("div", am4charts.XYChart)` | `am5.Root.new("div")` + `am5xy.XYChart.new(root, {})` |
 | `new am4charts.LineSeries()` | `am5xy.LineSeries.new(root, {})` |
 | `series.dataFields.valueY = "val"` | `valueYField: "val"` in `.new()` settings |
@@ -249,3 +407,4 @@ onUnmounted(() => { root.dispose(); });
 8. **Calling `chart.dispose()` instead of `root.dispose()`** — always dispose root.
 9. **Using CSS to style chart elements** — amCharts renders on Canvas, not DOM.
 10. **Wrong package import** — check the package map table above.
+11. **Calling `.each()` on `dataItems`** — `series.dataItems` is a plain array, not an amCharts `List`. Use `am5.array.each(series.dataItems, fn)` or standard `forEach`/`for` loops. Only `series.data` (the `ListData` object) has `.each()`.

@@ -464,6 +464,183 @@ rangeDataItem.get("axisFill").setAll({
 rangeDataItem.get("label").setAll({ text: "Target", fill: am5.color(0xff0000) });
 ```
 
+## Scatter / Bubble chart
+
+Use `ValueAxis` on both X and Y with `LineSeries` (no connecting line) or `ColumnSeries`.
+
+```js
+// Scatter: ValueAxis on both axes
+const xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererX.new(root, {}),
+  tooltip: am5.Tooltip.new(root, {})
+}));
+const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererY.new(root, {})
+}));
+
+const series = chart.series.push(am5xy.LineSeries.new(root, {
+  xAxis: xAxis,
+  yAxis: yAxis,
+  valueXField: "x",
+  valueYField: "y",
+  tooltip: am5.Tooltip.new(root, { labelText: "({valueX}, {valueY})" })
+}));
+
+// Hide connecting line (scatter, not line chart)
+series.strokes.template.set("visible", false);
+
+// Add circle bullets
+series.bullets.push(function(root, series, dataItem) {
+  return am5.Bullet.new(root, {
+    sprite: am5.Circle.new(root, {
+      radius: 5,
+      fill: series.get("fill"),
+      fillOpacity: 0.7
+    })
+  });
+});
+
+// Bubble chart: variable-size bullets from data
+series.bullets.push(function(root, series, dataItem) {
+  var size = dataItem.dataContext.size || 1;
+  return am5.Bullet.new(root, {
+    sprite: am5.Circle.new(root, {
+      radius: Math.sqrt(size) * 3,
+      fill: series.get("fill"),
+      fillOpacity: 0.5,
+      tooltipText: "{name}: ({valueX}, {valueY}) size: {size}"
+    })
+  });
+});
+
+series.data.setAll([
+  { x: 10, y: 20, size: 50, name: "A" },
+  { x: 30, y: 45, size: 120, name: "B" },
+  { x: 55, y: 15, size: 80, name: "C" }
+]);
+```
+
+## Bullets (data point markers)
+
+```js
+// Add circle bullets to a line series
+series.bullets.push(function(root, series, dataItem) {
+  return am5.Bullet.new(root, {
+    sprite: am5.Circle.new(root, {
+      radius: 4,
+      fill: series.get("fill"),
+      stroke: am5.color(0xffffff),
+      strokeWidth: 1
+    })
+  });
+});
+
+// Custom bullet (e.g., star, image, label)
+series.bullets.push(function(root, series, dataItem) {
+  return am5.Bullet.new(root, {
+    sprite: am5.Label.new(root, {
+      text: "{valueY}",
+      centerX: am5.percent(50),
+      centerY: am5.percent(100),
+      populateText: true
+    })
+  });
+});
+
+// Auto-hide bullets when too close together
+series.set("minBulletDistance", 20);
+```
+
+## Dual Y-axis (multiple value axes)
+
+```js
+// First Y axis (left)
+var yAxis1 = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererY.new(root, {})
+}));
+
+// Second Y axis (right)
+var yAxis2 = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererY.new(root, { opposite: true })
+}));
+
+// Sync grid lines (optional)
+yAxis2.set("syncWithAxis", yAxis1);
+
+// Series on first axis
+var series1 = chart.series.push(am5xy.LineSeries.new(root, {
+  name: "Revenue ($)",
+  xAxis: xAxis, yAxis: yAxis1,
+  valueYField: "revenue", valueXField: "date"
+}));
+
+// Series on second axis
+var series2 = chart.series.push(am5xy.LineSeries.new(root, {
+  name: "Units Sold",
+  xAxis: xAxis, yAxis: yAxis2,
+  valueYField: "units", valueXField: "date"
+}));
+```
+
+## Axis titles
+
+```js
+yAxis.children.unshift(am5.Label.new(root, {
+  text: "Revenue ($)",
+  rotation: -90,
+  y: am5.percent(50),
+  centerX: am5.percent(50)
+}));
+
+xAxis.children.push(am5.Label.new(root, {
+  text: "Month",
+  x: am5.percent(50),
+  centerX: am5.percent(50)
+}));
+```
+
+## Range columns / Waterfall (openValueYField)
+
+```js
+// Range columns: each bar spans from openValueY to valueY
+var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+  xAxis: xAxis, yAxis: yAxis,
+  valueYField: "high",
+  openValueYField: "low",       // bar starts from this value
+  categoryXField: "category"
+}));
+
+// Waterfall: cumulative bars using calculated open/close values
+// Data should pre-calculate start/end values for each bar
+```
+
+## Events on XY elements
+
+```js
+// Click on a column
+series.columns.template.events.on("click", function(ev) {
+  var data = ev.target.dataItem.dataContext;
+  console.log("Clicked:", data);
+});
+
+// Hover on a data point (line series bullet)
+series.bullets.push(function(root, series, dataItem) {
+  var circle = am5.Circle.new(root, { radius: 5, fill: series.get("fill") });
+  circle.events.on("pointerover", function() {
+    circle.set("scale", 1.5);
+  });
+  circle.events.on("pointerout", function() {
+    circle.set("scale", 1);
+  });
+  return am5.Bullet.new(root, { sprite: circle });
+});
+
+// Axis zoom/scroll event
+xAxis.events.on("rangechanged", function() {
+  console.log("Axis range changed (zoomed/scrolled)");
+});
+```
+
 ## Chart settings reference
 
 ```js

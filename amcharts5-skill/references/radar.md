@@ -218,6 +218,87 @@ const legend = chart.children.push(am5.Legend.new(root, {
 legend.data.setAll(chart.series.values);
 ```
 
+## Partial-circle radar chart
+
+```js
+// Half radar (180 degrees)
+var chart = root.container.children.push(am5radar.RadarChart.new(root, {
+  startAngle: -90,
+  endAngle: 90
+}));
+
+// Three-quarter radar (270 degrees)
+var chart = root.container.children.push(am5radar.RadarChart.new(root, {
+  startAngle: -135,
+  endAngle: 135
+}));
+```
+
+## Dynamic gauge value update
+
+```js
+// After creating the gauge hand and data item:
+// Update value from external event (button, API, timer, etc.)
+function setGaugeValue(newValue) {
+  handDataItem.animate({
+    key: "value",
+    to: newValue,
+    duration: 800,
+    easing: am5.ease.out(am5.ease.cubic)
+  });
+}
+
+// Example: update every 2 seconds
+setInterval(function() {
+  setGaugeValue(Math.random() * 100);
+}, 2000);
+```
+
+## Axis label formatting for gauges
+
+```js
+// Append "%" to gauge axis labels
+xAxis.get("renderer").labels.template.adapters.add("text", function(text) {
+  return text + "%";
+});
+
+// Custom number format
+xAxis.set("numberFormat", "#.#'%'");
+```
+
+## Events on radar elements
+
+```js
+// Click on radar columns
+columnSeries.columns.template.events.on("click", function(ev) {
+  var di = ev.target.dataItem;
+  console.log("Category:", di.get("categoryX"), "Value:", di.get("valueY"));
+});
+
+// Pointer over/out on radar line data points (via bullets)
+series.bullets.push(function() {
+  var circle = am5.Circle.new(root, {
+    radius: 5,
+    fill: series.get("fill"),
+    cursorOverStyle: "pointer"
+  });
+  circle.events.on("click", function(ev) {
+    console.log("Clicked data point:", ev.target.dataItem.get("valueY"));
+  });
+  return am5.Bullet.new(root, { sprite: circle });
+});
+
+// Gauge needle animation complete
+handDataItem.animate({
+  key: "value",
+  to: 75,
+  duration: 1000,
+  easing: am5.ease.out(am5.ease.cubic)
+}).events.on("stopped", function() {
+  console.log("Needle animation complete");
+});
+```
+
 ## Disposal
 
 ```js

@@ -218,6 +218,111 @@ chart.chartContainer.children.push(am5.Button.new(root, {
 });
 ```
 
+## Globe (orthographic projection)
+
+```js
+var chart = root.container.children.push(am5map.MapChart.new(root, {
+  projection: am5map.geoOrthographic(),
+  panX: "rotateX",     // drag to rotate horizontally
+  panY: "rotateY",     // drag to rotate vertically
+  rotationX: -70,      // initial longitude center
+  rotationY: -30       // initial latitude center
+}));
+
+// Rotate to a specific country
+chart.animate({ key: "rotationX", to: -2.35, duration: 1500, easing: am5.ease.out(am5.ease.cubic) });
+chart.animate({ key: "rotationY", to: -48.86, duration: 1500, easing: am5.ease.out(am5.ease.cubic) });
+```
+
+## GraticuleSeries (grid lines / ocean background)
+
+```js
+// Background (ocean)
+var backgroundSeries = chart.series.unshift(am5map.MapPolygonSeries.new(root, {}));
+backgroundSeries.mapPolygons.template.setAll({
+  fill: am5.color(0xddeeff),
+  stroke: am5.color(0xddeeff)
+});
+backgroundSeries.data.push({
+  geometry: am5map.getGeoRectangle(90, 180, -90, -180) // full globe background
+});
+
+// Grid lines (graticule)
+chart.series.push(am5map.GraticuleSeries.new(root, {}));
+```
+
+## Drill-down map (country → states)
+
+```js
+// World-level polygons
+var worldSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
+  geoJSON: am5geodata_worldLow
+}));
+
+// Country-level polygons (initially hidden)
+var countrySeries = chart.series.push(am5map.MapPolygonSeries.new(root, {}));
+
+// Click a country to drill down
+worldSeries.mapPolygons.template.events.on("click", function(ev) {
+  var country = ev.target.dataItem.dataContext.id; // ISO alpha-2 code, e.g., "US"
+  // Load country geodata dynamically
+  import("@amcharts/amcharts5-geodata/region/usa/usaLow").then(function(geodata) {
+    countrySeries.set("geoJSON", geodata.default);
+    chart.zoomToDataItem(ev.target.dataItem);
+  });
+});
+
+// Back button
+chart.chartContainer.children.push(am5.Button.new(root, {
+  label: am5.Label.new(root, { text: "Back" })
+})).events.on("click", function() {
+  countrySeries.set("geoJSON", undefined);
+  chart.goHome();
+});
+```
+
+## Additional MapChart settings
+
+```js
+am5map.MapChart.new(root, {
+  maxZoomLevel: 32,         // max zoom
+  minZoomLevel: 1,          // min zoom
+  maxPanOut: 0.4,           // how far user can pan beyond map (0-1)
+  rotationX: 0,             // center longitude
+  rotationY: 0,             // center latitude
+  rotationZ: 0,             // tilt
+  wheelY: "zoom",           // "zoom", "none"
+  wheelSensitivity: 1,      // zoom speed multiplier
+})
+```
+
+**Polygon IDs** use ISO 3166-1 alpha-2 codes (e.g., `"US"`, `"CN"`, `"DE"`, `"FR"`).
+
+## Events on map elements
+
+```js
+// Polygon click
+polygonSeries.mapPolygons.template.events.on("click", function(ev) {
+  var id = ev.target.dataItem.dataContext.id;    // "US", "CN", etc.
+  var name = ev.target.dataItem.dataContext.name; // "United States"
+  console.log("Clicked:", name, id);
+});
+
+// Point/marker click
+pointSeries.bullets.push(function(root, series, dataItem) {
+  var circle = am5.Circle.new(root, { radius: 5, fill: am5.color(0xff0000) });
+  circle.events.on("click", function() {
+    console.log("Marker:", dataItem.dataContext);
+  });
+  return am5.Bullet.new(root, { sprite: circle });
+});
+
+// Map zoom event
+chart.events.on("zoomlevelchanged", function(ev) {
+  console.log("Zoom:", chart.get("zoomLevel"));
+});
+```
+
 ## Disposal
 
 ```js
@@ -354,19 +459,6 @@ root.dispose();
       { name: "Sydney", latitude: -33.87, longitude: 151.21, population: 5.3 }
     ];
 
-    pointSeries.bullets.push(function() {
-      return am5.Bullet.new(root, {
-        sprite: am5.Circle.new(root, {
-          radius: 5,
-          fill: am5.color(0xff5733),
-          fillOpacity: 0.7,
-          strokeWidth: 1,
-          stroke: am5.color(0xffffff),
-          tooltipText: "{name}\nPopulation: {population}M"
-        })
-      });
-    });
-
     // Scale bubble size by population
     pointSeries.bullets.push(function(root, series, dataItem) {
       var value = dataItem.dataContext.population;
@@ -374,8 +466,10 @@ root.dispose();
         sprite: am5.Circle.new(root, {
           radius: Math.sqrt(value) * 4,
           fill: am5.color(0xff5733),
-          fillOpacity: 0.4,
-          tooltipText: "{name}: {population}M"
+          fillOpacity: 0.5,
+          strokeWidth: 1,
+          stroke: am5.color(0xffffff),
+          tooltipText: "{name}\nPopulation: {population}M"
         })
       });
     });

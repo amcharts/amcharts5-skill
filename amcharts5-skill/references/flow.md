@@ -197,19 +197,58 @@ series.links.template.setAll({
 series.data.setAll(data);
 ```
 
-## Custom node colors from data
+## Custom node data and colors
 
 ```js
-// In data:
-var data = [
-  { from: "A", to: "B", value: 10, fromColor: "#ff0000" },
-  // ...
-];
+// Define explicit node data with colors and custom names
+series.nodes.data.setAll([
+  { id: "A", name: "Source A", fill: am5.color(0x095256) },
+  { id: "B", name: "Target B", fill: am5.color(0x087f8c) },
+  { id: "C", name: "Output C", fill: am5.color(0x5aaa95) }
+]);
 
-// Not directly supported — use adapters:
+// Apply node colors from data
 series.nodes.rectangles.template.adapters.add("fill", function(fill, target) {
-  // Custom logic based on node data
+  var dataItem = target.dataItem;
+  if (dataItem && dataItem.dataContext && dataItem.dataContext.fill) {
+    return dataItem.dataContext.fill;
+  }
   return fill;
+});
+
+// Node labels use the "name" field by default
+series.nodes.labels.template.setAll({
+  text: "{name}"
+});
+```
+
+## Multi-level Sankey (3+ levels)
+
+```js
+// Data with 3 levels: Source → Category → Destination
+var data = [
+  { from: "Solar", to: "Renewable", value: 30 },
+  { from: "Wind", to: "Renewable", value: 25 },
+  { from: "Coal", to: "Fossil", value: 40 },
+  { from: "Gas", to: "Fossil", value: 35 },
+  { from: "Renewable", to: "Residential", value: 20 },
+  { from: "Renewable", to: "Commercial", value: 35 },
+  { from: "Fossil", to: "Residential", value: 30 },
+  { from: "Fossil", to: "Industrial", value: 45 }
+];
+```
+
+## Events on flow elements
+
+```js
+// Node click
+series.nodes.template.events.on("click", function(ev) {
+  console.log("Node:", ev.target.dataItem.get("id"));
+});
+
+// Link click
+series.links.template.events.on("click", function(ev) {
+  console.log("Link:", ev.target.dataItem.dataContext);
 });
 ```
 

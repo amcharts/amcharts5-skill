@@ -212,6 +212,63 @@ series.labels.template.setAll({
 series.data.setAll(data);
 ```
 
+## Partition
+
+```js
+const series = container.children.push(am5hierarchy.Partition.new(root, {
+  valueField: "value",
+  categoryField: "name",
+  childDataField: "children",
+  orientation: "horizontal",   // "horizontal" | "vertical"
+  initialDepth: 3
+}));
+
+series.rectangles.template.setAll({
+  strokeWidth: 1,
+  stroke: am5.color(0xffffff)
+});
+
+series.data.setAll(data);
+```
+
+## VoronoiTreemap
+
+```js
+const series = container.children.push(am5hierarchy.VoronoiTreemap.new(root, {
+  valueField: "value",
+  categoryField: "name",
+  childDataField: "children",
+  initialDepth: 2,
+  topDepth: 1
+}));
+
+series.data.setAll(data);
+```
+
+## Flat data with parentField (database-friendly)
+
+Instead of nested `children` arrays, use flat data with `id` and `parentId` fields:
+
+```js
+const series = container.children.push(am5hierarchy.Treemap.new(root, {
+  valueField: "value",
+  categoryField: "name",
+  childDataField: "children",  // still required
+  parentIdField: "parentId",   // enables flat data
+  idField: "id"
+}));
+
+// Flat data (e.g., from a database query)
+series.data.setAll([
+  { id: "root", name: "Root", children: [] },
+  { id: "a", name: "Group A", parentId: "root", children: [] },
+  { id: "b", name: "Group B", parentId: "root", children: [] },
+  { id: "a1", name: "Item A1", parentId: "a", value: 100 },
+  { id: "a2", name: "Item A2", parentId: "a", value: 60 },
+  { id: "b1", name: "Item B1", parentId: "b", value: 80 }
+]);
+```
+
 ## Common configuration
 
 ### Node colors
@@ -222,7 +279,7 @@ series.get("colors").set("colors", [
   am5.color(0x5aaa95), am5.color(0x86a873)
 ]);
 
-// Per-node via data + fill setting
+// Per-node via data + templateField
 // { name: "A", value: 100, nodeSettings: { fill: am5.color(0xff0000) } }
 // series.nodes.template.set("templateField", "nodeSettings");
 ```
@@ -232,10 +289,26 @@ Clicking a node zooms into its children. Configure with:
 ```js
 series.set("topDepth", 1);       // hide root
 series.set("initialDepth", 2);   // initial visible depth
+series.set("downDepth", 1);      // how many levels to reveal on drill-down
 ```
 
 ### Breadcrumbs (for navigation)
 Not built-in as a component — implement via click events on nodes.
+
+### Events on hierarchy nodes
+
+```js
+// Node click
+series.nodes.template.events.on("click", function(ev) {
+  var data = ev.target.dataItem.dataContext;
+  console.log("Clicked:", data.name);
+});
+
+// Data validated (after render)
+series.events.on("datavalidated", function() {
+  console.log("Hierarchy rendered");
+});
+```
 
 ## Disposal
 
