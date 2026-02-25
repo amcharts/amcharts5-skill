@@ -1,0 +1,369 @@
+# Timeline Charts — Curve, Serpentine, Spiral
+
+Docs: https://www.amcharts.com/docs/v5/charts/timeline/
+
+Timeline charts are "curved XY charts" — they use XY-style axes and series but bend the chart into serpentine, spiral, or custom shapes. Added in amCharts 5.12.0.
+
+## Key differences from XY charts
+
+Timeline charts work like XY charts but use **different classes**:
+
+| XY class | Timeline equivalent |
+|----------|-------------------|
+| `am5xy.XYChart` | `am5timeline.CurveChart` / `SerpentineChart` / `SpiralChart` |
+| `am5xy.AxisRendererX` | `am5timeline.AxisRendererCurveX` |
+| `am5xy.AxisRendererY` | `am5timeline.AxisRendererCurveY` |
+| `am5xy.LineSeries` | `am5timeline.CurveLineSeries` |
+| `am5xy.ColumnSeries` | `am5timeline.CurveColumnSeries` |
+| `am5xy.XYCursor` | `am5timeline.CurveCursor` |
+
+All XY axis types (DateAxis, CategoryAxis, ValueAxis) work — just swap the renderer.
+
+## Imports
+
+### ES modules / TypeScript
+```ts
+import * as am5 from "@amcharts/amcharts5";
+import * as am5xy from "@amcharts/amcharts5/xy";
+import * as am5timeline from "@amcharts/amcharts5/timeline";
+import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+```
+
+### CDN / script tags
+```html
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/timeline.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+```
+
+## Chart types
+
+### SerpentineChart
+
+The easiest starting point. Automatically generates a winding, snake-like path.
+
+```js
+const chart = root.container.children.push(
+  am5timeline.SerpentineChart.new(root, {
+    orientation: "vertical",  // "vertical" | "horizontal"
+    levelCount: 3,            // number of bends/turns
+    yAxisRadius: am5.percent(25),   // curve thickness
+    yAxisInnerRadius: -25,          // inner radius (negative = percentage of radius)
+  })
+);
+```
+
+**Serpentine settings:**
+
+| Setting | Type | Description |
+|---------|------|-------------|
+| `orientation` | `"vertical"` \| `"horizontal"` | Direction of the snake pattern |
+| `levelCount` | number | Number of turns/bends |
+| `yAxisRadius` | percent/number | Outer radius of the curve |
+| `yAxisInnerRadius` | number | Inner radius (0 = filled, negative = relative) |
+
+### SpiralChart
+
+Wraps the chart into a spiral shape.
+
+```js
+const chart = root.container.children.push(
+  am5timeline.SpiralChart.new(root, {
+    levelCount: 3,             // number of spiral rings
+    inversed: true,            // spiral direction
+    endAngle: -135,            // end angle in degrees
+    yAxisRadius: am5.percent(70),
+    yAxisInnerRadius: 0,
+    innerRadius: am5.percent(30),  // inner hole radius
+  })
+);
+```
+
+**Spiral settings:**
+
+| Setting | Type | Description |
+|---------|------|-------------|
+| `levelCount` | number | Number of spiral rings |
+| `inversed` | boolean | Spiral direction |
+| `endAngle` | number | Where the spiral ends (degrees) |
+| `innerRadius` | percent/number | Size of the center hole |
+
+### CurveChart
+
+The base class — define your own custom shape via control points on the X axis renderer.
+
+```js
+const chart = root.container.children.push(
+  am5timeline.CurveChart.new(root, {})
+);
+
+// Custom shape is defined on the X axis renderer
+const xRenderer = am5timeline.AxisRendererCurveX.new(root, {
+  // Control points define the curve shape
+  points: [
+    { x: -400, y: 0 },
+    { x: -200, y: -100 },
+    { x: 0, y: 0 },
+    { x: 200, y: 100 },
+    { x: 400, y: 0 }
+  ]
+});
+```
+
+## Axes
+
+Same axis types as XY charts, but with Curve renderers:
+
+```js
+const xAxis = chart.xAxes.push(
+  am5xy.DateAxis.new(root, {
+    baseInterval: { timeUnit: "day", count: 1 },
+    renderer: am5timeline.AxisRendererCurveX.new(root, {})
+  })
+);
+
+const yAxis = chart.yAxes.push(
+  am5xy.ValueAxis.new(root, {
+    renderer: am5timeline.AxisRendererCurveY.new(root, {
+      // innerRadius and radius control the Y axis "thickness"
+    })
+  })
+);
+```
+
+**Any XY axis type works:**
+- `am5xy.DateAxis` — most common for timelines
+- `am5xy.CategoryAxis` — discrete items along the curve
+- `am5xy.ValueAxis` — numeric scale
+
+**Important:** CategoryAxis still needs its own data: `xAxis.data.setAll(data)`.
+
+## Series
+
+Use Curve-prefixed series classes:
+
+```js
+// Line series
+const series = chart.series.push(
+  am5timeline.CurveLineSeries.new(root, {
+    name: "Events",
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueYField: "value",
+    valueXField: "date",     // timestamps for DateAxis
+    // or categoryXField     // for CategoryAxis
+    tooltip: am5.Tooltip.new(root, { labelText: "{valueY}" })
+  })
+);
+
+// Column series
+const series = chart.series.push(
+  am5timeline.CurveColumnSeries.new(root, {
+    name: "Events",
+    xAxis: xAxis,
+    yAxis: yAxis,
+    valueYField: "value",
+    valueXField: "date",
+    tooltip: am5.Tooltip.new(root, { labelText: "{valueY}" })
+  })
+);
+```
+
+## Cursor
+
+```js
+chart.set("cursor", am5timeline.CurveCursor.new(root, {}));
+```
+
+## Bullets
+
+Bullets on timeline charts work the same as XY charts:
+
+```js
+series.bullets.push(function() {
+  return am5.Bullet.new(root, {
+    sprite: am5.Circle.new(root, {
+      radius: 5,
+      fill: series.get("fill")
+    })
+  });
+});
+```
+
+---
+
+## Example: Serpentine timeline with events
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Serpentine Timeline</title>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/timeline.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <style>
+    #chartdiv { width: 100%; height: 600px; }
+  </style>
+</head>
+<body>
+  <div id="chartdiv"></div>
+  <script>
+    var root = am5.Root.new("chartdiv");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    // Create serpentine chart
+    var chart = root.container.children.push(
+      am5timeline.SerpentineChart.new(root, {
+        orientation: "vertical",
+        levelCount: 3,
+        yAxisRadius: am5.percent(25),
+        yAxisInnerRadius: -25
+      })
+    );
+
+    // Create axes with Curve renderers
+    var xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
+      baseInterval: { timeUnit: "month", count: 1 },
+      renderer: am5timeline.AxisRendererCurveX.new(root, {}),
+      tooltip: am5.Tooltip.new(root, {})
+    }));
+
+    var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+      renderer: am5timeline.AxisRendererCurveY.new(root, {})
+    }));
+
+    // Create series
+    var series = chart.series.push(am5timeline.CurveLineSeries.new(root, {
+      name: "Revenue",
+      xAxis: xAxis,
+      yAxis: yAxis,
+      valueYField: "value",
+      valueXField: "date",
+      tooltip: am5.Tooltip.new(root, { labelText: "{valueY}" })
+    }));
+
+    series.strokes.template.setAll({ strokeWidth: 2 });
+    series.fills.template.setAll({ visible: true, fillOpacity: 0.3 });
+
+    // Add bullets
+    series.bullets.push(function() {
+      return am5.Bullet.new(root, {
+        sprite: am5.Circle.new(root, {
+          radius: 4,
+          fill: series.get("fill")
+        })
+      });
+    });
+
+    // Generate data
+    var data = [];
+    var date = new Date(2024, 0, 1);
+    var value = 100;
+    for (var i = 0; i < 24; i++) {
+      value += Math.round((Math.random() - 0.45) * 20);
+      data.push({
+        date: new Date(date.getFullYear(), date.getMonth() + i, 1).getTime(),
+        value: value
+      });
+    }
+
+    series.data.setAll(data);
+
+    // Cursor
+    chart.set("cursor", am5timeline.CurveCursor.new(root, {}));
+
+    series.appear(1000);
+    chart.appear(1000, 100);
+  </script>
+</body>
+</html>
+```
+
+## Example: Spiral chart
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Spiral Chart</title>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/timeline.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <style>
+    #chartdiv { width: 100%; height: 600px; }
+  </style>
+</head>
+<body>
+  <div id="chartdiv"></div>
+  <script>
+    var root = am5.Root.new("chartdiv");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    var chart = root.container.children.push(
+      am5timeline.SpiralChart.new(root, {
+        levelCount: 3,
+        inversed: true,
+        endAngle: -135,
+        yAxisRadius: am5.percent(70),
+        yAxisInnerRadius: 0,
+        innerRadius: am5.percent(30)
+      })
+    );
+
+    var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+      categoryField: "category",
+      renderer: am5timeline.AxisRendererCurveX.new(root, {}),
+      tooltip: am5.Tooltip.new(root, {})
+    }));
+
+    var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+      renderer: am5timeline.AxisRendererCurveY.new(root, {}),
+      min: 0
+    }));
+
+    var series = chart.series.push(am5timeline.CurveColumnSeries.new(root, {
+      name: "Score",
+      xAxis: xAxis,
+      yAxis: yAxis,
+      valueYField: "value",
+      categoryXField: "category",
+      tooltip: am5.Tooltip.new(root, { labelText: "{categoryX}: {valueY}" })
+    }));
+
+    series.columns.template.setAll({
+      cornerRadiusTL: 5,
+      cornerRadiusTR: 5,
+      strokeOpacity: 0
+    });
+
+    series.columns.template.adapters.add("fill", function(fill, target) {
+      return chart.get("colors").getIndex(series.columns.indexOf(target));
+    });
+
+    var data = [
+      { category: "Lithuania", value: 501 },
+      { category: "Czechia", value: 301 },
+      { category: "Ireland", value: 201 },
+      { category: "Germany", value: 165 },
+      { category: "Australia", value: 139 },
+      { category: "Austria", value: 128 },
+      { category: "UK", value: 99 },
+      { category: "Belgium", value: 60 },
+      { category: "Netherlands", value: 50 }
+    ];
+
+    xAxis.data.setAll(data);  // CategoryAxis needs its own data!
+    series.data.setAll(data);
+
+    series.appear(1000);
+    chart.appear(1000, 100);
+  </script>
+</body>
+</html>
+```
