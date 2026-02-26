@@ -40,6 +40,8 @@ Docs: https://www.amcharts.com/docs/v5/
 9. **DateAxis values must be timestamps** — use `new Date().getTime()`, not Date objects.
 10. **Disposal is mandatory in SPAs** — call `root.dispose()` on component unmount. Not `chart.dispose()`.
 11. **Canvas-rendered** — CSS cannot style chart internals. Use amCharts settings/templates instead.
+12. **Dark backgrounds require Dark theme** — If the user requests or the page clearly has a dark background, always add `am5themes_Dark.new(root)` to `root.setThemes()` alongside Animated. Without it, labels, grid, and tooltips will be invisible. If the background is not clearly dark, default to white/light and do NOT add the Dark theme unless asked.
+13. **Use default amCharts colors** — Do NOT invent custom color palettes unless the user explicitly asks for specific colors. amCharts assigns colors automatically from its built-in ColorSet. If you need a color programmatically, use `chart.get("colors").getIndex(index)` or `chart.get("colors").next()`. For pie/percent charts, use `series.get("colors")` instead.
 
 ## Package / module map
 
@@ -317,6 +319,48 @@ myTheme.rule("Label").setAll({ fontSize: 12, fill: am5.color(0x555555) });
 myTheme.rule("Grid").setAll({ stroke: am5.color(0xe0e0e0) });
 root.setThemes([am5themes_Animated.new(root), myTheme]);
 // Theme order matters: later themes override earlier ones
+```
+
+## Dark theme
+
+When the page has a dark background, add the Dark theme so labels, grid, and tooltips are readable:
+
+```js
+root.setThemes([
+  am5themes_Animated.new(root),
+  am5themes_Dark.new(root)        // must come after Animated
+]);
+```
+
+Import: `import am5themes_Dark from "@amcharts/amcharts5/themes/Dark"` or CDN `themes/Dark.js`.
+
+**Rule:** Only add Dark theme when the background is clearly dark. Default to white/light background with no Dark theme.
+
+## ColorSet — using default colors
+
+amCharts assigns colors automatically via a built-in ColorSet. Do not invent custom palettes unless the user asks.
+
+```js
+// Get the chart's default color set
+var colors = chart.get("colors");       // XY, radar, etc.
+var colors = series.get("colors");      // pie/percent charts use series-level colors
+
+// Get a specific color by index (does not advance internal counter)
+var color = colors.getIndex(0);         // first default color
+var color = colors.getIndex(3);         // fourth default color
+
+// Get next color in sequence (advances internal counter)
+var color = colors.next();
+
+// Reset counter back to start
+colors.reset();
+
+// Override the default palette (only if user requests specific colors)
+colors.set("colors", [
+  am5.color(0x095256),
+  am5.color(0x087f8c),
+  am5.color(0x5aaa95)
+]);
 ```
 
 ## Data processor

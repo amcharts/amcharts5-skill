@@ -127,6 +127,36 @@ am5xy.LineSeries.new(root, {
 })
 ```
 
+## Dark theme
+
+If the page has a dark background, always include the Dark theme. Without it, labels and grid will be invisible:
+
+```js
+root.setThemes([
+  am5themes_Animated.new(root),
+  am5themes_Dark.new(root)        // must come after Animated
+]);
+```
+
+**Rule:** Only add Dark theme when background is clearly dark. Default to white/light with no Dark theme unless the user asks.
+
+## Colors — use defaults, don't invent palettes
+
+amCharts assigns colors automatically. Do NOT create custom color palettes unless the user explicitly requests specific colors.
+
+```js
+// Get default colors programmatically
+var colors = chart.get("colors");       // XY, radar, etc.
+var colors = series.get("colors");      // pie/percent charts
+
+colors.getIndex(0);   // color by index (no counter advance)
+colors.next();        // next color in sequence (advances counter)
+colors.reset();       // restart counter
+
+// Only if user requests custom colors:
+colors.set("colors", [am5.color(0x095256), am5.color(0x087f8c)]);
+```
+
 ## Common chart recipes
 
 ### XY chart with category axis (bar/column)
