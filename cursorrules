@@ -550,6 +550,19 @@ series.bullets.push(function(root, series, dataItem) {
 });
 ```
 
+15. **`MapPointSeries` needs `latitudeField`/`longitudeField` when using `data.setAll()`** — Without these settings, points silently won't appear:
+```js
+// WRONG — points won't show
+am5map.MapPointSeries.new(root, {})
+
+// CORRECT — tell the series which fields hold coordinates
+am5map.MapPointSeries.new(root, {
+  latitudeField: "latitude",
+  longitudeField: "longitude"
+})
+```
+This is NOT needed when using `pushDataItem({ latitude: ..., longitude: ... })` which passes coordinates directly to the data item.
+
 ## Disposal (SPA / React / Angular / Vue)
 
 Always dispose the root when the component unmounts:

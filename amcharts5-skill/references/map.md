@@ -135,7 +135,10 @@ const heatLegend = chart.children.push(am5.HeatLegend.new(root, {
 
 ```js
 const pointSeries = chart.series.push(
-  am5map.MapPointSeries.new(root, {})
+  am5map.MapPointSeries.new(root, {
+    latitudeField: "latitude",
+    longitudeField: "longitude"
+  })
 );
 
 // Define bullet appearance
@@ -149,7 +152,7 @@ pointSeries.bullets.push(function() {
   });
 });
 
-// Add points via data
+// Add points via data — requires latitudeField/longitudeField on the series
 pointSeries.data.setAll([
   { latitude: 48.8566, longitude: 2.3522, name: "Paris" },
   { latitude: 40.7128, longitude: -74.0060, name: "New York" },
@@ -449,7 +452,10 @@ root.dispose();
     });
 
     // Point series with scaled bubbles
-    var pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
+    var pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {
+      latitudeField: "latitude",
+      longitudeField: "longitude"
+    }));
 
     var cities = [
       { name: "New York", latitude: 40.71, longitude: -74.01, population: 8.3 },
