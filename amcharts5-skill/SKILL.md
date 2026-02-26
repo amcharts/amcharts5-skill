@@ -191,7 +191,10 @@ root.setThemes([am5themes_Animated.new(root), responsive]);
 
 ## Heat rules
 
+Color or size elements by value. Requires `calculateAggregates: true` on the series (unless `minValue`/`maxValue` are set manually).
+
 ```js
+// Color columns by value
 series.set("heatRules", [{
   target: series.columns.template,
   dataField: "valueY",
@@ -199,6 +202,70 @@ series.set("heatRules", [{
   max: am5.color(0x5faa46),
   key: "fill"
 }]);
+
+// Scale bullet radius by value
+series.set("heatRules", [{
+  target: bulletTemplate,        // am5.Template.new({})
+  dataField: "value",
+  min: 3,
+  max: 30,
+  key: "radius"
+}]);
+```
+
+**Heat rule settings:**
+
+| Setting | Type | Description |
+|---------|------|-------------|
+| `target` | Template | Element template to apply heat to |
+| `key` | string | Setting to modify: `"fill"`, `"radius"`, `"opacity"`, `"strokeWidth"`, `"fontSize"`, etc. |
+| `dataField` | string | Data field for the value: `"valueY"`, `"value"`, `"valueX"`, etc. |
+| `min` | color/number | Value applied at the lowest data value |
+| `max` | color/number | Value applied at the highest data value |
+| `minValue` | number | Override auto-calculated min (skips `calculateAggregates`) |
+| `maxValue` | number | Override auto-calculated max (skips `calculateAggregates`) |
+| `customFunction` | function | `(sprite, min, max, value)` — full control over the rule |
+
+**Using heat rules on bullets** — bullets need an explicit `am5.Template`:
+
+```js
+var circleTemplate = am5.Template.new({});
+
+series.bullets.push(function() {
+  return am5.Bullet.new(root, {
+    sprite: am5.Circle.new(root, {
+      fill: series.get("fill"),
+      tooltipText: "{valueX}: {valueY}"
+    }, circleTemplate)              // pass template as 3rd arg
+  });
+});
+
+series.set("heatRules", [{
+  target: circleTemplate,
+  dataField: "valueY",
+  min: 3,
+  max: 25,
+  key: "radius"
+}]);
+```
+
+**HeatLegend:**
+
+```js
+var heatLegend = chart.children.push(am5.HeatLegend.new(root, {
+  orientation: "horizontal",       // or "vertical"
+  startColor: am5.color(0xe5dc36),
+  endColor: am5.color(0x5faa46),
+  startText: "Low",
+  endText: "High",
+  stepCount: 5                     // number of color stops
+}));
+
+// Sync legend range with series data
+series.events.on("datavalidated", function() {
+  heatLegend.set("startValue", series.getPrivate("valueLow"));
+  heatLegend.set("endValue", series.getPrivate("valueHigh"));
+});
 ```
 
 ## Animations
