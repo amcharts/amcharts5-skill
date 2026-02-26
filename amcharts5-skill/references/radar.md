@@ -200,6 +200,16 @@ var hand = handDataItem.set("bullet", am5xy.AxisBullet.new(root, {
 chart.appear(1000, 100);
 ```
 
+**Tip: Avoiding needle/label overlap** — When adding a value label in the gauge center, the clock hand pin and inner portion will overlap the label. Hide the pin and increase `innerRadius` to leave space:
+
+```js
+am5radar.ClockHand.new(root, {
+  radius: am5.percent(99),
+  innerRadius: am5.percent(55),  // keep needle away from center
+  pinRadius: 0                    // hide the center pin circle
+})
+```
+
 ## Cursor
 
 ```js
@@ -466,8 +476,8 @@ root.dispose();
     handDataItem.set("bullet", am5xy.AxisBullet.new(root, {
       sprite: am5radar.ClockHand.new(root, {
         radius: am5.percent(99),
-        innerRadius: am5.percent(50),
-        pinRadius: 8
+        innerRadius: am5.percent(55),
+        pinRadius: 0              // hidden — avoids overlap with center label
       })
     }));
 
