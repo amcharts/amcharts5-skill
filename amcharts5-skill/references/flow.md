@@ -252,6 +252,56 @@ series.links.template.events.on("click", function(ev) {
 });
 ```
 
+## Animated bullets along links
+
+Animated labels/circles that flow along Sankey or Chord links use `series.bullets.push()` — **NOT** `series.links.template.bullets.push()`. The bullet's `locationX` (0 = source, 1 = target) is animated in a loop, and an adapter fades opacity based on position.
+
+```js
+series.bullets.push(function(root, series, dataItem) {
+  var label = am5.Label.new(root, {
+    text: "${value}B",
+    populateText: true,
+    centerX: am5.p50,
+    fill: am5.color(0xffffff),
+    fontSize: 11
+  });
+
+  var bullet = am5.Bullet.new(root, {
+    locationX: 0,
+    sprite: label,
+    autoRotate: true   // orient along link direction
+  });
+
+  // Animate position along the link: 0 → 1, looping forever
+  bullet.animate({
+    key: "locationX",
+    from: 0,
+    to: 1,
+    duration: Math.random() * 10000 + 2000,
+    loops: Infinity
+  });
+
+  // Fade in at center, fade out at edges via adapter
+  label.adapters.add("opacity", function(opacity) {
+    return 0.5 - Math.abs(0.5 - bullet.get("locationX"));
+  });
+
+  // Drive the adapter on every position change
+  bullet.on("locationX", function() {
+    label.set("opacity", label.get("opacity"));
+  });
+
+  return bullet;
+});
+```
+
+**Key points:**
+- Use `series.bullets.push()` — bullets belong to the series, not to `series.links.template`
+- `autoRotate: true` makes the label follow the link curve
+- Random duration per bullet creates natural asynchronous flow
+- The opacity adapter formula `0.5 - Math.abs(0.5 - locationX)` gives a bell curve: invisible at edges, max at center
+- `bullet.on("locationX", ...)` is needed to trigger the adapter as locationX changes
+
 ## Disposal
 
 ```js

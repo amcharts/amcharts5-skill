@@ -526,6 +526,30 @@ am5xy.AxisRendererX.new(root, {
 ```
 Style minor elements through theme rules targeting the `"minor"` tag — they auto-inherit main grid appearance but slightly lighter.
 
+14. **Flow chart animated bullets go on `series.bullets`, NOT `series.links.template.bullets`** — To animate labels/circles flowing along Sankey/Chord links, use `series.bullets.push()`. Animate `bullet.locationX` from 0→1 with `loops: Infinity`. Use an adapter on opacity based on position for fade effect:
+```js
+series.bullets.push(function(root, series, dataItem) {
+  var label = am5.Label.new(root, {
+    text: "${value}B", populateText: true,
+    centerX: am5.p50, fill: am5.color(0xffffff)
+  });
+  var bullet = am5.Bullet.new(root, {
+    locationX: 0, sprite: label, autoRotate: true
+  });
+  bullet.animate({
+    key: "locationX", from: 0, to: 1,
+    duration: Math.random() * 10000 + 2000, loops: Infinity
+  });
+  label.adapters.add("opacity", function(opacity) {
+    return 0.5 - Math.abs(0.5 - bullet.get("locationX"));
+  });
+  bullet.on("locationX", function() {
+    label.set("opacity", label.get("opacity"));
+  });
+  return bullet;
+});
+```
+
 ## Disposal (SPA / React / Angular / Vue)
 
 Always dispose the root when the component unmounts:
