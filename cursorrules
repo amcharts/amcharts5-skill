@@ -485,6 +485,8 @@ series.set("tooltip", am5.Tooltip.new(root, {
 
 11. **`dataItems` is a plain array** — `series.dataItems` does NOT have `.each()`. Use `series.dataItems.forEach(fn)` or `am5.array.each(series.dataItems, fn)`. Only `series.data` (the ListData object) has `.each()`.
 
+12. **CDN script load order matters** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` → `xy.js` → `radar.js` / `timeline.js` / `gantt.js` → `themes/*.js`.
+
 ## Disposal (SPA / React / Angular / Vue)
 
 Always dispose the root when the component unmounts:
