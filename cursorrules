@@ -487,6 +487,15 @@ series.set("tooltip", am5.Tooltip.new(root, {
 
 12. **CDN script load order matters** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` → `xy.js` → `radar.js` / `timeline.js` / `gantt.js` → `themes/*.js`.
 
+13. **No `minorGrid` / `minorTicks` / `minorLabels` objects** — These properties don't exist. Enable minor grid via renderer flags:
+```js
+am5xy.AxisRendererX.new(root, {
+  minorGridEnabled: true,    // shows minor grid lines
+  minorLabelsEnabled: true   // optional: shows minor labels
+})
+```
+Style minor elements through theme rules targeting the `"minor"` tag — they auto-inherit main grid appearance but slightly lighter.
+
 ## Disposal (SPA / React / Angular / Vue)
 
 Always dispose the root when the component unmounts:
