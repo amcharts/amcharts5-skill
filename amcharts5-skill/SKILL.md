@@ -256,14 +256,19 @@ const width = sprite.getPrivate("width"); // read-only internal values
 ## Dynamic data
 
 ```js
-// Replace all data (triggers full redraw)
+// Replace all data (full redraw, NO animation)
 series.data.setAll(newData);
 
 // Add items
 series.data.push({ category: "New", value: 42 });
 
-// Update item at index (animates the change)
+// Update item at index — this ANIMATES the change
 series.data.setIndex(0, { category: "Updated", value: 99 });
+
+// IMPORTANT: To update data WITH animation, use setIndex() per item.
+// setAll() replaces everything at once — no transition animation.
+// Loop through items for animated updates:
+// newData.forEach(function(item, i) { series.data.setIndex(i, item); });
 
 // Remove item at index
 series.data.removeIndex(2);
@@ -456,3 +461,4 @@ onUnmounted(() => { root.dispose(); });
 13. **No `minorGrid` / `minorTicks` / `minorLabels` objects** — These do not exist on axes. Minor grid is enabled via boolean flags on the **renderer**: `minorGridEnabled: true` and optionally `minorLabelsEnabled: true`. Styling is done through theme rules targeting the `"minor"` tag, not through separate object properties.
 14. **Flow chart animated bullets go on `series.bullets`, NOT `series.links.template.bullets`** — To animate labels/circles flowing along Sankey or Chord links, use `series.bullets.push(function(...) { ... })`. Animate `bullet.locationX` from 0→1 with `loops: Infinity`. Use an adapter on opacity for fade effect. See `references/flow.md` → "Animated bullets along links".
 15. **`MapPointSeries` needs `latitudeField`/`longitudeField` when using `data.setAll()`** — If point data has `latitude`/`longitude` fields, the series must declare them: `am5map.MapPointSeries.new(root, { latitudeField: "latitude", longitudeField: "longitude" })`. Without these, points silently won't appear. This is NOT needed when using `pushDataItem({ latitude: ..., longitude: ... })` which passes coordinates directly.
+16. **`data.setAll()` does NOT animate — use `data.setIndex()` for animated updates** — When the user asks to update/refresh data with animation, do NOT use `series.data.setAll(newData)` — it replaces everything instantly with no transition. Instead, update each item with `series.data.setIndex(i, newItem)` which triggers smooth value animation. For full replacement with animation, loop: `newData.forEach(function(item, i) { series.data.setIndex(i, item); })`.

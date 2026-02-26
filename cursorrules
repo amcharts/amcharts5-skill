@@ -421,11 +421,14 @@ series.columns.template.states.create("hover", {
 ## Dynamic data
 
 ```js
-series.data.setAll(newData);              // replace all
+series.data.setAll(newData);              // replace all (NO animation)
 series.data.push({ cat: "X", val: 1 });  // add
-series.data.setIndex(0, newItem);         // update at index (animates)
+series.data.setIndex(0, newItem);         // update at index (ANIMATES)
 series.data.removeIndex(2);               // remove at index
 series.data.insertIndex(1, newItem);      // insert at index
+
+// To update data WITH animation, use setIndex() per item:
+// newData.forEach(function(item, i) { series.data.setIndex(i, item); });
 
 // IMPORTANT: series.dataItems is a plain array, NOT a List
 // ❌ series.dataItems.each(fn)           — will throw
@@ -562,6 +565,17 @@ am5map.MapPointSeries.new(root, {
 })
 ```
 This is NOT needed when using `pushDataItem({ latitude: ..., longitude: ... })` which passes coordinates directly to the data item.
+
+16. **`data.setAll()` does NOT animate — use `data.setIndex()` for animated updates** — `series.data.setAll(newData)` replaces everything instantly with no transition. To update data with smooth animation, use `series.data.setIndex(i, newItem)` per item:
+```js
+// WRONG — no animation
+series.data.setAll(newData);
+
+// CORRECT — animates each value change
+newData.forEach(function(item, i) {
+  series.data.setIndex(i, item);
+});
+```
 
 ## Disposal (SPA / React / Angular / Vue)
 
