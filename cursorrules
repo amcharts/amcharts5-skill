@@ -712,12 +712,21 @@ var xRenderer = am5timeline.AxisRendererCurveX.new(root, {
 ```
 Without this, crashes with `Cannot read properties of undefined (reading 'axis')`.
 
-20. **`gantt.js` requires `plugins/colorPicker.js`** — Load `colorPicker.js` BEFORE `gantt.js`:
-```html
-<script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/gantt.js"></script>
+20. **Gantt data uses TWO separate calls** — Do NOT use `chart.data.setAll()`. Set categories on `chart.yAxis.data.setAll([{id, name, parentId, color}])` and tasks on `chart.series.data.setAll([{id, start, duration, progress, linkTo}])`. Use flat `parentId` for hierarchy, NOT nested `children` arrays. CDN order: `index.js` → `xy.js` → `gantt.js` → `plugins/colorPicker.js` → `themes/Animated.js`:
+```js
+// WRONG — single data call with nested children
+chart.data.setAll([{ name: "Task", children: [...] }]);
+
+// CORRECT — two separate calls with flat parentId hierarchy
+chart.yAxis.data.setAll([
+  { id: "phase1", name: "Phase 1", color: am5.color(0x297373) },
+  { id: "task1", name: "Task 1", parentId: "phase1" }
+]);
+chart.series.data.setAll([
+  { id: "phase1", start: timestamp, duration: 10, progress: 50 },
+  { id: "task1", start: timestamp, duration: 5, progress: 100, linkTo: ["phase1"] }
+]);
 ```
-Without it, `gantt.js` fails with `__esModule` error.
 
 21. **No continent-level geodata at top-level CDN** — `geodata/europeLow.js` does NOT exist. Use `geodata/region/world/europeLow.js` (global: `am5geodata_region_world_europeLow`) or filter `worldLow` with `include: ["FR", "DE", "ES", ...]`.
 
