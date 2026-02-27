@@ -35,6 +35,15 @@ CDN: `https://cdn.amcharts.com/lib/5/geodata/{mapName}.js`
 
 Pattern: camelCase country name + detail level. E.g. `germanyLow`, `canadaHigh`, `chinaLow`.
 
+**IMPORTANT — regional/continent geodata:**
+- Individual country maps: `geodata/{countryName}Low.js` → global `am5geodata_{countryName}Low`
+- **There are NO continent-level maps** like `europeLow.js` or `asiaLow.js` at the top-level CDN path
+- Regional maps are in subdirectories: `geodata/region/world/{regionName}Low.js`
+  - CDN: `https://cdn.amcharts.com/lib/5/geodata/region/world/europeLow.js`
+  - Global: `am5geodata_region_world_europeLow`
+- For a map of European countries, use `worldLow.js` and filter with `include: ["DE", "FR", "IT", ...]`
+- US congressional districts: `geodata/usaCongressionalLow.js` (may not be available on all CDN versions)
+
 ## Core setup
 
 ```js

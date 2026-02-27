@@ -98,8 +98,10 @@ const chart = root.container.children.push(
   am5timeline.CurveChart.new(root, {})
 );
 
-// Custom shape is defined on the X axis renderer
+// Create Y renderer first, then X renderer with yRenderer + custom points
+const yRenderer = am5timeline.AxisRendererCurveY.new(root, {});
 const xRenderer = am5timeline.AxisRendererCurveX.new(root, {
+  yRenderer: yRenderer,   // REQUIRED
   // Control points define the curve shape
   points: [
     { x: -400, y: 0 },
@@ -113,21 +115,30 @@ const xRenderer = am5timeline.AxisRendererCurveX.new(root, {
 
 ## Axes
 
-Same axis types as XY charts, but with Curve renderers:
+Same axis types as XY charts, but with Curve renderers.
+
+**IMPORTANT:** `AxisRendererCurveX` MUST receive the `yRenderer` reference. Create the Y renderer first, then pass it to the X renderer. Without this, the chart crashes with `Cannot read properties of undefined (reading 'axis')`.
 
 ```js
+// Step 1: Create Y renderer FIRST
+const yRenderer = am5timeline.AxisRendererCurveY.new(root, {});
+
+// Step 2: Create X renderer and pass yRenderer to it
+const xRenderer = am5timeline.AxisRendererCurveX.new(root, {
+  yRenderer: yRenderer   // REQUIRED — links the two axes for curve layout
+});
+
+// Step 3: Create the axes
 const xAxis = chart.xAxes.push(
   am5xy.DateAxis.new(root, {
     baseInterval: { timeUnit: "day", count: 1 },
-    renderer: am5timeline.AxisRendererCurveX.new(root, {})
+    renderer: xRenderer
   })
 );
 
 const yAxis = chart.yAxes.push(
   am5xy.ValueAxis.new(root, {
-    renderer: am5timeline.AxisRendererCurveY.new(root, {
-      // innerRadius and radius control the Y axis "thickness"
-    })
+    renderer: yRenderer
   })
 );
 ```
@@ -284,15 +295,20 @@ chart.get("cursor").events.on("cursormoved", function(ev) {
       })
     );
 
-    // Create axes with Curve renderers
+    // Create axes — Y renderer first, then pass to X renderer
+    var yRenderer = am5timeline.AxisRendererCurveY.new(root, {});
+    var xRenderer = am5timeline.AxisRendererCurveX.new(root, {
+      yRenderer: yRenderer  // REQUIRED
+    });
+
     var xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
       baseInterval: { timeUnit: "month", count: 1 },
-      renderer: am5timeline.AxisRendererCurveX.new(root, {}),
+      renderer: xRenderer,
       tooltip: am5.Tooltip.new(root, {})
     }));
 
     var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
-      renderer: am5timeline.AxisRendererCurveY.new(root, {})
+      renderer: yRenderer
     }));
 
     // Create series
@@ -375,14 +391,19 @@ chart.get("cursor").events.on("cursormoved", function(ev) {
       })
     );
 
+    var yRenderer = am5timeline.AxisRendererCurveY.new(root, {});
+    var xRenderer = am5timeline.AxisRendererCurveX.new(root, {
+      yRenderer: yRenderer  // REQUIRED
+    });
+
     var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
       categoryField: "category",
-      renderer: am5timeline.AxisRendererCurveX.new(root, {}),
+      renderer: xRenderer,
       tooltip: am5.Tooltip.new(root, {})
     }));
 
     var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
-      renderer: am5timeline.AxisRendererCurveY.new(root, {}),
+      renderer: yRenderer,
       min: 0
     }));
 

@@ -2,7 +2,7 @@
 
 Docs: https://www.amcharts.com/docs/v5/charts/venn/
 
-Venn diagrams show overlapping relationships between sets. Uses its own chart class (`VennDiagram`) and series class (`Venn`).
+Venn diagrams show overlapping relationships between sets. There is NO `VennDiagram` chart class — `am5venn.Venn` is both the series and the visual container, pushed directly into `root.container.children` (or any `Container`).
 
 ## Imports
 
@@ -22,17 +22,21 @@ import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 
 ## Setup
 
+**IMPORTANT:** There is no `am5venn.VennDiagram` class. The `am5venn.Venn` object IS the chart — push it directly into a container.
+
 ```js
 const root = am5.Root.new("chartdiv");
 root.setThemes([am5themes_Animated.new(root)]);
 
-// VennDiagram is the chart container
-const chart = root.container.children.push(
-  am5venn.VennDiagram.new(root, {})
-);
+// Create a wrapper container (optional, useful for adding legend)
+const container = root.container.children.push(am5.Container.new(root, {
+  width: am5.p100,
+  height: am5.p100,
+  layout: root.verticalLayout
+}));
 
-// Venn series handles layout and rendering
-const series = chart.series.push(
+// Venn is pushed directly into the container — NOT into chart.series
+const series = container.children.push(
   am5venn.Venn.new(root, {
     categoryField: "name",
     valueField: "value",
@@ -155,7 +159,8 @@ series.slices.template.events.on("click", function(ev) {
 ## Legend
 
 ```js
-const legend = chart.children.push(am5.Legend.new(root, {
+// Add legend to the same container as the Venn series
+const legend = container.children.push(am5.Legend.new(root, {
   centerX: am5.percent(50),
   x: am5.percent(50),
   layout: root.horizontalLayout
@@ -207,11 +212,13 @@ series.data.setAll([
     var root = am5.Root.new("chartdiv");
     root.setThemes([am5themes_Animated.new(root)]);
 
-    var chart = root.container.children.push(
-      am5venn.VennDiagram.new(root, {})
-    );
+    var container = root.container.children.push(am5.Container.new(root, {
+      width: am5.p100,
+      height: am5.p100,
+      layout: root.verticalLayout
+    }));
 
-    var series = chart.series.push(
+    var series = container.children.push(
       am5venn.Venn.new(root, {
         categoryField: "name",
         valueField: "value",
@@ -250,7 +257,7 @@ series.data.setAll([
     ]);
 
     // Legend — only main sets
-    var legend = chart.children.push(am5.Legend.new(root, {
+    var legend = container.children.push(am5.Legend.new(root, {
       centerX: am5.percent(50),
       x: am5.percent(50)
     }));
@@ -259,7 +266,7 @@ series.data.setAll([
     }));
 
     series.appear(1000);
-    chart.appear(1000, 100);
+    // Note: no chart.appear() needed — Venn is not a chart, just a series
   </script>
 </body>
 </html>
@@ -286,11 +293,13 @@ series.data.setAll([
     var root = am5.Root.new("chartdiv");
     root.setThemes([am5themes_Animated.new(root)]);
 
-    var chart = root.container.children.push(
-      am5venn.VennDiagram.new(root, {})
-    );
+    var container = root.container.children.push(am5.Container.new(root, {
+      width: am5.p100,
+      height: am5.p100,
+      layout: root.verticalLayout
+    }));
 
-    var series = chart.series.push(
+    var series = container.children.push(
       am5venn.Venn.new(root, {
         categoryField: "name",
         valueField: "value",
@@ -341,7 +350,7 @@ series.data.setAll([
     ]);
 
     // Legend — main sets only
-    var legend = chart.children.push(am5.Legend.new(root, {
+    var legend = container.children.push(am5.Legend.new(root, {
       centerX: am5.percent(50),
       x: am5.percent(50),
       y: am5.percent(95),
@@ -352,7 +361,7 @@ series.data.setAll([
     }));
 
     series.appear(1000);
-    chart.appear(1000, 100);
+    // Note: no chart.appear() needed — Venn is not a chart, just a series
   </script>
 </body>
 </html>

@@ -4,8 +4,6 @@ Docs: https://www.amcharts.com/docs/v5/charts/gantt/
 
 Gantt is a standalone chart class (not just a simulated XY chart). It auto-creates axes, series, and toolbar — you only provide data. It supports editable tasks, task linking, progress tracking, collapsible groups, weekends/holidays, and a color picker.
 
-**Note:** Gantt is a separate licensed product. You can simulate a basic Gantt with XY charts (CategoryAxis + DateAxis + ColumnSeries with `openValueXField`/`valueXField`), but the dedicated `am5gantt.Gantt` class provides far more features out of the box.
-
 ## Imports
 
 ### ES modules / TypeScript
@@ -13,6 +11,7 @@ Gantt is a standalone chart class (not just a simulated XY chart). It auto-creat
 import * as am5 from "@amcharts/amcharts5";
 import * as am5xy from "@amcharts/amcharts5/xy";
 import * as am5gantt from "@amcharts/amcharts5/gantt";
+import am5plugins_colorPicker from "@amcharts/amcharts5/plugins/colorPicker";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 ```
 
@@ -20,30 +19,26 @@ import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 ```html
 <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/gantt.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-```
-
-**Optional:** Color picker plugin for task color editing:
-```html
-<script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
 ```
 
 ## Core setup
 
 ```js
-const root = am5.Root.new("chartdiv");
+var root = am5.Root.new("chartdiv");
 root.setThemes([am5themes_Animated.new(root)]);
 
-const chart = root.container.children.push(
+var chart = root.container.children.push(
   am5gantt.Gantt.new(root, {
-    editable: true,         // allows UI editing (default: true)
-    durationUnit: "day",    // time unit for duration values
+    editable: true,
+    durationUnit: "day"
   })
 );
 ```
 
-**Important:** Gantt auto-creates axes and series — do NOT create them manually. Just set data on the chart.
+**Important:** Gantt auto-creates axes (`chart.xAxis`, `chart.xAxisMinor`, `chart.yAxis`) and series (`chart.series`). Do NOT create them manually.
 
 ## Chart settings
 
@@ -55,173 +50,217 @@ const chart = root.container.children.push(
 | `excludeWeekends` | boolean | `true` | Whether to exclude weekends from task durations |
 | `holidays` | Date[] | `[]` | Specific non-working dates |
 | `snapThreshold` | number | `0.5` | Drag snap position within a period (0–1) |
+| `sidebarWidth` | number | — | Sidebar width in pixels or Percent |
 
 ## Data structure
 
-Data is set on the chart (not on a series):
+**CRITICAL:** Data is set in TWO separate calls — category data on the Y axis, and task data on the series:
 
 ```js
-chart.data.setAll([
-  {
-    name: "Design Phase",           // task name (required)
-    start: new Date(2024, 0, 1).getTime(),  // start timestamp (required)
-    duration: 10,                   // number of durationUnits (required)
-    progress: 100,                  // 0–100 completion (optional)
-    color: am5.color(0x297373),     // task bar color (optional)
-    children: [                     // nested sub-tasks (optional)
-      {
-        name: "Wireframes",
-        start: new Date(2024, 0, 1).getTime(),
-        duration: 4,
-        progress: 100
-      },
-      {
-        name: "Mockups",
-        start: new Date(2024, 0, 7).getTime(),
-        duration: 6,
-        progress: 100
-      }
-    ]
-  },
-  {
-    name: "Development",
-    start: new Date(2024, 0, 15).getTime(),
-    duration: 20,
-    progress: 60,
-    children: [
-      { name: "Frontend", start: new Date(2024, 0, 15).getTime(), duration: 15, progress: 80 },
-      { name: "Backend", start: new Date(2024, 0, 20).getTime(), duration: 15, progress: 40 }
-    ]
-  }
+// 1. Category data → chart.yAxis.data.setAll()
+//    Flat array with parentId for hierarchy (NOT nested children)
+chart.yAxis.data.setAll([
+  { id: "design", name: "Design Phase", color: am5.color(0x297373) },
+  { id: "wireframes", name: "Wireframes", parentId: "design" },
+  { id: "mockups", name: "Mockups", parentId: "design" },
+  { id: "dev", name: "Development", color: am5.color(0xffc857) },
+  { id: "frontend", name: "Frontend", parentId: "dev" },
+  { id: "backend", name: "Backend", parentId: "dev" }
+]);
+
+// 2. Task/series data → chart.series.data.setAll()
+//    Each item's id must match a category id from above
+chart.series.data.setAll([
+  { id: "design", start: new Date(2024, 0, 1).getTime(), duration: 10, progress: 100 },
+  { id: "wireframes", start: new Date(2024, 0, 1).getTime(), duration: 4, progress: 100 },
+  { id: "mockups", start: new Date(2024, 0, 7).getTime(), duration: 6, progress: 100 },
+  { id: "dev", start: new Date(2024, 0, 15).getTime(), duration: 20, progress: 60 },
+  { id: "frontend", start: new Date(2024, 0, 15).getTime(), duration: 15, progress: 80 },
+  { id: "backend", start: new Date(2024, 0, 20).getTime(), duration: 15, progress: 40 }
 ]);
 ```
 
-### Data fields
+### Category data fields (yAxis)
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | Yes | Task display name |
-| `start` | number | Yes | Start timestamp (milliseconds) |
-| `duration` | number | Yes | Duration in `durationUnit`s |
-| `progress` | number | No | 0–100 percentage completion |
-| `color` | Color | No | Task bar color (`am5.color(0x...)`) |
-| `children` | array | No | Nested sub-tasks (unlimited depth) |
-| `id` | string | No | Unique task identifier |
+| Field | Default Key | Description |
+|-------|------------|-------------|
+| `idField` | `"id"` | Unique category identifier |
+| `nameField` | `"name"` | Display name in sidebar |
+| `parentIdField` | `"parentId"` | Parent category id for hierarchy |
+| `collapsedField` | `"collapsed"` | Whether group starts collapsed |
+| `colorField` | `"color"` | Task bar color |
+
+Customize field names:
+```js
+chart.yAxis.setAll({
+  nameField: "task",
+  collapsedField: "closed"
+});
+```
+
+### Series data fields
+
+| Field | Default Key | Description |
+|-------|------------|-------------|
+| `idField` | `"id"` | Must match a category id |
+| `openValueXField` | `"start"` | Start timestamp (ms) |
+| `durationField` | `"duration"` | Duration in durationUnits |
+| `progressField` | `"progress"` | 0–100 completion |
+| `linkToField` | `"linkTo"` | Array of ids to link to |
+
+Customize field names:
+```js
+chart.series.setAll({
+  durationField: "days",
+  progressField: "completion"
+});
+```
+
+### Task linking (dependencies)
+
+```js
+chart.series.data.setAll([
+  { id: "task1", start: timestamp, duration: 5, progress: 100, linkTo: ["task2"] },
+  { id: "task2", start: timestamp, duration: 3, progress: 0 }
+]);
+```
 
 ### Zero-duration tasks (milestones)
 
-Set `duration: 0` to create event-type milestone markers.
+Set `duration: 0` to create milestone markers.
+
+## Y-axis configuration (categories)
+
+```js
+chart.yAxis.setAll({
+  minCellHeight: 80,    // row height in pixels (default: 70)
+  childCellSize: 1,     // child row size relative to parent (default: 0.7, 1 = same)
+  childShift: 0         // child label indent in pixels (default: 25)
+});
+```
+
+## X-axis (timeline)
+
+Access: `chart.xAxis` (primary) and `chart.xAxisMinor` (secondary).
+
+```js
+// Hide the secondary axis
+chart.xAxisMinor.hide();
+```
 
 ## Weekend & holiday configuration
 
 ```js
-const chart = root.container.children.push(
+var chart = root.container.children.push(
   am5gantt.Gantt.new(root, {
     durationUnit: "day",
-    weekends: [0, 5, 6],           // Sunday, Friday, Saturday
+    weekends: [0, 5, 6],
     excludeWeekends: true,
     holidays: [
-      new Date(2025, 0, 1),        // New Year's Day
-      new Date(2025, 6, 4),        // Independence Day
-      new Date(2025, 10, 27)       // Thanksgiving
+      new Date(2025, 0, 1),
+      new Date(2025, 6, 4),
+      new Date(2025, 10, 27)
     ]
   })
 );
 ```
 
-When weekends/holidays are excluded, a 3-day task starting Thursday will end on the following Monday (skipping Sat/Sun).
-
 ## Read-only mode
 
 ```js
 am5gantt.Gantt.new(root, {
-  editable: false   // view-only, no UI editing
+  editable: false
 })
 ```
 
-## Today marker / current date line
+## Control buttons
+
+| Property | Description |
+|----------|-------------|
+| `chart.addButton` | Add new task |
+| `chart.colorPickerButton` | Invoke color picker |
+| `chart.expandButton` | Expand all categories |
+| `chart.collapseButton` | Collapse all categories |
+| `chart.linkButton` | Toggle auto-linking |
+| `chart.clearButton` | Delete all data (with confirmation) |
+| `chart.editButton` | Toggle edit/read-only (hidden by default) |
+| `chart.zoomOutButton` | Zoom to full width |
+| `chart.fitButton` | Fit tasks to view |
+| `chart.controls` | Container holding all controls |
 
 ```js
-// Add a vertical line at today's date using axis ranges
-var today = new Date().getTime();
-var rangeDataItem = xAxis.makeDataItem({ value: today });
-xAxis.createAxisRange(rangeDataItem);
-rangeDataItem.get("grid").setAll({
-  stroke: am5.color(0xff0000),
+// Hide specific buttons
+chart.colorPickerButton.hide(0);
+chart.clearButton.hide(0);
+
+// Hide ALL controls
+chart.controls.hide(0);
+
+// Show edit toggle
+chart.editButton.show(0);
+```
+
+## Series customization
+
+```js
+chart.series.columns.template.setAll({
   strokeWidth: 2,
-  strokeOpacity: 1
+  height: am5.percent(90)
 });
-rangeDataItem.get("label").setAll({
-  text: "Today",
-  fill: am5.color(0xff0000),
-  location: 0
+
+chart.series.columns.template.adapters.add("stroke", function() {
+  return am5.color(0x000000);
 });
 ```
 
-## Simulated Gantt with XY (limited alternative)
-
-If you don't have the Gantt license, you can simulate a basic Gantt using XY charts. This approach lacks editing, task linking, and hierarchy but works for simple display:
+## Color customization
 
 ```js
-// CategoryAxis on Y (tasks), DateAxis on X (time)
-const yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
-  categoryField: "task",
-  renderer: am5xy.AxisRendererY.new(root, { inversed: true })
-}));
+// Set custom color palette
+chart.get("colors").set("colors", [
+  am5.color(0x095256),
+  am5.color(0x087f8c),
+  am5.color(0x5aaa95),
+  am5.color(0x86a873),
+  am5.color(0xbb9f06)
+]);
 
-const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
-  baseInterval: { timeUnit: "day", count: 1 },
-  renderer: am5xy.AxisRendererX.new(root, {})
-}));
-
-const series = chart.series.push(am5xy.ColumnSeries.new(root, {
-  xAxis: xAxis,
-  yAxis: yAxis,
-  openValueXField: "start",    // task start timestamp
-  valueXField: "end",          // task end timestamp
-  categoryYField: "task",
-  tooltip: am5.Tooltip.new(root, { labelText: "{task}" })
-}));
-
-// Color by task status
-series.columns.template.adapters.add("fill", function(fill, target) {
-  var dc = target.dataItem.dataContext;
-  if (dc.progress >= 1) return am5.color(0x4caf50);    // done
-  if (dc.progress > 0) return am5.color(0xff9800);      // in progress
-  return am5.color(0x2196f3);                             // not started
+// Single color for all tasks
+chart.get("colors").setAll({
+  colors: [am5.color(0x095256)],
+  step: 0
 });
-
-yAxis.data.setAll(data);
-series.data.setAll(data);
 ```
 
-## Events on Gantt elements
+## Events and serialization
 
 ```js
-// For the dedicated am5gantt.Gantt class, editing events are handled
-// internally (drag, resize, add, delete). Access updated data via:
-chart.events.on("datavalidated", function() {
-  console.log("Data changed — tasks:", chart.data.values);
+// Listen for data changes
+chart.events.on("valueschanged", function(ev) {
+  console.log("Data changed");
 });
 
-// For simulated XY Gantt, use standard XY events:
-series.columns.template.events.on("click", function(ev) {
-  var task = ev.target.dataItem.dataContext;
-  console.log("Clicked:", task.task, "Progress:", task.progress);
-});
+// Debounced version
+chart.events.onDebounced("valueschanged", function(ev) {
+  // Fires once after 500ms of last change
+}, 500);
 
-series.columns.template.events.on("pointerover", function(ev) {
-  ev.target.set("fillOpacity", 1);
-});
+// Serialize data for saving
+var ganttData = {
+  axis: chart.yAxis.data.values,
+  series: chart.series.data.values
+};
+var serialized = JSON.stringify(ganttData);
 
-series.columns.template.events.on("pointerout", function(ev) {
-  ev.target.set("fillOpacity", 0.8);
-});
+// Restore saved data
+var restored = JSON.parse(serialized);
+chart.yAxis.data.setAll(restored.axis);
+chart.series.data.setAll(restored.series);
 ```
 
 ---
 
-## Example 1: Full Gantt chart
+## Example 1: Full Gantt chart with am5gantt.Gantt
 
 ```html
 <!DOCTYPE html>
@@ -232,6 +271,7 @@ series.columns.template.events.on("pointerout", function(ev) {
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/gantt.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
   <style>
     #chartdiv { width: 100%; height: 500px; }
@@ -252,47 +292,34 @@ series.columns.template.events.on("pointerout", function(ev) {
       })
     );
 
-    chart.data.setAll([
-      {
-        name: "Planning",
-        start: new Date(2024, 0, 1).getTime(),
-        duration: 5,
-        progress: 100,
-        color: am5.color(0x297373),
-        children: [
-          { name: "Requirements", start: new Date(2024, 0, 1).getTime(), duration: 3, progress: 100 },
-          { name: "Architecture", start: new Date(2024, 0, 4).getTime(), duration: 2, progress: 100 }
-        ]
-      },
-      {
-        name: "Design",
-        start: new Date(2024, 0, 8).getTime(),
-        duration: 10,
-        progress: 80,
-        color: am5.color(0xe9724c),
-        children: [
-          { name: "Wireframes", start: new Date(2024, 0, 8).getTime(), duration: 4, progress: 100 },
-          { name: "Visual Design", start: new Date(2024, 0, 14).getTime(), duration: 6, progress: 60 }
-        ]
-      },
-      {
-        name: "Development",
-        start: new Date(2024, 0, 22).getTime(),
-        duration: 25,
-        progress: 40,
-        color: am5.color(0xffc857),
-        children: [
-          { name: "Frontend", start: new Date(2024, 0, 22).getTime(), duration: 20, progress: 50 },
-          { name: "Backend API", start: new Date(2024, 0, 22).getTime(), duration: 18, progress: 45 },
-          { name: "Integration", start: new Date(2024, 1, 15).getTime(), duration: 7, progress: 10 }
-        ]
-      },
-      {
-        name: "Launch",
-        start: new Date(2024, 2, 1).getTime(),
-        duration: 0,     // milestone
-        progress: 0
-      }
+    // Category data (yAxis) — flat with parentId for hierarchy
+    chart.yAxis.data.setAll([
+      { id: "planning", name: "Planning", color: am5.color(0x297373) },
+      { id: "requirements", name: "Requirements", parentId: "planning" },
+      { id: "architecture", name: "Architecture", parentId: "planning" },
+      { id: "design", name: "Design", color: am5.color(0xe9724c) },
+      { id: "wireframes", name: "Wireframes", parentId: "design" },
+      { id: "visual", name: "Visual Design", parentId: "design" },
+      { id: "dev", name: "Development", color: am5.color(0xffc857) },
+      { id: "frontend", name: "Frontend", parentId: "dev" },
+      { id: "backend", name: "Backend API", parentId: "dev" },
+      { id: "integration", name: "Integration", parentId: "dev" },
+      { id: "launch", name: "Launch" }
+    ]);
+
+    // Task data (series) — ids must match category ids
+    chart.series.data.setAll([
+      { id: "planning", start: new Date(2024, 0, 1).getTime(), duration: 5, progress: 100 },
+      { id: "requirements", start: new Date(2024, 0, 1).getTime(), duration: 3, progress: 100 },
+      { id: "architecture", start: new Date(2024, 0, 4).getTime(), duration: 2, progress: 100, linkTo: ["design"] },
+      { id: "design", start: new Date(2024, 0, 8).getTime(), duration: 10, progress: 80 },
+      { id: "wireframes", start: new Date(2024, 0, 8).getTime(), duration: 4, progress: 100 },
+      { id: "visual", start: new Date(2024, 0, 14).getTime(), duration: 6, progress: 60, linkTo: ["dev"] },
+      { id: "dev", start: new Date(2024, 0, 22).getTime(), duration: 25, progress: 40 },
+      { id: "frontend", start: new Date(2024, 0, 22).getTime(), duration: 20, progress: 50 },
+      { id: "backend", start: new Date(2024, 0, 22).getTime(), duration: 18, progress: 45 },
+      { id: "integration", start: new Date(2024, 1, 15).getTime(), duration: 7, progress: 10, linkTo: ["launch"] },
+      { id: "launch", start: new Date(2024, 2, 1).getTime(), duration: 0, progress: 0 }
     ]);
 
     chart.appear(1000, 100);
@@ -337,19 +364,16 @@ series.columns.template.events.on("pointerout", function(ev) {
       { task: "Deployment",   start: new Date(2024, 1, 18).getTime(), end: new Date(2024, 1, 25).getTime(), progress: 0 }
     ];
 
-    // Category Y axis (tasks) — inversed so first task is at top
     var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
       categoryField: "task",
       renderer: am5xy.AxisRendererY.new(root, { inversed: true, minGridDistance: 20 })
     }));
 
-    // Date X axis (time)
     var xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
       baseInterval: { timeUnit: "day", count: 1 },
       renderer: am5xy.AxisRendererX.new(root, {})
     }));
 
-    // Column series with open/close values for task bars
     var series = chart.series.push(am5xy.ColumnSeries.new(root, {
       xAxis: xAxis,
       yAxis: yAxis,
@@ -363,35 +387,16 @@ series.columns.template.events.on("pointerout", function(ev) {
 
     series.columns.template.setAll({
       height: am5.percent(60),
-      cornerRadiusBR: 4,
-      cornerRadiusTR: 4,
-      cornerRadiusBL: 4,
-      cornerRadiusTL: 4,
+      cornerRadiusBR: 4, cornerRadiusTR: 4,
+      cornerRadiusBL: 4, cornerRadiusTL: 4,
       strokeOpacity: 0
     });
 
-    // Color by progress
     series.columns.template.adapters.add("fill", function(fill, target) {
       var p = target.dataItem.dataContext.progress;
       if (p >= 1) return am5.color(0x4caf50);
       if (p > 0)  return am5.color(0xff9800);
       return am5.color(0x2196f3);
-    });
-    series.columns.template.adapters.add("stroke", function(stroke, target) {
-      var p = target.dataItem.dataContext.progress;
-      if (p >= 1) return am5.color(0x4caf50);
-      if (p > 0)  return am5.color(0xff9800);
-      return am5.color(0x2196f3);
-    });
-
-    // Today marker
-    var today = new Date().getTime();
-    var rangeDataItem = xAxis.makeDataItem({ value: today });
-    xAxis.createAxisRange(rangeDataItem);
-    rangeDataItem.get("grid").setAll({
-      stroke: am5.color(0xff0000),
-      strokeWidth: 2,
-      strokeOpacity: 1
     });
 
     yAxis.data.setAll(data);
