@@ -161,6 +161,37 @@ series.set("tooltip", am5.Tooltip.new(root, {
 
 **Inline formatting:** `"[bold]{name}[/]: [fontSize: 20px]{value}[/]"`
 
+## Chart title
+
+Do NOT add titles as HTML elements — they are outside the canvas and won't appear in exports. Add an `am5.Label` to the container BEFORE the chart, and set `verticalLayout`:
+
+```js
+// Option 1: directly on root.container
+root.container.children.push(am5.Label.new(root, {
+  text: "Chart Title",
+  fontSize: "1.3em",
+  x: am5.p50,
+  centerX: am5.p50
+}));
+root.container.set("layout", root.verticalLayout);
+
+var chart = root.container.children.push(am5xy.XYChart.new(root, { ... }));
+
+// Option 2: with a wrapper container
+var container = root.container.children.push(am5.Container.new(root, {
+  width: am5.p100,
+  height: am5.p100,
+  layout: root.verticalLayout
+}));
+container.children.push(am5.Label.new(root, {
+  text: "Chart Title",
+  fontSize: "1.3em",
+  x: am5.p50,
+  centerX: am5.p50
+}));
+var chart = container.children.push(am5xy.XYChart.new(root, { ... }));
+```
+
 ## Exporting
 
 ```js
@@ -592,6 +623,7 @@ onUnmounted(() => { root.dispose(); });
 19. **Timeline `AxisRendererCurveX` requires `yRenderer`** — Always create the Y renderer first, then pass it: `am5timeline.AxisRendererCurveX.new(root, { yRenderer: yRenderer })`. Without this, crashes with `Cannot read properties of undefined (reading 'axis')`.
 20. **Gantt data uses TWO separate calls** — Do NOT use `chart.data.setAll()`. Set categories on `chart.yAxis.data.setAll([{id, name, parentId, color}])` and tasks on `chart.series.data.setAll([{id, start, duration, progress, linkTo}])`. Use flat `parentId` for hierarchy, NOT nested `children` arrays. CDN order: `index.js` → `xy.js` → `plugins/colorPicker.js` → `gantt.js` → `themes/Animated.js` (gantt.js webpack-depends on colorPicker chunk). See `references/gantt.md`.
 21. **No continent-level geodata at top-level CDN** — `geodata/europeLow.js` does NOT exist. Use `geodata/region/world/europeLow.js` (global: `am5geodata_region_world_europeLow`) or filter `worldLow` with `include: [...]`.
+22. **Do not add chart titles as HTML** — HTML titles are outside the canvas and won't appear in exports. Use `am5.Label` pushed into the container BEFORE the chart, with `verticalLayout` on the container. See "Chart title" section above.
 
 ## Verify unfamiliar API before using it
 
