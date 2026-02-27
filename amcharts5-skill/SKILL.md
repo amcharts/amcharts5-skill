@@ -80,6 +80,7 @@ Based on the chart type the user is building, read the relevant reference file f
 | Gantt chart, project timeline, task management chart | `references/gantt.md` |
 | Word cloud, tag cloud, sentence cloud | `references/wordcloud.md` |
 | Venn diagram, set overlap visualization | `references/venn.md` |
+| Interactive controls: buttons, sliders, steppers, color pickers | `references/ui-elements.md` |
 
 If the chart type is unclear, start with `references/xy.md` — XY charts are by far the most common.
 
@@ -114,9 +115,11 @@ am5.color("#ff0000")
 // From RGB
 am5.color({ r: 255, g: 0, b: 0 })
 
-// Lighten / darken
-am5.color(0xff0000).lighten(0.3)
-am5.color(0xff0000).darken(0.3)
+// Lighten / darken — STATIC methods on am5.Color (NOT instance methods)
+am5.Color.lighten(am5.color(0xff0000), 0.3)   // lighter
+am5.Color.lighten(am5.color(0xff0000), -0.3)  // darker (use negative value; there is NO .darken())
+am5.Color.brighten(am5.color(0xff0000), 0.3)  // brighter
+// WRONG: am5.color(0xff0000).lighten(0.3) — this does NOT work, lighten is not an instance method
 
 // Color sets (auto-cycle)
 chart.get("colors").getIndex(0)   // first color in palette
@@ -479,6 +482,61 @@ container.setAll({
 });
 ```
 
+**Layout options:**
+
+| Layout | Access | Behavior |
+|--------|--------|----------|
+| Vertical | `root.verticalLayout` | Children stacked top-to-bottom |
+| Horizontal | `root.horizontalLayout` | Children in a row left-to-right |
+| Grid | `root.gridLayout` | Multi-column grid |
+| Custom grid | `am5.GridLayout.new(root, { maxColumns: 3 })` | Grid with custom column count |
+| None | omit `layout` | Children placed at x/y coordinates |
+
+Use layouts to arrange charts, legends, controls, and labels within containers.
+
+## UI Elements
+
+amCharts 5 provides built-in interactive UI widgets. **Prefer these over HTML elements** when building controls, unless instructed otherwise. Read `references/ui-elements.md` for full API and examples.
+
+| Element | Class | Description |
+|---------|-------|-------------|
+| Button | `am5.Button` | Clickable button with label, icon, background, hover/down/active states |
+| Slider | `am5.Slider` | Single-value slider (0-1 range), fires `rangechanged` event |
+| Scrollbar | `am5.Scrollbar` | Two-grip range selector, `orientation: "horizontal"\|"vertical"` |
+| NumericStepper | `am5.NumericStepper` | Number input with up/down arrows |
+| ProgressPie | `am5.ProgressPie` | Circular progress indicator with `value`, `radius`, `innerRadius` |
+| SpriteResizer | `am5.SpriteResizer` | Drag-to-resize handles on any sprite |
+| EditableLabel | `am5.EditableLabel` | Label that becomes editable text field on click |
+| Modal | `am5.Modal` | HTML overlay dialog with `open()`/`close()` |
+| ColorPicker | `am5plugins_colorPicker.ColorPicker` | Color picker (requires `plugins/colorPicker.js`) |
+
+**Quick example — slider + button controlling a chart:**
+
+```js
+// Slider to control a value
+var slider = container.children.push(am5.Slider.new(root, {
+  orientation: "horizontal",
+  start: 0.5,
+  width: am5.percent(80),
+  centerX: am5.percent(50),
+  x: am5.percent(50)
+}));
+slider.events.on("rangechanged", function(ev) {
+  var value = ev.start;  // 0-1 range
+  // update chart based on slider position
+});
+
+// Button
+var button = container.children.push(am5.Button.new(root, {
+  label: am5.Label.new(root, { text: "Reset" }),
+  centerX: am5.percent(50),
+  x: am5.percent(50)
+}));
+button.events.on("click", function() {
+  slider.set("start", 0.5);
+});
+```
+
 ## Disposal (SPA frameworks)
 
 ```js
@@ -529,3 +587,25 @@ onUnmounted(() => { root.dispose(); });
 14. **Flow chart animated bullets go on `series.bullets`, NOT `series.links.template.bullets`** — To animate labels/circles flowing along Sankey or Chord links, use `series.bullets.push(function(...) { ... })`. Animate `bullet.locationX` from 0→1 with `loops: Infinity`. Use an adapter on opacity for fade effect. See `references/flow.md` → "Animated bullets along links".
 15. **`MapPointSeries` needs `latitudeField`/`longitudeField` when using `data.setAll()`** — If point data has `latitude`/`longitude` fields, the series must declare them: `am5map.MapPointSeries.new(root, { latitudeField: "latitude", longitudeField: "longitude" })`. Without these, points silently won't appear. This is NOT needed when using `pushDataItem({ latitude: ..., longitude: ... })` which passes coordinates directly.
 16. **`data.setAll()` does NOT animate — use `data.setIndex()` for animated updates** — When the user asks to update/refresh data with animation, do NOT use `series.data.setAll(newData)` — it replaces everything instantly with no transition. Instead, update each item with `series.data.setIndex(i, newItem)` which triggers smooth value animation. For full replacement with animation, loop: `newData.forEach(function(item, i) { series.data.setIndex(i, item); })`.
+17. **`color.lighten()` / `color.darken()` are NOT instance methods** — `am5.color(0xff0000).lighten(0.3)` does NOT work. Use static methods: `am5.Color.lighten(color, 0.3)` to lighten, `am5.Color.lighten(color, -0.3)` to darken. There is NO `darken()` method — use negative lighten. Also available: `am5.Color.brighten()`, `am5.Color.saturate()`.
+18. **Venn diagram has no `VennDiagram` class** — `am5venn.Venn` is pushed directly into a `Container`, NOT into a chart's `series`. See `references/venn.md`.
+19. **Timeline `AxisRendererCurveX` requires `yRenderer`** — Always create the Y renderer first, then pass it: `am5timeline.AxisRendererCurveX.new(root, { yRenderer: yRenderer })`. Without this, crashes with `Cannot read properties of undefined (reading 'axis')`.
+20. **`gantt.js` requires `plugins/colorPicker.js`** — Load `colorPicker.js` BEFORE `gantt.js`. Without it, `gantt.js` fails with `__esModule` error. See `references/gantt.md`.
+21. **No continent-level geodata at top-level CDN** — `geodata/europeLow.js` does NOT exist. Use `geodata/region/world/europeLow.js` (global: `am5geodata_region_world_europeLow`) or filter `worldLow` with `include: [...]`.
+
+## Verify unfamiliar API before using it
+
+If you are unsure whether a method, property, or setting exists on an amCharts 5 class, **verify it before using it**. Check the class reference (class name in lowercase, e.g. `LineSeries` → `lineseries`):
+
+1. **Primary:** `https://www.amcharts.com/docs/v5/reference/{classname}/` — e.g. `https://www.amcharts.com/docs/v5/reference/lineseries/`
+2. **Fallback (if primary is unavailable):** Check the TypeScript source on GitHub — `https://raw.githubusercontent.com/amcharts/amcharts5/master/src/.internal/charts/` and navigate to the relevant file. Settings interfaces are named `I{ClassName}Settings`.
+
+Common source file paths:
+- XY series: `charts/xy/series/{ClassName}.ts`
+- XY axes: `charts/xy/axes/{ClassName}.ts`
+- Pie: `charts/percent/pie/{ClassName}.ts`
+- Radar: `charts/radar/{ClassName}.ts`
+- Map: `charts/map/{ClassName}.ts`
+- Hierarchy: `charts/hierarchy/{ClassName}.ts`
+- Flow: `charts/flow/{ClassName}.ts`
+- Core sprites: `core/render/{ClassName}.ts`

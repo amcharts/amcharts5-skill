@@ -740,6 +740,21 @@ ngOnDestroy() { this.root?.dispose(); }
 onUnmounted(() => { root.dispose(); });
 ```
 
+## Verify unfamiliar API before using it
+
+If unsure whether a method, property, or setting exists, **verify it** before using it:
+
+1. **Primary:** `https://www.amcharts.com/docs/v5/reference/{classname}/` (lowercase, e.g. `LineSeries` → `lineseries`)
+2. **Fallback:** TypeScript source on GitHub — `https://raw.githubusercontent.com/amcharts/amcharts5/master/src/.internal/charts/` — settings interfaces are named `I{ClassName}Settings`
+
+Common source paths:
+- XY series: `charts/xy/series/{ClassName}.ts`
+- XY axes: `charts/xy/axes/{ClassName}.ts`
+- Pie: `charts/percent/pie/{ClassName}.ts`
+- Radar: `charts/radar/{ClassName}.ts`
+- Map: `charts/map/{ClassName}.ts`
+- Core sprites: `core/render/{ClassName}.ts`
+
 ## Documentation reference
 
 Full docs: https://www.amcharts.com/docs/v5/
