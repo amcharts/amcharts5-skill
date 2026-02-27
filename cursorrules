@@ -468,6 +468,78 @@ series.events.on("datavalidated", function() {
 });
 ```
 
+## Accessibility
+
+```js
+series.columns.template.setAll({
+  focusable: true,
+  ariaLabel: "{categoryX}: {valueY}",
+  role: "figure"
+});
+// Keyboard: TAB to navigate focusable elements, ENTER to click
+// focusableGroup: "series1" — TAB to first, arrows within group
+```
+
+## Container & Layout
+
+```js
+var container = root.container.children.push(am5.Container.new(root, {
+  width: am5.percent(100),
+  height: am5.percent(100),
+  layout: root.verticalLayout  // also: horizontalLayout, gridLayout
+}));
+container.setAll({ paddingTop: 10, paddingBottom: 10, marginLeft: 20 });
+```
+
+**Layout options:**
+
+| Layout | Access | Behavior |
+|--------|--------|----------|
+| Vertical | `root.verticalLayout` | Children stacked top-to-bottom |
+| Horizontal | `root.horizontalLayout` | Children in a row left-to-right |
+| Grid | `root.gridLayout` | Multi-column grid |
+| Custom grid | `am5.GridLayout.new(root, { maxColumns: 3 })` | Grid with custom column count |
+| None | omit `layout` | Children placed at x/y coordinates |
+
+## UI Elements
+
+amCharts 5 provides built-in interactive UI widgets. **Prefer these over HTML elements** when building controls.
+
+| Element | Class | Description |
+|---------|-------|-------------|
+| Button | `am5.Button` | Clickable with label, icon, hover/down/active states |
+| Slider | `am5.Slider` | Single-value slider (0-1 range), fires `rangechanged` |
+| Scrollbar | `am5.Scrollbar` | Two-grip range selector |
+| NumericStepper | `am5.NumericStepper` | Number input with up/down arrows |
+| ProgressPie | `am5.ProgressPie` | Circular progress indicator |
+| SpriteResizer | `am5.SpriteResizer` | Drag-to-resize handles on any sprite |
+| EditableLabel | `am5.EditableLabel` | Label editable on click |
+| Modal | `am5.Modal` | HTML overlay dialog with `open()`/`close()` |
+
+```js
+// Slider controlling a chart value
+var slider = container.children.push(am5.Slider.new(root, {
+  orientation: "horizontal",
+  start: 0.5,
+  width: am5.percent(80),
+  centerX: am5.percent(50),
+  x: am5.percent(50)
+}));
+slider.events.on("rangechanged", function(ev) {
+  var value = ev.start;  // 0-1 range
+});
+
+// Button
+var button = container.children.push(am5.Button.new(root, {
+  label: am5.Label.new(root, { text: "Reset" }),
+  centerX: am5.percent(50),
+  x: am5.percent(50)
+}));
+button.events.on("click", function() {
+  slider.set("start", 0.5);
+});
+```
+
 ## Dynamic data
 
 ```js
@@ -627,15 +699,46 @@ newData.forEach(function(item, i) {
 });
 ```
 
+17. **`color.lighten()` / `color.darken()` are NOT instance methods** — `am5.color(0xff0000).lighten(0.3)` does NOT work. Use static methods: `am5.Color.lighten(color, 0.3)` to lighten, `am5.Color.lighten(color, -0.3)` to darken. There is NO `darken()` method — use negative lighten. Also: `am5.Color.brighten()`, `am5.Color.saturate()`.
+
+18. **Venn diagram has no `VennDiagram` class** — `am5venn.Venn` is pushed directly into a `Container`, NOT into a chart's `series`. See references/venn.md.
+
+19. **Timeline `AxisRendererCurveX` requires `yRenderer`** — Always create the Y renderer first, then pass it:
+```js
+var yRenderer = am5timeline.AxisRendererCurveY.new(root, {});
+var xRenderer = am5timeline.AxisRendererCurveX.new(root, {
+  yRenderer: yRenderer
+});
+```
+Without this, crashes with `Cannot read properties of undefined (reading 'axis')`.
+
+20. **`gantt.js` requires `plugins/colorPicker.js`** — Load `colorPicker.js` BEFORE `gantt.js`:
+```html
+<script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/gantt.js"></script>
+```
+Without it, `gantt.js` fails with `__esModule` error.
+
+21. **No continent-level geodata at top-level CDN** — `geodata/europeLow.js` does NOT exist. Use `geodata/region/world/europeLow.js` (global: `am5geodata_region_world_europeLow`) or filter `worldLow` with `include: ["FR", "DE", "ES", ...]`.
+
 ## Disposal (SPA / React / Angular / Vue)
 
-Always dispose the root when the component unmounts:
-```js
-// In cleanup / unmount / onDestroy:
-root.dispose();
-```
+**Always call `root.dispose()`** — this cleans up all children, series, and event listeners.
 
-For React, use `useLayoutEffect` with cleanup. For Angular, use `ngOnDestroy`. For Vue, use `onUnmounted`.
+```js
+// React
+useLayoutEffect(() => {
+  const root = am5.Root.new("chartdiv");
+  // ... build chart
+  return () => { root.dispose(); };
+}, []);
+
+// Angular
+ngOnDestroy() { this.root?.dispose(); }
+
+// Vue
+onUnmounted(() => { root.dispose(); });
+```
 
 ## Documentation reference
 
