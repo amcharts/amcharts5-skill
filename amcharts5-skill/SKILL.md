@@ -108,12 +108,13 @@ root.numberFormatter.setAll({ numberFormat: "#,###.##" });
 ## Colors
 
 ```js
-// From hex
+// From hex integer or CSS string — only these forms are valid
 am5.color(0xff0000)
 am5.color("#ff0000")
+am5.color("rgb(255, 0, 0)")
 
-// From RGB
-am5.color({ r: 255, g: 0, b: 0 })
+// WRONG — {r,g,b} objects are NOT accepted
+// am5.color({ r: 255, g: 0, b: 0 })  // throws!
 
 // Lighten / darken — STATIC methods on am5.Color (NOT instance methods)
 am5.Color.lighten(am5.color(0xff0000), 0.3)   // lighter
@@ -448,8 +449,11 @@ amCharts assigns colors automatically via a built-in ColorSet. Do not invent cus
 
 ```js
 // Get the chart's default color set
-var colors = chart.get("colors");       // XY, radar, etc.
+var colors = chart.get("colors");       // XY, Radar, Percent charts only
 var colors = series.get("colors");      // pie/percent charts use series-level colors
+
+// MapChart has NO built-in ColorSet — create your own:
+var colors = am5.ColorSet.new(root, {});
 
 // Get a specific color by index (does not advance internal counter)
 var color = colors.getIndex(0);         // first default color
@@ -615,7 +619,7 @@ onUnmounted(() => { root.dispose(); });
 11. **Calling `.each()` on `dataItems`** — `series.dataItems` is a plain array, not an amCharts `List`. Use `am5.array.each(series.dataItems, fn)` or standard `forEach`/`for` loops. Only `series.data` (the `ListData` object) has `.each()`.
 12. **CDN script load order** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` → `xy.js` → `radar.js` / `timeline.js` / `gantt.js` → `themes/*.js`.
 13. **No `minorGrid` / `minorTicks` / `minorLabels` objects** — These do not exist on axes. Minor grid is enabled via boolean flags on the **renderer**: `minorGridEnabled: true` and optionally `minorLabelsEnabled: true`. Styling is done through theme rules targeting the `"minor"` tag, not through separate object properties.
-14. **Flow chart animated bullets go on `series.bullets`, NOT `series.links.template.bullets`** — To animate labels/circles flowing along Sankey or Chord links, use `series.bullets.push(function(...) { ... })`. Animate `bullet.locationX` from 0→1 with `loops: Infinity`. Use an adapter on opacity for fade effect. See `references/flow.md` → "Animated bullets along links".
+14. **Flow chart animated bullets go on `series.bullets`, NOT `series.links.template.bullets`** — To animate labels/circles flowing along Sankey or Chord links, use `series.bullets.push(function(...) { ... })`. Animate `bullet.locationX` (Sankey) or `bullet.locationY` (Chord) from 0→1 with `loops: Infinity`. Use an adapter on opacity for fade effect. See `references/flow.md` → "Animated bullets along links".
 15. **`MapPointSeries` needs `latitudeField`/`longitudeField` when using `data.setAll()`** — If point data has `latitude`/`longitude` fields, the series must declare them: `am5map.MapPointSeries.new(root, { latitudeField: "latitude", longitudeField: "longitude" })`. Without these, points silently won't appear. This is NOT needed when using `pushDataItem({ latitude: ..., longitude: ... })` which passes coordinates directly.
 16. **`data.setAll()` does NOT animate — use `data.setIndex()` for animated updates** — When the user asks to update/refresh data with animation, do NOT use `series.data.setAll(newData)` — it replaces everything instantly with no transition. Instead, update each item with `series.data.setIndex(i, newItem)` which triggers smooth value animation. For full replacement with animation, loop: `newData.forEach(function(item, i) { series.data.setIndex(i, item); })`.
 17. **`color.lighten()` / `color.darken()` are NOT instance methods** — `am5.color(0xff0000).lighten(0.3)` does NOT work. Use static methods: `am5.Color.lighten(color, 0.3)` to lighten, `am5.Color.lighten(color, -0.3)` to darken. There is NO `darken()` method — use negative lighten. Also available: `am5.Color.brighten()`, `am5.Color.saturate()`.
@@ -624,6 +628,10 @@ onUnmounted(() => { root.dispose(); });
 20. **Gantt data uses TWO separate calls** — Do NOT use `chart.data.setAll()`. Set categories on `chart.yAxis.data.setAll([{id, name, parentId, color}])` and tasks on `chart.series.data.setAll([{id, start, duration, progress, linkTo}])`. Use flat `parentId` for hierarchy, NOT nested `children` arrays. CDN order: `index.js` → `xy.js` → `plugins/colorPicker.js` → `gantt.js` → `themes/Animated.js` (gantt.js webpack-depends on colorPicker chunk). See `references/gantt.md`.
 21. **No continent-level geodata at top-level CDN** — `geodata/europeLow.js` does NOT exist. Use `geodata/region/world/europeLow.js` (global: `am5geodata_region_world_europeLow`) or filter `worldLow` with `include: [...]`.
 22. **Do not add chart titles as HTML** — HTML titles are outside the canvas and won't appear in exports. Use `am5.Label` pushed into the container BEFORE the chart, with `verticalLayout` on the container. See "Chart title" section above.
+23. **`XYChartScrollbar` axes — never use `scrollbar.get("xAxis")`** — The axes passed to the scrollbar constructor are NOT stored as gettable settings. Create axes as separate variables, pass them to the scrollbar, and reuse those same variables for the scrollbar's inner series. `scrollbar.get("xAxis")` returns `undefined`.
+24. **`am5.color()` only accepts hex integers or CSS strings** — `am5.color(0xff0000)`, `am5.color("#ff0000")`, `am5.color("rgb(255,0,0)")` are valid. `am5.color({ r: 255, g: 0, b: 0 })` is NOT — it throws.
+25. **`MapChart` has NO `"colors"` setting** — `chart.get("colors")` returns `undefined` on `MapChart`. Only XY, Radar, and Percent charts auto-create a ColorSet. For maps, create your own: `am5.ColorSet.new(root, {})`.
+26. **`VoronoiTreemap` has NO `.rectangles` property** — Unlike `Treemap` (which has `series.rectangles.template`), `VoronoiTreemap` renders organic polygon cells. Style via `series.nodes.template` and its children, not `.rectangles`.
 
 ## Verify unfamiliar API before using it
 

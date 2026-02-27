@@ -233,6 +233,8 @@ series.data.setAll(data);
 
 ## VoronoiTreemap
 
+**Note:** VoronoiTreemap has NO `.rectangles` property. Unlike `Treemap` (which has `series.rectangles.template`), VoronoiTreemap renders organic polygon cells. Style via `series.nodes.template` and its children.
+
 ```js
 const series = container.children.push(am5hierarchy.VoronoiTreemap.new(root, {
   valueField: "value",

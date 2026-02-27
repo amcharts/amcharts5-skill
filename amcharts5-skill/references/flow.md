@@ -254,7 +254,9 @@ series.links.template.events.on("click", function(ev) {
 
 ## Animated bullets along links
 
-Animated labels/circles that flow along Sankey or Chord links use `series.bullets.push()` — **NOT** `series.links.template.bullets.push()`. The bullet's `locationX` (0 = source, 1 = target) is animated in a loop, and an adapter fades opacity based on position.
+Animated labels/circles that flow along Sankey or Chord links use `series.bullets.push()` — **NOT** `series.links.template.bullets.push()`. The bullet position (0 = source, 1 = target) is animated in a loop, and an adapter fades opacity based on position.
+
+**Important:** Sankey uses `locationX`, Chord uses `locationY`.
 
 ```js
 series.bullets.push(function(root, series, dataItem) {
@@ -295,12 +297,38 @@ series.bullets.push(function(root, series, dataItem) {
 });
 ```
 
+**For Chord diagrams**, replace every `locationX` with `locationY`:
+
+```js
+var bullet = am5.Bullet.new(root, {
+  locationY: 0,
+  sprite: label,
+  autoRotate: true
+});
+
+bullet.animate({
+  key: "locationY",
+  from: 0, to: 1,
+  duration: Math.random() * 10000 + 2000,
+  loops: Infinity
+});
+
+label.adapters.add("opacity", function(opacity) {
+  return 0.5 - Math.abs(0.5 - bullet.get("locationY"));
+});
+
+bullet.on("locationY", function() {
+  label.set("opacity", label.get("opacity"));
+});
+```
+
 **Key points:**
 - Use `series.bullets.push()` — bullets belong to the series, not to `series.links.template`
+- **Sankey → `locationX`**, **Chord → `locationY`** (using the wrong one means bullets won't animate)
 - `autoRotate: true` makes the label follow the link curve
 - Random duration per bullet creates natural asynchronous flow
-- The opacity adapter formula `0.5 - Math.abs(0.5 - locationX)` gives a bell curve: invisible at edges, max at center
-- `bullet.on("locationX", ...)` is needed to trigger the adapter as locationX changes
+- The opacity adapter formula `0.5 - Math.abs(0.5 - location)` gives a bell curve: invisible at edges, max at center
+- `bullet.on("locationX"/"locationY", ...)` is needed to trigger the adapter as position changes
 
 ## Disposal
 
