@@ -254,7 +254,7 @@ const series = chart.series.push(am5percent.FunnelSeries.new(root, {
   valueField: "value",
   categoryField: "stage",
   orientation: "vertical",
-  bottomRatio: 1
+  bottomRatio: 0   // 0 = trapezoids (classic funnel), 1 = rectangles
 }));
 
 series.data.setAll([
@@ -338,8 +338,14 @@ series.data.setAll([
 ### Venn diagram
 ```js
 // Requires: index.js, venn.js
-const chart = root.container.children.push(am5venn.VennDiagram.new(root, {}));
-const series = chart.series.push(am5venn.Venn.new(root, {
+// NOTE: There is NO VennDiagram class — push Venn directly into a Container
+const container = root.container.children.push(am5.Container.new(root, {
+  width: am5.percent(100),
+  height: am5.percent(100),
+  layout: root.verticalLayout
+}));
+
+const series = container.children.push(am5venn.Venn.new(root, {
   categoryField: "name",
   valueField: "value",
   intersectionsField: "sets"
@@ -354,22 +360,23 @@ series.data.setAll([
 
 ### Gantt chart
 ```js
-// Requires: index.js, xy.js, gantt.js
+// Requires: index.js, xy.js, plugins/colorPicker.js, gantt.js
 const chart = root.container.children.push(am5gantt.Gantt.new(root, {
   editable: true,
   durationUnit: "day"
 }));
 
-chart.data.setAll([{
-  name: "Phase 1",
-  start: new Date(2024, 0, 1).getTime(),
-  duration: 10,
-  progress: 100,
-  children: [
-    { name: "Task A", start: new Date(2024, 0, 1).getTime(), duration: 5, progress: 100 },
-    { name: "Task B", start: new Date(2024, 0, 6).getTime(), duration: 5, progress: 80 }
-  ]
-}]);
+// Gantt uses TWO separate data calls — NOT nested children
+chart.yAxis.data.setAll([
+  { id: "phase1", name: "Phase 1", color: am5.color(0x297373) },
+  { id: "taskA", name: "Task A", parentId: "phase1" },
+  { id: "taskB", name: "Task B", parentId: "phase1" }
+]);
+chart.series.data.setAll([
+  { id: "phase1", start: new Date(2024, 0, 1).getTime(), duration: 10, progress: 100 },
+  { id: "taskA", start: new Date(2024, 0, 1).getTime(), duration: 5, progress: 100 },
+  { id: "taskB", start: new Date(2024, 0, 6).getTime(), duration: 5, progress: 80 }
+]);
 ```
 
 ## Events
@@ -727,7 +734,7 @@ var xRenderer = am5timeline.AxisRendererCurveX.new(root, {
 ```
 Without this, crashes with `Cannot read properties of undefined (reading 'axis')`.
 
-20. **Gantt data uses TWO separate calls** — Do NOT use `chart.data.setAll()`. Set categories on `chart.yAxis.data.setAll([{id, name, parentId, color}])` and tasks on `chart.series.data.setAll([{id, start, duration, progress, linkTo}])`. Use flat `parentId` for hierarchy, NOT nested `children` arrays. CDN order: `index.js` → `xy.js` → `gantt.js` → `plugins/colorPicker.js` → `themes/Animated.js`:
+20. **Gantt data uses TWO separate calls** — Do NOT use `chart.data.setAll()`. Set categories on `chart.yAxis.data.setAll([{id, name, parentId, color}])` and tasks on `chart.series.data.setAll([{id, start, duration, progress, linkTo}])`. Use flat `parentId` for hierarchy, NOT nested `children` arrays. CDN order: `index.js` → `xy.js` → `plugins/colorPicker.js` → `gantt.js` → `themes/Animated.js`:
 ```js
 // WRONG — single data call with nested children
 chart.data.setAll([{ name: "Task", children: [...] }]);
