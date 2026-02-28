@@ -29,19 +29,21 @@ Docs: https://www.amcharts.com/docs/v5/
 
 ## Critical rules — apply to ALL chart types
 
-1. **Always use amCharts 5** — never v3 or v4. The APIs are completely different.
-2. **Use `.new()` factory** — never `new ClassName()`. Every object is created via `ClassName.new(root, { settings })`.
-3. **Root is always the first argument** to `.new()` (except Root itself, which takes a div ID).
-4. **Set data last** — once data is set, objects are created. Configuration applied after may not take effect.
-5. **Colors use `am5.color()`** — e.g. `am5.color(0xff0000)` or `am5.color("#ff0000")`. Never raw hex strings.
-6. **Percent values use `am5.percent()`** — e.g. `am5.percent(50)`, not `50` or `"50%"`.
-7. **Every axis needs a renderer** — `am5xy.AxisRendererX.new(root, {})` or `AxisRendererY`.
-8. **CategoryAxis must receive data** — call `xAxis.data.setAll(data)` in addition to series data. Forgetting this is the #1 bug.
-9. **DateAxis values must be timestamps** — use `new Date().getTime()`, not Date objects.
-10. **Disposal is mandatory in SPAs** — call `root.dispose()` on component unmount. Not `chart.dispose()`.
-11. **Canvas-rendered** — CSS cannot style chart internals. Use amCharts settings/templates instead.
-12. **Dark backgrounds require Dark theme** — If the user requests or the page clearly has a dark background, always add `am5themes_Dark.new(root)` to `root.setThemes()` alongside Animated. Without it, labels, grid, and tooltips will be invisible. If the background is not clearly dark, default to white/light and do NOT add the Dark theme unless asked.
-13. **Use default amCharts colors** — Do NOT invent custom color palettes unless the user explicitly asks for specific colors. amCharts assigns colors automatically from its built-in ColorSet. If you need a color programmatically, use `chart.get("colors").getIndex(index)` or `chart.get("colors").next()`. For pie/percent charts, use `series.get("colors")` instead.
+1. **Check demos first (if you can browse the web)** — Before building a chart, search or browse https://www.amcharts.com/demos/ for a demo that matches the user's request. Demo source code is the most reliable starting point — adapt it rather than writing from scratch. Skip this step if you have no web access.
+2. **Read the docs (if you can browse the web)** — For unfamiliar features or configuration, check https://www.amcharts.com/docs/v5/ for guides and tutorials. The docs explain concepts, patterns, and options that the class reference alone does not. Skip if you have no web access.
+3. **Always use amCharts 5** — never v3 or v4. The APIs are completely different.
+4. **Use `.new()` factory** — never `new ClassName()`. Every object is created via `ClassName.new(root, { settings })`.
+5. **Root is always the first argument** to `.new()` (except Root itself, which takes a div ID).
+6. **Set data last** — once data is set, objects are created. Configuration applied after may not take effect.
+7. **Colors use `am5.color()`** — e.g. `am5.color(0xff0000)`, `am5.color("#ff0000")`, or `am5.color("rgb(255,0,0)")`. Never raw hex strings.
+8. **Percent values use `am5.percent()`** — e.g. `am5.percent(50)`, not `50` or `"50%"`.
+9. **Every axis needs a renderer** — `am5xy.AxisRendererX.new(root, {})` or `AxisRendererY`.
+10. **CategoryAxis must receive data** — call `xAxis.data.setAll(data)` in addition to series data. Forgetting this is the #1 bug.
+11. **DateAxis values must be timestamps** — use `new Date().getTime()`, not Date objects.
+12. **Disposal is mandatory in SPAs** — call `root.dispose()` on component unmount. Not `chart.dispose()`.
+13. **Canvas-rendered** — CSS cannot style chart internals. Use amCharts settings/templates instead.
+14. **Dark backgrounds require Dark theme** — If the user requests or the page clearly has a dark background, always add `am5themes_Dark.new(root)` to `root.setThemes()` alongside Animated. Without it, labels, grid, and tooltips will be invisible. If the background is not clearly dark, default to white/light and do NOT add the Dark theme unless asked.
+15. **Use default amCharts colors** — Do NOT invent custom color palettes unless the user explicitly asks for specific colors. amCharts assigns colors automatically from its built-in ColorSet. If you need a color programmatically, use `chart.get("colors").getIndex(index)` or `chart.get("colors").next()`. For pie/percent charts, use `series.get("colors")` instead.
 
 ## Package / module map
 
@@ -57,7 +59,7 @@ Docs: https://www.amcharts.com/docs/v5/
 | Stock | `@amcharts/amcharts5/stock` | `stock.js` | StockChart, StockPanel, StockToolbar |
 | Timeline | `@amcharts/amcharts5/timeline` | `timeline.js` | CurveChart, SerpentineChart, SpiralChart, CurveLineSeries, CurveColumnSeries |
 | Word cloud | `@amcharts/amcharts5/wc` | `wc.js` | WordCloud |
-| Venn | `@amcharts/amcharts5/venn` | `venn.js` | VennDiagram, Venn |
+| Venn | `@amcharts/amcharts5/venn` | `venn.js` | Venn |
 | Gantt | `@amcharts/amcharts5/gantt` | `gantt.js` | Gantt (also needs xy) |
 | Geodata | `@amcharts/amcharts5-geodata/*` | `geodata/*.js` | worldLow, usaLow, etc. |
 | Themes | `@amcharts/amcharts5/themes/Animated` | `themes/Animated.js` | am5themes_Animated |
@@ -89,7 +91,7 @@ If the user asks about core setup (theming, colors, exporting, legends, tooltips
 ## Root element setup
 
 ```js
-const root = am5.Root.new("chartdiv"); // div id, not a DOM element
+const root = am5.Root.new("chartdiv"); // div id or HTMLElement reference
 
 // Apply theme(s)
 root.setThemes([am5themes_Animated.new(root)]);
@@ -209,11 +211,11 @@ const exporting = am5plugins_exporting.Exporting.new(root, {
 ## Responsive rules
 
 ```js
-import am5plugins_responsive from "@amcharts/amcharts5/plugins/responsive";
+import am5themes_Responsive from "@amcharts/amcharts5/themes/Responsive";
 
-const responsive = am5plugins_responsive.Responsive.new(root);
+const responsive = am5themes_Responsive.new(root);
 responsive.addRule({
-  relevant: am5plugins_responsive.WidthXS,  // < 300px
+  relevant: am5themes_Responsive.widthXS,  // < 300px
   applying: function() {
     legend.setAll({ visible: false });
   },
@@ -325,8 +327,11 @@ series.events.on("datavalidated", () => {
   // Fires after data is processed — safe to read dataItems
 });
 
-// Axis zoom event
-xAxis.events.on("rangechanged", () => {
+// Axis zoom/scroll — watch start/end settings, not events
+xAxis.on("start", () => {
+  console.log("Zoomed/scrolled");
+});
+xAxis.on("end", () => {
   console.log("Zoomed/scrolled");
 });
 
@@ -632,6 +637,16 @@ onUnmounted(() => { root.dispose(); });
 24. **`am5.color()` only accepts hex integers or CSS strings** — `am5.color(0xff0000)`, `am5.color("#ff0000")`, `am5.color("rgb(255,0,0)")` are valid. `am5.color({ r: 255, g: 0, b: 0 })` is NOT — it throws.
 25. **`MapChart` has NO `"colors"` setting** — `chart.get("colors")` returns `undefined` on `MapChart`. Only XY, Radar, and Percent charts auto-create a ColorSet. For maps, create your own: `am5.ColorSet.new(root, {})`.
 26. **`VoronoiTreemap` has NO `.rectangles` property** — Unlike `Treemap` (which has `series.rectangles.template`), `VoronoiTreemap` renders organic polygon cells. Style via `series.nodes.template` and its children, not `.rectangles`.
+
+## Validate generated code (if you can execute commands)
+
+If you have the ability to run shell commands, validate your generated chart code before delivering it to the user:
+
+1. Save the complete HTML+JS to a temp `.html` file
+2. Open it in a headless browser (Puppeteer, Playwright, or similar) and collect console errors for a few seconds
+3. If JavaScript errors are found, fix them and re-validate
+
+Skip this step entirely if you cannot execute code (e.g., chat-only context with no tool access).
 
 ## Verify unfamiliar API before using it
 

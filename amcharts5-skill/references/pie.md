@@ -145,7 +145,7 @@ const series = chart.series.push(
     valueField: "value",
     categoryField: "stage",
     orientation: "vertical",   // "vertical" or "horizontal"
-    bottomRatio: 1,            // 0 = rectangles, 1 = true funnel trapezoids
+    bottomRatio: 0,            // 0 = trapezoids (classic funnel), 1 = rectangles
     alignLabels: true
   })
 );
@@ -163,7 +163,7 @@ series.data.setAll([
 | Setting | Type | Description |
 |---------|------|-------------|
 | `orientation` | `"vertical" \| "horizontal"` | Direction of the funnel (required) |
-| `bottomRatio` | number (0–1) | 0 = rectangles, 1 = bottom matches next slice width |
+| `bottomRatio` | number (0–1) | 0 = trapezoids (classic funnel), 1 = rectangles (default) |
 | `alignLabels` | boolean | Align labels in a column (default: true) |
 
 ### Slice links (connectors between funnel slices)
@@ -555,7 +555,7 @@ root.dispose();
       valueField: "value",
       categoryField: "stage",
       orientation: "vertical",
-      bottomRatio: 1,
+      bottomRatio: 0,
       alignLabels: true
     }));
 

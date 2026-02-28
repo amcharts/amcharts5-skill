@@ -178,7 +178,7 @@ legend.data.setAll(series.dataItems.filter(function(di) {
 series.data.setAll([
   { name: "Frontend", value: 300 },
   { name: "Backend", value: 250 },
-  { name: "Frontend", value: 80, sets: ["Frontend", "Backend"] }  // intersection
+  { name: "Frontend ∩ Backend", value: 80, sets: ["Frontend", "Backend"] }  // intersection — name must be unique
 ]);
 ```
 

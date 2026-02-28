@@ -286,7 +286,7 @@ series.strokes.template.setAll({
 ```
 
 **Line appearance:**
-- `connect: true` — connect lines over missing data (default: false, line breaks)
+- `connect: true` — connect lines over missing data (default: true). Set `false` for line breaks at gaps
 - `minDistance: 10` — min pixel distance between points before simplifying
 
 ## ColumnSeries
@@ -378,20 +378,22 @@ chart.set("scrollbarX", am5.Scrollbar.new(root, {
 }));
 
 // Scrollbar with preview chart:
-const sbxAxis = am5xy.DateAxis.new(root, {
-  baseInterval: { timeUnit: "day", count: 1 },
-  renderer: am5xy.AxisRendererX.new(root, { opposite: false, strokeOpacity: 0 })
-});
-const sbyAxis = am5xy.ValueAxis.new(root, {
-  renderer: am5xy.AxisRendererY.new(root, {})
-});
-
 const scrollbar = am5xy.XYChartScrollbar.new(root, {
-  xAxis: sbxAxis,
-  yAxis: sbyAxis
+  orientation: "horizontal",
+  height: 50
 });
 chart.set("scrollbarX", scrollbar);
 
+// Push axes into the scrollbar's internal chart
+const sbxAxis = scrollbar.chart.xAxes.push(am5xy.DateAxis.new(root, {
+  baseInterval: { timeUnit: "day", count: 1 },
+  renderer: am5xy.AxisRendererX.new(root, {})
+}));
+const sbyAxis = scrollbar.chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererY.new(root, {})
+}));
+
+// Add a series to the scrollbar's chart for the preview
 const sbSeries = scrollbar.chart.series.push(am5xy.LineSeries.new(root, {
   xAxis: sbxAxis,
   yAxis: sbyAxis,

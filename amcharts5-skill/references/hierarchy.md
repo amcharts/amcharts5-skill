@@ -295,7 +295,14 @@ series.set("downDepth", 1);      // how many levels to reveal on drill-down
 ```
 
 ### Breadcrumbs (for navigation)
-Not built-in as a component — implement via click events on nodes.
+
+amCharts 5 provides a built-in `BreadcrumbBar` component for hierarchy navigation:
+
+```js
+const breadcrumbs = container.children.push(am5hierarchy.BreadcrumbBar.new(root, {
+  series: series
+}));
+```
 
 ### Events on hierarchy nodes
 
