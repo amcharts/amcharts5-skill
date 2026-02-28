@@ -59,7 +59,7 @@ chart.appear(1000, 100);
 | `startAngle` | number | Start angle in degrees (default: -90) |
 | `endAngle` | number | End angle in degrees (default: 270) |
 
-**Semi-circle pie:** `startAngle: -90, endAngle: 90`
+**Semi-circle pie:** `startAngle: 180, endAngle: 360` (set on BOTH PieChart AND PieSeries)
 
 ### PieSeries key settings
 
@@ -70,6 +70,8 @@ chart.appear(1000, 100);
 | `alignLabels` | boolean | Align labels in column (default: true). Set false for radial/inside labels |
 | `legendLabelText` | string | Legend label format, e.g. `"{category}"` |
 | `legendValueText` | string | Legend value format, e.g. `"{value}"` |
+| `startAngle` | number | Start angle in degrees (default: inherits from chart). Must match PieChart's startAngle for semi-circle |
+| `endAngle` | number | End angle in degrees (default: inherits from chart). Must match PieChart's endAngle for semi-circle |
 
 ### Labels
 

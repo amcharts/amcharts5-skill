@@ -303,12 +303,13 @@ const chart = root.container.children.push(am5timeline.SerpentineChart.new(root,
   orientation: "vertical", levelCount: 3,
   yAxisRadius: am5.percent(25), yAxisInnerRadius: -25
 }));
+const yRenderer = am5timeline.AxisRendererCurveY.new(root, {}); // create Y renderer FIRST
 const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
   baseInterval: { timeUnit: "day", count: 1 },
-  renderer: am5timeline.AxisRendererCurveX.new(root, {}) // NOT AxisRendererX
+  renderer: am5timeline.AxisRendererCurveX.new(root, { yRenderer: yRenderer }) // NOT AxisRendererX
 }));
 const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
-  renderer: am5timeline.AxisRendererCurveY.new(root, {}) // NOT AxisRendererY
+  renderer: yRenderer // reuse the same renderer
 }));
 const series = chart.series.push(am5timeline.CurveLineSeries.new(root, { // NOT LineSeries
   xAxis, yAxis, valueYField: "value", valueXField: "date"
@@ -322,7 +323,7 @@ series.data.setAll(data); // timestamps for DateAxis
 const series = root.container.children.push(am5wc.WordCloud.new(root, {
   categoryField: "tag",
   valueField: "weight",
-  maxFontSize: am5.percent(15),
+  maxFontSize: am5.percent(20),
   minFontSize: am5.percent(3)
 }));
 

@@ -242,7 +242,7 @@ var data = [
 
 ```js
 // Node click
-series.nodes.template.events.on("click", function(ev) {
+series.nodes.nodes.template.events.on("click", function(ev) {
   console.log("Node:", ev.target.dataItem.get("id"));
 });
 

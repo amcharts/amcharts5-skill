@@ -53,7 +53,7 @@ Docs: https://www.amcharts.com/docs/v5/
 | XY charts | `@amcharts/amcharts5/xy` | `xy.js` | XYChart, axes, series |
 | Pie / Sliced | `@amcharts/amcharts5/percent` | `percent.js` | PieChart, SlicedChart, PieSeries, FunnelSeries, PyramidSeries, PictorialStackedSeries |
 | Map | `@amcharts/amcharts5/map` | `map.js` | MapChart, MapPolygonSeries, MapPointSeries, MapLineSeries |
-| Hierarchy | `@amcharts/amcharts5/hierarchy` | `hierarchy.js` | Treemap, ForceDirected, Sunburst, Pack, Partition, Tree |
+| Hierarchy | `@amcharts/amcharts5/hierarchy` | `hierarchy.js` | Treemap, VoronoiTreemap, ForceDirected, Sunburst, Pack, Partition, Tree |
 | Flow | `@amcharts/amcharts5/flow` | `flow.js` | Sankey, Chord, ChordDirected, ChordNonRibbon, ArcDiagram |
 | Radar | `@amcharts/amcharts5/radar` | `radar.js` | RadarChart, AxisRendererCircular, AxisRendererRadial |
 | Stock | `@amcharts/amcharts5/stock` | `stock.js` | StockChart, StockPanel, StockToolbar |
@@ -198,7 +198,7 @@ var chart = container.children.push(am5xy.XYChart.new(root, { ... }));
 ## Exporting
 
 ```js
-import am5plugins_exporting from "@amcharts/amcharts5/plugins/exporting";
+import * as am5plugins_exporting from "@amcharts/amcharts5/plugins/exporting";
 
 const exporting = am5plugins_exporting.Exporting.new(root, {
   menu: am5plugins_exporting.ExportingMenu.new(root, {}),
@@ -215,7 +215,7 @@ import am5themes_Responsive from "@amcharts/amcharts5/themes/Responsive";
 
 const responsive = am5themes_Responsive.new(root);
 responsive.addRule({
-  relevant: am5themes_Responsive.widthXS,  // < 300px
+  relevant: am5themes_Responsive.widthXS,  // <= 200px
   applying: function() {
     legend.setAll({ visible: false });
   },
@@ -419,7 +419,7 @@ series.columns.template.states.create("active", {
   fill: am5.color(0xff0000)
 });
 
-// Built-in state names: "hover", "active", "disabled", "hidden"
+// Built-in state names: "default", "hover", "active", "disabled", "hidden"
 // State animation: stateAnimationDuration, stateAnimationEasing
 ```
 

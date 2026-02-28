@@ -278,7 +278,7 @@ var countrySeries = chart.series.push(am5map.MapPolygonSeries.new(root, {}));
 worldSeries.mapPolygons.template.events.on("click", function(ev) {
   var country = ev.target.dataItem.dataContext.id; // ISO alpha-2 code, e.g., "US"
   // Load country geodata dynamically
-  import("@amcharts/amcharts5-geodata/region/usa/usaLow").then(function(geodata) {
+  import("@amcharts/amcharts5-geodata/usaLow").then(function(geodata) {
     countrySeries.set("geoJSON", geodata.default);
     chart.zoomToDataItem(ev.target.dataItem);
   });
@@ -329,9 +329,9 @@ pointSeries.bullets.push(function(root, series, dataItem) {
   return am5.Bullet.new(root, { sprite: circle });
 });
 
-// Map zoom event
-chart.events.on("zoomlevelchanged", function(ev) {
-  console.log("Zoom:", chart.get("zoomLevel"));
+// Map zoom — use settings watch, NOT events (there is no "zoomlevelchanged" event)
+chart.on("zoomLevel", function(zoomLevel) {
+  console.log("Zoom:", zoomLevel);
 });
 ```
 

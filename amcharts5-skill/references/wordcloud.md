@@ -57,13 +57,14 @@ series.appear(1000);
 |---------|------|---------|-------------|
 | `categoryField` | string | — | Data field for word text (required) |
 | `valueField` | string | — | Data field for word weight/size (required) |
-| `maxFontSize` | percent/number | `am5.percent(15)` | Maximum font size |
+| `maxFontSize` | percent/number | `am5.percent(20)` | Maximum font size |
 | `minFontSize` | percent/number | `am5.percent(2)` | Minimum font size |
 | `angles` | number[] | `[0, -90]` | Allowed rotation angles for words |
 | `randomness` | number (0–1) | `0.2` | Layout randomness (0 = ordered by value, 1 = fully random) |
 | `minWordLength` | number | `1` | Skip words shorter than this |
 | `maxCount` | number | — | Maximum number of words to display |
 | `excludeWords` | string[] | `[]` | Words to exclude |
+| `text` | string | — | Raw text to parse — words are extracted and weighted by frequency automatically |
 | `colors` | ColorSet | — | Color set for words |
 
 ### excludeWords example
