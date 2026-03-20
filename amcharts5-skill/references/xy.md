@@ -358,14 +358,20 @@ const cursor = chart.set("cursor", am5xy.XYCursor.new(root, {
   xAxis: xAxis,           // optional: snap to axis
 }));
 
-// Customize appearance:
+// Customize appearance (always access cursor.lineX/lineY AFTER creation):
 cursor.lineX.setAll({ stroke: am5.color(0x000000), strokeDasharray: [2, 2] });
-cursor.lineY.setAll({ visible: false });
+
+// Hide a cursor line — use forceHidden (NOT visible:false):
+cursor.lineY.set("forceHidden", true);
 
 // Snap tooltips to series data points:
 series.set("tooltip", am5.Tooltip.new(root, { labelText: "{valueY}" }));
 chart.set("cursor", am5xy.XYCursor.new(root, { snapToSeries: [series] }));
 ```
+
+**Do NOT** pass `lineX`/`lineY` as constructor options to `XYCursor.new()`. Always access `cursor.lineX` / `cursor.lineY` after creation.
+
+For timeline charts, use `am5timeline.CurveCursor` instead — see `references/timeline.md`.
 
 ## Scrollbar
 

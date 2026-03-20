@@ -638,6 +638,33 @@ onUnmounted(() => { root.dispose(); });
 25. **`MapChart` has NO `"colors"` setting** — `chart.get("colors")` returns `undefined` on `MapChart`. Only XY, Radar, and Percent charts auto-create a ColorSet. For maps, create your own: `am5.ColorSet.new(root, {})`.
 26. **`VoronoiTreemap` has NO `.rectangles` property** — Unlike `Treemap` (which has `series.rectangles.template`), `VoronoiTreemap` renders organic polygon cells. Style via `series.nodes.template` and its children, not `.rectangles`.
 27. **Labels with data placeholders need `populateText: true`** — When a Label uses data field placeholders like `text: "{name}"`, you MUST also set `populateText: true`. Without it, the placeholder is not resolved and the label appears blank. This applies everywhere Labels display dynamic data — bullet labels, map point labels, etc. Example: `am5.Label.new(root, { text: "{name}", populateText: true, ... })`.
+28. **Easing: `am5.ease.in()` does NOT exist** — amCharts 5 provides base easing functions (`am5.ease.cubic`, `am5.ease.bounce`, `am5.ease.elastic`, `am5.ease.linear`, `am5.ease.quad`, `am5.ease.sine`, `am5.ease.circle`, `am5.ease.exp`, `am5.ease.pow`) and three modifiers: `am5.ease.out()`, `am5.ease.inOut()`, `am5.ease.yoyo()`. Usage: `am5.ease.cubic` (ease-in by default), `am5.ease.out(am5.ease.cubic)` (ease-out), `am5.ease.inOut(am5.ease.cubic)` (ease in+out). There is NO `am5.ease.in()` — using it throws a runtime error. The base functions already ease-in by default.
+29. **Use `forceHidden` instead of `visible: false` when you need to guarantee something stays hidden** — amCharts internally manages `visible` on many elements (cursor lines, labels, ticks, tooltips, grid, etc.), toggling them on/off in response to user interaction or data changes. If you set `visible: false`, the library may set it back to `true`. `forceHidden: true` overrides all system visibility changes and keeps the element hidden regardless. Examples: `cursor.lineX.set("forceHidden", true)`, `yRenderer.labels.template.set("forceHidden", true)`, `xRenderer.grid.template.set("forceHidden", true)`. For cursor lines specifically, always access `cursor.lineX`/`cursor.lineY` after creation — do NOT pass them as constructor options.
+30. **`snapTooltip: true` on series for cursor tooltip snapping** — When using a cursor and you want tooltips to snap to data points, set `snapTooltip: true` on the series in addition to (or instead of) `snapToSeries` on the cursor. This is especially useful for timeline/curve charts.
+
+## Easing functions
+
+amCharts 5 easing functions live under `am5.ease`:
+
+```js
+// Base functions (ease-in by default):
+am5.ease.linear    am5.ease.quad     am5.ease.cubic
+am5.ease.sine      am5.ease.circle   am5.ease.exp
+am5.ease.pow       am5.ease.bounce   am5.ease.elastic
+
+// Modifiers — wrap a base function:
+am5.ease.out(am5.ease.cubic)      // ease-out
+am5.ease.inOut(am5.ease.cubic)    // ease in + out
+am5.ease.yoyo(am5.ease.cubic)     // animate to end, then back to start
+
+// Usage in .animate():
+sprite.animate({
+  key: "y", to: 100, duration: 400,
+  easing: am5.ease.out(am5.ease.cubic)
+});
+```
+
+**There is NO `am5.ease.in()`** — the base functions already ease-in by default.
 
 ## Validate generated code (if you can execute commands)
 

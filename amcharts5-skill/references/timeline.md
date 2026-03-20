@@ -183,9 +183,25 @@ const series = chart.series.push(
 
 ## Cursor
 
+Timeline charts use `CurveCursor`, NOT `XYCursor`. It follows the curve path.
+
 ```js
-chart.set("cursor", am5timeline.CurveCursor.new(root, {}));
+// Create cursor — must use CurveCursor for timeline charts
+var cursor = chart.set("cursor", am5timeline.CurveCursor.new(root, {
+  xAxis: xAxis,           // recommended — enables axis-based snapping
+  yAxis: yAxis,
+  behavior: "none"         // "zoomX", "zoomY", "zoomXY", "selectX", etc.
+}));
+
+// Hide crosshair lines (forceHidden stays hidden; visible:false can be overridden by the library)
+cursor.lineX.set("forceHidden", true);
+cursor.lineY.set("forceHidden", true);
+
+// Snap tooltips to data points — set on the SERIES, not the cursor
+series.set("snapTooltip", true);
 ```
+
+**Do NOT** pass `lineX`/`lineY` as constructor options. Always access `cursor.lineX` / `cursor.lineY` after creation.
 
 ## Bullets
 
