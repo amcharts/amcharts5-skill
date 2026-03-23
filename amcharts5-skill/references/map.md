@@ -63,8 +63,8 @@ const chart = root.container.children.push(
 // Polygon series (countries/regions)
 const polygonSeries = chart.series.push(
   am5map.MapPolygonSeries.new(root, {
-    geoJSON: am5geodata_worldLow,
-    exclude: ["AQ"]             // exclude Antarctica
+    geoJSON: am5geodata_worldLow
+    // exclude: ["AQ"]             // exclude Antarctica (only if needed)
     // include: ["US", "CA", "MX"]  // show only these
   })
 );
@@ -83,6 +83,11 @@ am5map.geoEqualEarth()        // equal-area
 am5map.geoEquirectangular()   // simple lat/long grid
 ```
 
+**IMPORTANT — Antarctica (`exclude: ["AQ"]`):**
+- Do NOT exclude Antarctica by default. Many amCharts demos exclude it because they use Mercator projection where Antarctica appears disproportionately large, but this is a demo-specific choice, not a best practice.
+- Only exclude Antarctica when the user explicitly asks for it, or when referencing a specific demo that excludes it.
+- With non-Mercator projections (`geoNaturalEarth1`, `geoEqualEarth`, `geoOrthographic`, `geoEquirectangular`) Antarctica renders at a reasonable size and should be included.
+
 ## Series types
 
 ### MapPolygonSeries (countries, regions)
@@ -91,7 +96,7 @@ am5map.geoEquirectangular()   // simple lat/long grid
 const polygonSeries = chart.series.push(
   am5map.MapPolygonSeries.new(root, {
     geoJSON: am5geodata_worldLow,
-    exclude: ["AQ"],
+    // exclude: ["AQ"],          // only if user requests Antarctica exclusion
     valueField: "value",        // for choropleth coloring
     calculateAggregates: true   // needed for heat rules
   })
@@ -374,7 +379,6 @@ root.dispose();
 
     var polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
       geoJSON: am5geodata_worldLow,
-      exclude: ["AQ"],
       valueField: "value",
       calculateAggregates: true
     }));
@@ -449,7 +453,7 @@ root.dispose();
       projection: am5map.geoMercator()
     }));
 
-    // Background polygons
+    // Background polygons — excluding Antarctica here because Mercator makes it disproportionately large
     var polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
       geoJSON: am5geodata_worldLow,
       exclude: ["AQ"]
