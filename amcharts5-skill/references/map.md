@@ -321,10 +321,10 @@ sankeySeries.data.setAll([
 
 #### Node configuration
 
-Each unique endpoint gets a node shape. Configure via `mapCircles.template`:
+Each unique endpoint gets a node shape. Configure via `nodes.mapPolygons.template`:
 
 ```js
-sankeySeries.mapCircles.template.setAll({
+sankeySeries.nodes.mapPolygons.template.setAll({
   fill: am5.color(0x8b5e3c),
   fillOpacity: 0.9,
   stroke: am5.color(0xffffff),
@@ -1106,7 +1106,7 @@ Demonstrates: `MapSankeySeries` with geographic flow bands, node circles, toolti
     });
 
     // Node appearance
-    sankeySeries.mapCircles.template.setAll({
+    sankeySeries.nodes.mapPolygons.template.setAll({
       fill: am5.color(0x8b5e3c),
       fillOpacity: 0.9,
       stroke: am5.color(0xffffff),
