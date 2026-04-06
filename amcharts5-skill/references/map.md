@@ -214,6 +214,186 @@ lineSeries.pushDataItem({
 });
 ```
 
+### MapSankeySeries (geographic flow bands)
+
+Draws variable-width curved bands between geographic points on a map. Band thickness represents a numeric value — like a Sankey diagram projected onto a map. Extends `MapPolygonSeries` and generates actual GeoJSON polygon geometries, so bands follow the map projection during pan, zoom, and rotation.
+
+**Requires** a `MapPolygonSeries` to resolve country IDs to geographic centroids.
+
+```js
+// Create polygon series for countries (required for ID resolution)
+var polygonSeries = chart.series.push(
+  am5map.MapPolygonSeries.new(root, {
+    geoJSON: am5geodata_worldLow
+  })
+);
+
+// Create Sankey flow series
+var sankeySeries = chart.series.push(
+  am5map.MapSankeySeries.new(root, {
+    polygonSeries: polygonSeries,
+    maxWidth: 5               // max band width in geographic degrees
+  })
+);
+```
+
+#### Data format
+
+Each item needs `sourceId`, `targetId`, and `value`. IDs use ISO 3166-1 alpha-2 codes matching the geodata.
+
+```js
+sankeySeries.data.setAll([
+  { sourceId: "BR", targetId: "DE", value: 350 },
+  { sourceId: "BR", targetId: "US", value: 450 },
+  { sourceId: "DE", targetId: "FR", value: 150 },
+  { sourceId: "DE", targetId: "PL", value: 100 }
+]);
+```
+
+**Explicit coordinates** instead of polygon IDs:
+```js
+sankeySeries.data.setAll([
+  {
+    sourceLongitude: 2.35, sourceLatitude: 48.86,    // Paris
+    targetLongitude: -74.01, targetLatitude: 40.71,  // New York
+    value: 100
+  }
+]);
+```
+
+**Waypoints** — route flows through intermediate points:
+```js
+sankeySeries.data.setAll([
+  {
+    sourceId: "GB", targetId: "JP", value: 40,
+    waypoints: [
+      { longitude: 30, latitude: 65 },
+      { longitude: 90, latitude: 55 }
+    ]
+  }
+]);
+```
+
+#### Key settings
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `polygonSeries` | MapPolygonSeries | — | Reference series for resolving country IDs |
+| `maxWidth` | number | `5` | Maximum band width in geographic degrees |
+| `controlPointDistance` | number | `0.5` | Bezier control point distance (0–0.5) |
+| `controlPointDistanceSource` | number | — | Control point distance at source end |
+| `controlPointDistanceTarget` | number | — | Control point distance at target end |
+| `orientation` | string | `"horizontal"` | `"horizontal"` or `"vertical"` — controls departure/arrival direction |
+| `resolution` | number | `50` | Sample points per bezier segment |
+| `autoSort` | boolean | `true` | Sort bands by target latitude to prevent overlap |
+| `nodeType` | string | `"circle"` | `"circle"` or `"bar"` — endpoint node shape |
+| `nodeWidth` | number | `1` | Bar width in degrees (bar nodeType only) |
+| `nodePadding` | number | `0.3` | Extra padding on node shapes in degrees |
+| `antimeridian` | string | `"short"` | `"short"` for shortest path, `"long"` to avoid ±180° crossing |
+| `sourceIdField` | string | `"sourceId"` | Data field for source polygon ID |
+| `targetIdField` | string | `"targetId"` | Data field for target polygon ID |
+| `sourceLongitudeField` | string | `"sourceLongitude"` | Data field for source longitude |
+| `sourceLatitudeField` | string | `"sourceLatitude"` | Data field for source latitude |
+| `targetLongitudeField` | string | `"targetLongitude"` | Data field for target longitude |
+| `targetLatitudeField` | string | `"targetLatitude"` | Data field for target latitude |
+| `waypointsField` | string | `"waypoints"` | Data field for waypoints array |
+
+#### Band appearance
+
+Configure flow bands via `mapPolygons.template`:
+
+```js
+sankeySeries.mapPolygons.template.setAll({
+  fill: am5.color(0xff6b35),
+  fillOpacity: 0.6,
+  strokeOpacity: 0,
+  tooltipText: "{sourceId} → {targetId}: {value}"
+});
+```
+
+Per-link control point overrides in data:
+```js
+sankeySeries.data.setAll([
+  { sourceId: "CN", targetId: "US", value: 300, controlPointDistance: 0.2 },
+  { sourceId: "CN", targetId: "DE", value: 200, controlPointDistanceSource: 0.4 }
+]);
+```
+
+#### Node configuration
+
+Each unique endpoint gets a node shape. Configure via `mapCircles.template`:
+
+```js
+sankeySeries.mapCircles.template.setAll({
+  fill: am5.color(0x8b5e3c),
+  fillOpacity: 0.9,
+  stroke: am5.color(0xffffff),
+  strokeWidth: 1.5
+});
+```
+
+Bar-style nodes (like traditional Sankey):
+```js
+var sankeySeries = chart.series.push(
+  am5map.MapSankeySeries.new(root, {
+    polygonSeries: polygonSeries,
+    nodeType: "bar",
+    nodeWidth: 1.5   // bar width in degrees
+  })
+);
+```
+
+#### Animated bullets along bands
+
+```js
+sankeySeries.bullets.push(function() {
+  return am5.Bullet.new(root, {
+    locationX: 0,
+    autoRotate: true,
+    sprite: am5.Circle.new(root, {
+      radius: 3,
+      fill: am5.color(0xffffff)
+    })
+  });
+});
+
+// Animate bullets along flow paths
+sankeySeries.events.on("datavalidated", function() {
+  am5.array.each(sankeySeries.dataItems, function(dataItem) {
+    var bullets = dataItem.bullets;
+    if (bullets) {
+      am5.array.each(bullets, function(bullet) {
+        bullet.animate({
+          key: "locationX",
+          from: 0,
+          to: 1,
+          duration: 3000,
+          easing: am5.ease.linear,
+          loops: Infinity
+        });
+      });
+    }
+  });
+});
+```
+
+Bullets automatically hide on the back side of the globe (orthographic projection).
+
+#### Multi-level flows
+
+The same country can be both target and source — incoming and outgoing bands share unified stacking at intermediate nodes:
+
+```js
+sankeySeries.data.setAll([
+  // Level 1: Producers → Hubs
+  { sourceId: "BR", targetId: "DE", value: 350 },
+  { sourceId: "VN", targetId: "DE", value: 200 },
+  // Level 2: Hubs → Consumers
+  { sourceId: "DE", targetId: "FR", value: 150 },
+  { sourceId: "DE", targetId: "PL", value: 100 }
+]);
+```
+
 ### Animating bullets along lines (positionOnLine)
 
 `MapPointSeries` data items have a `positionOnLine` setting (0–1) that positions the point along a line. Combined with `lineDataItem` and `autoRotate`, this enables flight-path-style animations.
@@ -866,6 +1046,91 @@ Demonstrates: orthographic projection, single-segment lines for per-segment anim
     chart.appear(1000, 100);
     expandCity(0);
     setTimeout(function () { flySegment(0); }, 1500);
+  </script>
+</body>
+</html>
+```
+
+## Example 5: Map Sankey — trade flows between countries
+
+Demonstrates: `MapSankeySeries` with geographic flow bands, node circles, tooltips, and multi-level flows.
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Map Sankey — Trade Flows</title>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <style>#chartdiv { width: 100%; height: 600px; }</style>
+</head>
+<body>
+  <div id="chartdiv"></div>
+  <script>
+    var root = am5.Root.new("chartdiv");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    var chart = root.container.children.push(am5map.MapChart.new(root, {
+      panX: "rotateX",
+      panY: "translateY",
+      projection: am5map.geoNaturalEarth1()
+    }));
+
+    // Background countries
+    var polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
+      geoJSON: am5geodata_worldLow
+    }));
+    polygonSeries.mapPolygons.template.setAll({
+      fill: am5.color(0xdddddd),
+      stroke: am5.color(0xffffff),
+      strokeWidth: 0.5
+    });
+
+    // Sankey flow series
+    var sankeySeries = chart.series.push(am5map.MapSankeySeries.new(root, {
+      polygonSeries: polygonSeries,
+      maxWidth: 4,
+      controlPointDistance: 0.4,
+      autoSort: true
+    }));
+
+    // Band appearance
+    sankeySeries.mapPolygons.template.setAll({
+      fill: am5.color(0xff6b35),
+      fillOpacity: 0.5,
+      strokeOpacity: 0,
+      tooltipText: "{sourceId} → {targetId}: {value}B"
+    });
+
+    // Node appearance
+    sankeySeries.mapCircles.template.setAll({
+      fill: am5.color(0x8b5e3c),
+      fillOpacity: 0.9,
+      stroke: am5.color(0xffffff),
+      strokeWidth: 1.5
+    });
+
+    // Multi-level trade data
+    sankeySeries.data.setAll([
+      // Producers → Trade hubs
+      { sourceId: "BR", targetId: "DE", value: 350 },
+      { sourceId: "BR", targetId: "US", value: 450 },
+      { sourceId: "CN", targetId: "DE", value: 500 },
+      { sourceId: "CN", targetId: "US", value: 600 },
+      { sourceId: "AU", targetId: "JP", value: 200 },
+      { sourceId: "AU", targetId: "CN", value: 300 },
+      // Hubs → Consumers
+      { sourceId: "DE", targetId: "FR", value: 250 },
+      { sourceId: "DE", targetId: "GB", value: 300 },
+      { sourceId: "US", targetId: "CA", value: 400 },
+      { sourceId: "JP", targetId: "KR", value: 100 }
+    ]);
+
+    chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
+    chart.appear(1000, 100);
   </script>
 </body>
 </html>

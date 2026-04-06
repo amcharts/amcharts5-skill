@@ -93,7 +93,7 @@ Geodata: `am5geodata_worldLow`, `am5geodata_usaLow`, etc.
 |----------|---------------|
 | XY chart (line, bar, column, area, candlestick) | `@amcharts/amcharts5/xy` |
 | Pie, donut, funnel, pyramid | `@amcharts/amcharts5/percent` |
-| Map / choropleth | `@amcharts/amcharts5/map` + geodata |
+| Map / choropleth / map sankey | `@amcharts/amcharts5/map` + geodata |
 | Radar / gauge | `@amcharts/amcharts5/radar` (also needs xy) |
 | Treemap, sunburst, force-directed, pack | `@amcharts/amcharts5/hierarchy` |
 | Sankey, chord, arc diagram | `@amcharts/amcharts5/flow` |
@@ -241,6 +241,26 @@ const polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
   valueField: "value",
   calculateAggregates: true
 }));
+```
+
+### Map Sankey (geographic flow bands)
+```js
+// Requires: map package + geodata (NOT flow package)
+var polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
+  geoJSON: am5geodata_worldLow
+}));
+var sankeySeries = chart.series.push(am5map.MapSankeySeries.new(root, {
+  polygonSeries: polygonSeries,  // required: resolves country IDs to centroids
+  maxWidth: 5                    // max band width in geographic degrees
+}));
+sankeySeries.mapPolygons.template.setAll({
+  fillOpacity: 0.5, strokeOpacity: 0,
+  tooltipText: "{sourceId} → {targetId}: {value}"
+});
+sankeySeries.data.setAll([
+  { sourceId: "BR", targetId: "DE", value: 350 },
+  { sourceId: "CN", targetId: "US", value: 600 }
+]);
 ```
 
 ### Funnel chart
@@ -780,7 +800,9 @@ var sbSeries = scrollbar.chart.series.push(am5xy.LineSeries.new(root, {
 27. **Labels with data placeholders need `populateText: true`** — When a Label uses data field placeholders like `text: "{name}"`, you MUST also set `populateText: true`. Without it, the placeholder is not resolved and the label appears blank. This applies everywhere Labels display dynamic data — bullet labels, map point labels, etc. Example: `am5.Label.new(root, { text: "{name}", populateText: true, ... })`.
 28. **Globe rotation uses negative coordinates** — To center the globe (`geoOrthographic`) on a geographic point, set `rotationX` to **-longitude** and `rotationY` to **-latitude**. E.g., to center on Paris (48.86°N, 2.35°E): `chart.animate({ key: "rotationX", to: -2.35 }); chart.animate({ key: "rotationY", to: -48.86 });`. Using positive values rotates the globe the wrong way.
 29. **`positionOnLine` with multi-segment lines limits per-segment control** — `MapPointSeries` data items can animate along a line via `positionOnLine` (0→1). If the line has 3+ points (multi-segment), position 0.5 is the midpoint of the *entire* path, making per-segment effects (scaling at each segment midpoint, pausing between segments, etc.) difficult. For advanced per-segment animations, use **single-segment lines** (2 points each) and animate the bullet across them sequentially.
-30. **Do NOT exclude Antarctica (`exclude: ["AQ"]`) by default** — Many amCharts demos exclude Antarctica because they use Mercator projection where it appears disproportionately large. This is a demo-specific choice, not a best practice. Unless the user explicitly asks to exclude Antarctica, or references a demo that does so, keep Antarctica in the map. With non-Mercator projections (`geoNaturalEarth1`, `geoEqualEarth`, `geoOrthographic`, `geoEquirectangular`), Antarctica renders at a reasonable size.
+30. **`MapSankeySeries` is in the map package, NOT the flow package** — Geographic Sankey bands on a map use `am5map.MapSankeySeries` from `@amcharts/amcharts5/map`. Do NOT import `@amcharts/amcharts5/flow` for this. It requires a `polygonSeries` setting pointing to a `MapPolygonSeries` to resolve country IDs to centroids. Data uses `{ sourceId, targetId, value }` with ISO alpha-2 country codes. Bands are styled via `sankeySeries.mapPolygons.template`, nodes via `sankeySeries.mapCircles.template`. Supports waypoints, explicit lat/long coordinates, multi-level flows, and animated bullets via `locationX`.
+
+31. **Do NOT exclude Antarctica (`exclude: ["AQ"]`) by default** — Many amCharts demos exclude Antarctica because they use Mercator projection where it appears disproportionately large. This is a demo-specific choice, not a best practice. Unless the user explicitly asks to exclude Antarctica, or references a demo that does so, keep Antarctica in the map. With non-Mercator projections (`geoNaturalEarth1`, `geoEqualEarth`, `geoOrthographic`, `geoEquirectangular`), Antarctica renders at a reasonable size.
 
 ## Disposal (SPA / React / Angular / Vue)
 

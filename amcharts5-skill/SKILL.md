@@ -52,7 +52,7 @@ Docs: https://www.amcharts.com/docs/v5/
 | Core | `@amcharts/amcharts5` | `index.js` | Root, Theme, Legend, Tooltip, Label, Container |
 | XY charts | `@amcharts/amcharts5/xy` | `xy.js` | XYChart, axes, series |
 | Pie / Sliced | `@amcharts/amcharts5/percent` | `percent.js` | PieChart, SlicedChart, PieSeries, FunnelSeries, PyramidSeries, PictorialStackedSeries |
-| Map | `@amcharts/amcharts5/map` | `map.js` | MapChart, MapPolygonSeries, MapPointSeries, MapLineSeries |
+| Map | `@amcharts/amcharts5/map` | `map.js` | MapChart, MapPolygonSeries, MapPointSeries, MapLineSeries, MapSankeySeries |
 | Hierarchy | `@amcharts/amcharts5/hierarchy` | `hierarchy.js` | Treemap, VoronoiTreemap, ForceDirected, Sunburst, Pack, Partition, Tree |
 | Flow | `@amcharts/amcharts5/flow` | `flow.js` | Sankey, Chord, ChordDirected, ChordNonRibbon, ArcDiagram |
 | Radar | `@amcharts/amcharts5/radar` | `radar.js` | RadarChart, AxisRendererCircular, AxisRendererRadial |
@@ -73,7 +73,7 @@ Based on the chart type the user is building, read the relevant reference file f
 |-----------|------|
 | Line, area, bar, column, candlestick, OHLC, scatter, stacked charts | `references/xy.md` |
 | Pie, donut, semi-circle, funnel, pyramid, pictorial stacked charts | `references/pie.md` |
-| World map, country map, choropleth, bubble map, point map | `references/map.md` |
+| World map, country map, choropleth, bubble map, point map, map sankey | `references/map.md` |
 | Treemap, sunburst, force-directed, pack, partition, tree, org chart | `references/hierarchy.md` |
 | Sankey, chord, arc diagram, alluvial, flow visualization | `references/flow.md` |
 | Radar, spider, polar chart, gauge, speedometer, meter | `references/radar.md` |
