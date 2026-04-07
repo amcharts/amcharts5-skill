@@ -87,7 +87,7 @@ CDN script objects use `am5` (core), `am5xy`, `am5percent`, `am5map`, `am5hierar
 Themes: `am5themes_Animated`, `am5themes_Dark`, etc.
 Geodata: `am5geodata_worldLow`, `am5geodata_usaLow`, etc.
 
-### Package → chart type mapping
+### Package > chart type mapping
 
 | You need | Import package |
 |----------|---------------|
@@ -255,12 +255,19 @@ var sankeySeries = chart.series.push(am5map.MapSankeySeries.new(root, {
 }));
 sankeySeries.mapPolygons.template.setAll({
   fillOpacity: 0.5, strokeOpacity: 0,
-  tooltipText: "{sourceId} → {targetId}: {value}"
+  tooltipText: "{sourceId} > {targetId}: {value}"
 });
-sankeySeries.data.setAll([
-  { sourceId: "BR", targetId: "DE", value: 350 },
-  { sourceId: "CN", targetId: "US", value: 600 }
-]);
+// CRITICAL: sourceId/targetId data MUST be set inside datavalidated —
+// polygonSeries needs to finish parsing geoJSON first, otherwise centroids
+// silently fail and no bands appear.
+polygonSeries.events.once("datavalidated", function() {
+  sankeySeries.data.setAll([
+    { sourceId: "BR", targetId: "DE", value: 350 },
+    { sourceId: "CN", targetId: "US", value: 600 }
+  ]);
+});
+// Alternative: use explicit coordinates (no timing needed):
+// { sourceLongitude: 2.35, sourceLatitude: 48.86, targetLongitude: -74.01, targetLatitude: 40.71, value: 100 }
 ```
 
 ### Funnel chart
@@ -682,7 +689,7 @@ var chart = root.container.children.push(am5xy.XYChart.new(root, { ... }));
 
 11. **`dataItems` is a plain array** — `series.dataItems` does NOT have `.each()`. Use `series.dataItems.forEach(fn)` or `am5.array.each(series.dataItems, fn)`. Only `series.data` (the ListData object) has `.each()`.
 
-12. **CDN script load order matters** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` → `xy.js` → `radar.js` / `timeline.js` / `gantt.js` → `themes/*.js`.
+12. **CDN script load order matters** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` > `xy.js` > `radar.js` / `timeline.js` / `gantt.js` > `themes/*.js`.
 
 13. **No `minorGrid` / `minorTicks` / `minorLabels` objects** — These properties don't exist. Enable minor grid via renderer flags:
 ```js
@@ -693,7 +700,7 @@ am5xy.AxisRendererX.new(root, {
 ```
 Style minor elements through theme rules targeting the `"minor"` tag — they auto-inherit main grid appearance but slightly lighter.
 
-14. **Flow chart animated bullets go on `series.bullets`, NOT `series.links.template.bullets`** — To animate labels/circles flowing along Sankey/Chord links, use `series.bullets.push()`. Animate `bullet.locationX` (Sankey) or `bullet.locationY` (Chord) from 0→1 with `loops: Infinity`. Use an adapter on opacity based on position for fade effect:
+14. **Flow chart animated bullets go on `series.bullets`, NOT `series.links.template.bullets`** — To animate labels/circles flowing along Sankey/Chord links, use `series.bullets.push()`. Animate `bullet.locationX` (Sankey) or `bullet.locationY` (Chord) from 0>1 with `loops: Infinity`. Use an adapter on opacity based on position for fade effect:
 ```js
 // Sankey: use locationX. For Chord: replace ALL locationX with locationY.
 series.bullets.push(function(root, series, dataItem) {
@@ -755,7 +762,7 @@ var xRenderer = am5timeline.AxisRendererCurveX.new(root, {
 ```
 Without this, crashes with `Cannot read properties of undefined (reading 'axis')`.
 
-20. **Gantt data uses TWO separate calls** — Do NOT use `chart.data.setAll()`. Set categories on `chart.yAxis.data.setAll([{id, name, parentId, color}])` and tasks on `chart.series.data.setAll([{id, start, duration, progress, linkTo}])`. Use flat `parentId` for hierarchy, NOT nested `children` arrays. CDN order: `index.js` → `xy.js` → `plugins/colorPicker.js` → `gantt.js` → `themes/Animated.js`:
+20. **Gantt data uses TWO separate calls** — Do NOT use `chart.data.setAll()`. Set categories on `chart.yAxis.data.setAll([{id, name, parentId, color}])` and tasks on `chart.series.data.setAll([{id, start, duration, progress, linkTo}])`. Use flat `parentId` for hierarchy, NOT nested `children` arrays. CDN order: `index.js` > `xy.js` > `plugins/colorPicker.js` > `gantt.js` > `themes/Animated.js`:
 ```js
 // WRONG — single data call with nested children
 chart.data.setAll([{ name: "Task", children: [...] }]);
@@ -799,8 +806,8 @@ var sbSeries = scrollbar.chart.series.push(am5xy.LineSeries.new(root, {
 26. **`VoronoiTreemap` has NO `.rectangles` property** — Unlike `Treemap` (which has `series.rectangles.template`), `VoronoiTreemap` renders organic polygon cells. Style via `series.nodes.template` and its children, not `.rectangles`.
 27. **Labels with data placeholders need `populateText: true`** — When a Label uses data field placeholders like `text: "{name}"`, you MUST also set `populateText: true`. Without it, the placeholder is not resolved and the label appears blank. This applies everywhere Labels display dynamic data — bullet labels, map point labels, etc. Example: `am5.Label.new(root, { text: "{name}", populateText: true, ... })`.
 28. **Globe rotation uses negative coordinates** — To center the globe (`geoOrthographic`) on a geographic point, set `rotationX` to **-longitude** and `rotationY` to **-latitude**. E.g., to center on Paris (48.86°N, 2.35°E): `chart.animate({ key: "rotationX", to: -2.35 }); chart.animate({ key: "rotationY", to: -48.86 });`. Using positive values rotates the globe the wrong way.
-29. **`positionOnLine` with multi-segment lines limits per-segment control** — `MapPointSeries` data items can animate along a line via `positionOnLine` (0→1). If the line has 3+ points (multi-segment), position 0.5 is the midpoint of the *entire* path, making per-segment effects (scaling at each segment midpoint, pausing between segments, etc.) difficult. For advanced per-segment animations, use **single-segment lines** (2 points each) and animate the bullet across them sequentially.
-30. **`MapSankeySeries` is in the map package, NOT the flow package** — Geographic Sankey bands on a map use `am5map.MapSankeySeries` from `@amcharts/amcharts5/map`. Do NOT import `@amcharts/amcharts5/flow` for this. It requires a `polygonSeries` setting pointing to a `MapPolygonSeries` to resolve country IDs to centroids. Data uses `{ sourceId, targetId, value }` with ISO alpha-2 country codes. Bands are styled via `sankeySeries.mapPolygons.template`, nodes via `sankeySeries.nodes.mapPolygons.template`. Supports waypoints, explicit lat/long coordinates, multi-level flows, and animated bullets via `locationX`.
+29. **`positionOnLine` with multi-segment lines limits per-segment control** — `MapPointSeries` data items can animate along a line via `positionOnLine` (0>1). If the line has 3+ points (multi-segment), position 0.5 is the midpoint of the *entire* path, making per-segment effects (scaling at each segment midpoint, pausing between segments, etc.) difficult. For advanced per-segment animations, use **single-segment lines** (2 points each) and animate the bullet across them sequentially.
+30. **`MapSankeySeries` is in the map package, NOT the flow package** — Geographic Sankey bands on a map use `am5map.MapSankeySeries` from `@amcharts/amcharts5/map`. Do NOT import `@amcharts/amcharts5/flow` for this. It requires a `polygonSeries` setting pointing to a `MapPolygonSeries` to resolve country IDs to centroids. Data uses `{ sourceId, targetId, value }` with ISO alpha-2 country codes. Bands are styled via `sankeySeries.mapPolygons.template`, nodes via `sankeySeries.nodes.mapPolygons.template`. Supports waypoints, explicit lat/long coordinates, multi-level flows, and animated bullets via `locationX`. **CRITICAL timing:** When using `sourceId`/`targetId`, data MUST be set inside `polygonSeries.events.once("datavalidated", function() { ... })` — otherwise centroid lookup silently fails (no errors, no bands). Explicit coordinates (`sourceLongitude`/`sourceLatitude`) don't need this wrapper. **Never** call `polygonSeries.data.setAll()` with custom objects — this replaces geoJSON-derived data items and breaks centroid resolution.
 
 31. **Do NOT exclude Antarctica (`exclude: ["AQ"]`) by default** — Many amCharts demos exclude Antarctica because they use Mercator projection where it appears disproportionately large. This is a demo-specific choice, not a best practice. Unless the user explicitly asks to exclude Antarctica, or references a demo that does so, keep Antarctica in the map. With non-Mercator projections (`geoNaturalEarth1`, `geoEqualEarth`, `geoOrthographic`, `geoEquirectangular`), Antarctica renders at a reasonable size.
 
@@ -827,7 +834,7 @@ onUnmounted(() => { root.dispose(); });
 
 If unsure whether a method, property, or setting exists, **verify it** before using it:
 
-1. **Primary:** `https://www.amcharts.com/docs/v5/reference/{classname}/` (lowercase, e.g. `LineSeries` → `lineseries`)
+1. **Primary:** `https://www.amcharts.com/docs/v5/reference/{classname}/` (lowercase, e.g. `LineSeries` > `lineseries`)
 2. **Fallback:** TypeScript source on GitHub — `https://raw.githubusercontent.com/amcharts/amcharts5/master/src/.internal/charts/` — settings interfaces are named `I{ClassName}Settings`
 
 Common source paths:

@@ -36,7 +36,7 @@ CDN: `https://cdn.amcharts.com/lib/5/geodata/{mapName}.js`
 Pattern: camelCase country name + detail level. E.g. `germanyLow`, `canadaHigh`, `chinaLow`.
 
 **IMPORTANT — regional/continent geodata:**
-- Individual country maps: `geodata/{countryName}Low.js` → global `am5geodata_{countryName}Low`
+- Individual country maps: `geodata/{countryName}Low.js` > global `am5geodata_{countryName}Low`
 - **There are NO continent-level maps** like `europeLow.js` or `asiaLow.js` at the top-level CDN path
 - Regional maps are in subdirectories: `geodata/region/world/{regionName}Low.js`
   - CDN: `https://cdn.amcharts.com/lib/5/geodata/region/world/europeLow.js`
@@ -239,18 +239,26 @@ var sankeySeries = chart.series.push(
 
 #### Data format
 
-Each item needs `sourceId`, `targetId`, and `value`. IDs use ISO 3166-1 alpha-2 codes matching the geodata.
+Two data patterns — polygon IDs or explicit coordinates.
+
+**Pattern 1: `sourceId` / `targetId` (country codes)**
+
+IDs use ISO 3166-1 alpha-2 codes matching the geodata. **CRITICAL:** Data MUST be set inside `polygonSeries.events.once("datavalidated", ...)` — the polygon series needs to finish parsing geoJSON before MapSankeySeries can resolve country IDs to centroids. Without this wrapper, `getDataItemById()` returns null and flows silently don't appear (no errors, no bands).
 
 ```js
-sankeySeries.data.setAll([
-  { sourceId: "BR", targetId: "DE", value: 350 },
-  { sourceId: "BR", targetId: "US", value: 450 },
-  { sourceId: "DE", targetId: "FR", value: 150 },
-  { sourceId: "DE", targetId: "PL", value: 100 }
-]);
+polygonSeries.events.once("datavalidated", function() {
+  sankeySeries.data.setAll([
+    { sourceId: "BR", targetId: "DE", value: 350 },
+    { sourceId: "BR", targetId: "US", value: 450 },
+    { sourceId: "DE", targetId: "FR", value: 150 },
+    { sourceId: "DE", targetId: "PL", value: 100 }
+  ]);
+});
 ```
 
-**Explicit coordinates** instead of polygon IDs:
+**Pattern 2: Explicit coordinates (no timing needed)**
+
+When using `sourceLongitude`/`sourceLatitude`/`targetLongitude`/`targetLatitude`, data can be set immediately — no `datavalidated` wrapper required:
 ```js
 sankeySeries.data.setAll([
   {
@@ -263,15 +271,28 @@ sankeySeries.data.setAll([
 
 **Waypoints** — route flows through intermediate points:
 ```js
-sankeySeries.data.setAll([
-  {
-    sourceId: "GB", targetId: "JP", value: 40,
-    waypoints: [
-      { longitude: 30, latitude: 65 },
-      { longitude: 90, latitude: 55 }
-    ]
-  }
-]);
+polygonSeries.events.once("datavalidated", function() {
+  sankeySeries.data.setAll([
+    {
+      sourceId: "GB", targetId: "JP", value: 40,
+      waypoints: [
+        { longitude: 30, latitude: 65 },
+        { longitude: 90, latitude: 55 }
+      ]
+    }
+  ]);
+});
+```
+
+**WARNING:** Never call `polygonSeries.data.setAll()` with custom objects — this replaces all geoJSON-derived data items, breaking MapSankeySeries centroid resolution. To set per-country properties (like colors), iterate existing data items after `datavalidated` instead:
+```js
+polygonSeries.events.on("datavalidated", function() {
+  am5.array.each(polygonSeries.dataItems, function(di) {
+    if (di.get("id") === "BR") {
+      di.get("mapPolygon").setAll({ fill: am5.color(0x8fae7e) });
+    }
+  });
+});
 ```
 
 #### Key settings
@@ -307,7 +328,7 @@ sankeySeries.mapPolygons.template.setAll({
   fill: am5.color(0xff6b35),
   fillOpacity: 0.6,
   strokeOpacity: 0,
-  tooltipText: "{sourceId} → {targetId}: {value}"
+  tooltipText: "{sourceId} > {targetId}: {value}"
 });
 ```
 
@@ -384,14 +405,16 @@ Bullets automatically hide on the back side of the globe (orthographic projectio
 The same country can be both target and source — incoming and outgoing bands share unified stacking at intermediate nodes:
 
 ```js
-sankeySeries.data.setAll([
-  // Level 1: Producers → Hubs
-  { sourceId: "BR", targetId: "DE", value: 350 },
-  { sourceId: "VN", targetId: "DE", value: 200 },
-  // Level 2: Hubs → Consumers
-  { sourceId: "DE", targetId: "FR", value: 150 },
-  { sourceId: "DE", targetId: "PL", value: 100 }
-]);
+polygonSeries.events.once("datavalidated", function() {
+  sankeySeries.data.setAll([
+    // Level 1: Producers > Hubs
+    { sourceId: "BR", targetId: "DE", value: 350 },
+    { sourceId: "VN", targetId: "DE", value: 200 },
+    // Level 2: Hubs > Consumers
+    { sourceId: "DE", targetId: "FR", value: 150 },
+    { sourceId: "DE", targetId: "PL", value: 100 }
+  ]);
+});
 ```
 
 ### Animating bullets along lines (positionOnLine)
@@ -430,7 +453,7 @@ plane.on("positionOnLine", function(pos) {
 
 **IMPORTANT — Multi-segment lines and `positionOnLine`:**
 - `positionOnLine` treats the entire line as one unit (0 = start, 1 = end). If a line has multiple segments (i.e. `pointsToConnect` has 3+ points), position 0.5 is the midpoint of the *entire* path.
-- For advanced per-segment animations (e.g., scaling the bullet differently at the midpoint of each segment, or pausing between segments), use **single-segment lines** (2 points each) instead of one multi-segment line. This gives you full control: animate `positionOnLine` from 0→1 on each segment line sequentially, with independent timing, easing, and callbacks per segment.
+- For advanced per-segment animations (e.g., scaling the bullet differently at the midpoint of each segment, or pausing between segments), use **single-segment lines** (2 points each) instead of one multi-segment line. This gives you full control: animate `positionOnLine` from 0 to 1 on each segment line sequentially, with independent timing, easing, and callbacks per segment.
 - Example: instead of one line with points [A, B, C, D], create three lines: [A,B], [B,C], [C,D] and animate the bullet across them one at a time.
 
 ## Zoom controls
@@ -491,7 +514,7 @@ backgroundSeries.data.push({
 chart.series.push(am5map.GraticuleSeries.new(root, {}));
 ```
 
-## Drill-down map (country → states)
+## Drill-down map (country > states)
 
 ```js
 // World-level polygons
@@ -1102,7 +1125,7 @@ Demonstrates: `MapSankeySeries` with geographic flow bands, node circles, toolti
       fill: am5.color(0xff6b35),
       fillOpacity: 0.5,
       strokeOpacity: 0,
-      tooltipText: "{sourceId} → {targetId}: {value}B"
+      tooltipText: "{sourceId} > {targetId}: {value}B"
     });
 
     // Node appearance
@@ -1113,21 +1136,155 @@ Demonstrates: `MapSankeySeries` with geographic flow bands, node circles, toolti
       strokeWidth: 1.5
     });
 
-    // Multi-level trade data
+    // Set data AFTER polygonSeries parses geoJSON (required for sourceId/targetId)
+    polygonSeries.events.once("datavalidated", function() {
+      sankeySeries.data.setAll([
+        // Producers > Trade hubs
+        { sourceId: "BR", targetId: "DE", value: 350 },
+        { sourceId: "BR", targetId: "US", value: 450 },
+        { sourceId: "CN", targetId: "DE", value: 500 },
+        { sourceId: "CN", targetId: "US", value: 600 },
+        { sourceId: "AU", targetId: "JP", value: 200 },
+        { sourceId: "AU", targetId: "CN", value: 300 },
+        // Hubs > Consumers
+        { sourceId: "DE", targetId: "FR", value: 250 },
+        { sourceId: "DE", targetId: "GB", value: 300 },
+        { sourceId: "US", targetId: "CA", value: 400 },
+        { sourceId: "JP", targetId: "KR", value: 100 }
+      ]);
+    });
+
+    chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
+    chart.appear(1000, 100);
+  </script>
+</body>
+</html>
+```
+
+## Example 6: Map Sankey — explicit coordinates with waypoints
+
+Demonstrates: `MapSankeySeries` with explicit `sourceLongitude`/`sourceLatitude` coordinates, waypoints for routing, and animated bullets. No `datavalidated` timing needed when using explicit coordinates.
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Map Sankey — Oil Flows</title>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <style>body { background: #1a2a3a; margin: 0; } #chartdiv { width: 100%; height: 600px; }</style>
+</head>
+<body>
+  <div id="chartdiv"></div>
+  <script>
+    var root = am5.Root.new("chartdiv");
+    root.setThemes([am5themes_Animated.new(root)]);
+
+    var chart = root.container.children.push(am5map.MapChart.new(root, {
+      panX: "rotateX",
+      panY: "rotateY",
+      projection: am5map.geoOrthographic(),
+      rotationX: -54,
+      rotationY: -25
+    }));
+
+    var bgSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {}));
+    bgSeries.mapPolygons.template.setAll({ fill: am5.color(0x111d2d), fillOpacity: 1, strokeOpacity: 0 });
+    bgSeries.data.push({ geometry: am5map.getGeoRectangle(90, 180, -90, -180) });
+
+    var polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
+      geoJSON: am5geodata_worldLow
+    }));
+    polygonSeries.mapPolygons.template.setAll({
+      fill: am5.color(0x2c4a6a),
+      stroke: am5.color(0x1a2a3a),
+      strokeWidth: 0.5
+    });
+
+    var sankeySeries = chart.series.push(am5map.MapSankeySeries.new(root, {
+      polygonSeries: polygonSeries,
+      maxWidth: 3,
+      controlPointDistance: 0.3,
+      resolution: 60
+    }));
+
+    sankeySeries.mapPolygons.template.setAll({
+      fill: am5.color(0xd4a017),
+      fillOpacity: 0.6,
+      strokeOpacity: 0,
+      tooltipText: "{source} > {target}: {value}M barrels/day"
+    });
+
+    sankeySeries.nodes.mapPolygons.template.setAll({
+      fill: am5.color(0xd4a017),
+      stroke: am5.color(0xf0e6d0),
+      strokeWidth: 1.5,
+      fillOpacity: 0.9,
+      tooltipText: "{name}"
+    });
+
+    // Helper for explicit-coordinate data with optional waypoints
+    function flow(src, srcName, tgt, tgtName, val, wp) {
+      var result = {
+        sourceLongitude: src.lon, sourceLatitude: src.lat,
+        targetLongitude: tgt.lon, targetLatitude: tgt.lat,
+        source: srcName, target: tgtName, value: val
+      };
+      if (wp) result.waypoints = wp;
+      return result;
+    }
+
+    var saudiPort  = { lon: 50.2, lat: 26.6 };
+    var hormuz     = { lon: 56.3, lat: 26.6 };
+    var india      = { lon: 72.8, lat: 19.1 };
+    var china      = { lon: 121.5, lat: 31.2 };
+    var japan      = { lon: 139.7, lat: 35.7 };
+    var europe     = { lon: 9.5, lat: 44.4 };
+    var suez       = { lon: 32.3, lat: 30.0 };
+
+    // No datavalidated wrapper needed — explicit coordinates resolve immediately
     sankeySeries.data.setAll([
-      // Producers → Trade hubs
-      { sourceId: "BR", targetId: "DE", value: 350 },
-      { sourceId: "BR", targetId: "US", value: 450 },
-      { sourceId: "CN", targetId: "DE", value: 500 },
-      { sourceId: "CN", targetId: "US", value: 600 },
-      { sourceId: "AU", targetId: "JP", value: 200 },
-      { sourceId: "AU", targetId: "CN", value: 300 },
-      // Hubs → Consumers
-      { sourceId: "DE", targetId: "FR", value: 250 },
-      { sourceId: "DE", targetId: "GB", value: 300 },
-      { sourceId: "US", targetId: "CA", value: 400 },
-      { sourceId: "JP", targetId: "KR", value: 100 }
+      flow(saudiPort, "Saudi Arabia", china, "China", 1.8,
+        [hormuz, { lon: 65, lat: 20 }, { lon: 80, lat: 15 }, { lon: 105, lat: 20 }]),
+      flow(saudiPort, "Saudi Arabia", japan, "Japan", 1.2,
+        [hormuz, { lon: 70, lat: 22 }, { lon: 100, lat: 18 }, { lon: 125, lat: 28 }]),
+      flow(saudiPort, "Saudi Arabia", india, "India", 0.9,
+        [hormuz, { lon: 62, lat: 22 }]),
+      flow(saudiPort, "Saudi Arabia", europe, "Europe", 1.0,
+        [{ lon: 43, lat: 28 }, suez, { lon: 20, lat: 36 }])
     ]);
+
+    // Animated bullets along flow paths
+    sankeySeries.bullets.push(function() {
+      return am5.Bullet.new(root, {
+        locationX: 0,
+        autoRotate: true,
+        sprite: am5.Circle.new(root, {
+          radius: 2,
+          fill: am5.color(0xd4a017)
+        })
+      });
+    });
+
+    sankeySeries.events.on("datavalidated", function() {
+      am5.array.each(sankeySeries.dataItems, function(dataItem) {
+        var bullets = dataItem.bullets;
+        if (bullets) {
+          am5.array.each(bullets, function(bullet) {
+            bullet.animate({
+              key: "locationX",
+              from: 0, to: 1,
+              duration: 3000 + Math.random() * 3000,
+              easing: am5.ease.linear,
+              loops: Infinity
+            });
+          });
+        }
+      });
+    });
 
     chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
     chart.appear(1000, 100);

@@ -42,7 +42,7 @@ Node IDs ("A", "B", etc.) are automatically extracted — you don't define nodes
 | `am5flow.ChordNonRibbon` | Chord with line links | Arc nodes + line links |
 | `am5flow.ArcDiagram` | Arc connections between linear nodes | Linear nodes + arc links |
 
-**Geographic Sankey (MapSankeySeries):** For Sankey-style flow bands drawn on a geographic map, use `am5map.MapSankeySeries` from the **map** package (not flow). See `references/map.md` → MapSankeySeries section.
+**Geographic Sankey (MapSankeySeries):** For Sankey-style flow bands drawn on a geographic map, use `am5map.MapSankeySeries` from the **map** package (not flow). See `references/map.md` > MapSankeySeries section.
 
 ## Sankey diagram
 
