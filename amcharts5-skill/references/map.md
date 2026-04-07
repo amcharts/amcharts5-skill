@@ -243,22 +243,20 @@ Two data patterns — polygon IDs or explicit coordinates.
 
 **Pattern 1: `sourceId` / `targetId` (country codes)**
 
-IDs use ISO 3166-1 alpha-2 codes matching the geodata. **CRITICAL:** Data MUST be set inside `polygonSeries.events.once("datavalidated", ...)` — the polygon series needs to finish parsing geoJSON before MapSankeySeries can resolve country IDs to centroids. Without this wrapper, `getDataItemById()` returns null and flows silently don't appear (no errors, no bands).
+IDs use ISO 3166-1 alpha-2 codes matching the geodata. Set data directly — `MapSankeySeries` auto-resolves `sourceId`/`targetId` once the referenced `polygonSeries` finishes loading, so data can be set at any time:
 
 ```js
-polygonSeries.events.once("datavalidated", function() {
-  sankeySeries.data.setAll([
-    { sourceId: "BR", targetId: "DE", value: 350 },
-    { sourceId: "BR", targetId: "US", value: 450 },
-    { sourceId: "DE", targetId: "FR", value: 150 },
-    { sourceId: "DE", targetId: "PL", value: 100 }
-  ]);
-});
+sankeySeries.data.setAll([
+  { sourceId: "BR", targetId: "DE", value: 350 },
+  { sourceId: "BR", targetId: "US", value: 450 },
+  { sourceId: "DE", targetId: "FR", value: 150 },
+  { sourceId: "DE", targetId: "PL", value: 100 }
+]);
 ```
 
-**Pattern 2: Explicit coordinates (no timing needed)**
+**Pattern 2: Explicit coordinates**
 
-When using `sourceLongitude`/`sourceLatitude`/`targetLongitude`/`targetLatitude`, data can be set immediately — no `datavalidated` wrapper required:
+When using `sourceLongitude`/`sourceLatitude`/`targetLongitude`/`targetLatitude`, centroid lookup is skipped entirely:
 ```js
 sankeySeries.data.setAll([
   {
@@ -271,17 +269,15 @@ sankeySeries.data.setAll([
 
 **Waypoints** — route flows through intermediate points:
 ```js
-polygonSeries.events.once("datavalidated", function() {
-  sankeySeries.data.setAll([
-    {
-      sourceId: "GB", targetId: "JP", value: 40,
-      waypoints: [
-        { longitude: 30, latitude: 65 },
-        { longitude: 90, latitude: 55 }
-      ]
-    }
-  ]);
-});
+sankeySeries.data.setAll([
+  {
+    sourceId: "GB", targetId: "JP", value: 40,
+    waypoints: [
+      { longitude: 30, latitude: 65 },
+      { longitude: 90, latitude: 55 }
+    ]
+  }
+]);
 ```
 
 **WARNING:** Never call `polygonSeries.data.setAll()` with custom objects — this replaces all geoJSON-derived data items, breaking MapSankeySeries centroid resolution. To set per-country properties (like colors), iterate existing data items after `datavalidated` instead:
@@ -405,16 +401,14 @@ Bullets automatically hide on the back side of the globe (orthographic projectio
 The same country can be both target and source — incoming and outgoing bands share unified stacking at intermediate nodes:
 
 ```js
-polygonSeries.events.once("datavalidated", function() {
-  sankeySeries.data.setAll([
-    // Level 1: Producers > Hubs
-    { sourceId: "BR", targetId: "DE", value: 350 },
-    { sourceId: "VN", targetId: "DE", value: 200 },
-    // Level 2: Hubs > Consumers
-    { sourceId: "DE", targetId: "FR", value: 150 },
-    { sourceId: "DE", targetId: "PL", value: 100 }
-  ]);
-});
+sankeySeries.data.setAll([
+  // Level 1: Producers > Hubs
+  { sourceId: "BR", targetId: "DE", value: 350 },
+  { sourceId: "VN", targetId: "DE", value: 200 },
+  // Level 2: Hubs > Consumers
+  { sourceId: "DE", targetId: "FR", value: 150 },
+  { sourceId: "DE", targetId: "PL", value: 100 }
+]);
 ```
 
 ### Animating bullets along lines (positionOnLine)
@@ -1222,36 +1216,34 @@ Demonstrates: `MapSankeySeries` with `sourceId`/`targetId` data (country codes),
       });
     });
 
-    // Set data after polygonSeries loads (sourceId/targetId need centroid lookup)
-    // CRITICAL: data MUST be set inside datavalidated handler
-    polygonSeries.events.once("datavalidated", function() {
-      sankeySeries.data.setAll([
-        // Producers > Hubs
-        { sourceId: "BR", targetId: "DE", value: 350 },
-        { sourceId: "BR", targetId: "US", value: 450 },
-        { sourceId: "BR", targetId: "IT", value: 200 },
-        { sourceId: "VN", targetId: "DE", value: 200 },
-        { sourceId: "VN", targetId: "BE", value: 150 },
-        { sourceId: "CO", targetId: "US", value: 250 },
-        { sourceId: "CO", targetId: "DE", value: 80 },
-        { sourceId: "ET", targetId: "DE", value: 60 },
-        { sourceId: "ET", targetId: "BE", value: 40 },
-        { sourceId: "ID", targetId: "US", value: 80 },
-        { sourceId: "HN", targetId: "DE", value: 60 },
-        { sourceId: "HN", targetId: "BE", value: 40 },
-        // Hubs > Consumer Markets
-        { sourceId: "DE", targetId: "FR", value: 150 },
-        { sourceId: "DE", targetId: "PL", value: 100 },
-        { sourceId: "DE", targetId: "SE", value: 80 },
-        { sourceId: "DE", targetId: "RU", value: 120 },
-        { sourceId: "BE", targetId: "GB", value: 100 },
-        { sourceId: "BE", targetId: "NL", value: 80 },
-        { sourceId: "IT", targetId: "GR", value: 50 },
-        { sourceId: "IT", targetId: "AT", value: 40 },
-        { sourceId: "US", targetId: "CA", value: 120 },
-        { sourceId: "US", targetId: "JP", value: 80 }
-      ]);
-    });
+    // Set data directly — MapSankeySeries auto-resolves sourceId/targetId
+    // once polygonSeries finishes loading.
+    sankeySeries.data.setAll([
+      // Producers > Hubs
+      { sourceId: "BR", targetId: "DE", value: 350 },
+      { sourceId: "BR", targetId: "US", value: 450 },
+      { sourceId: "BR", targetId: "IT", value: 200 },
+      { sourceId: "VN", targetId: "DE", value: 200 },
+      { sourceId: "VN", targetId: "BE", value: 150 },
+      { sourceId: "CO", targetId: "US", value: 250 },
+      { sourceId: "CO", targetId: "DE", value: 80 },
+      { sourceId: "ET", targetId: "DE", value: 60 },
+      { sourceId: "ET", targetId: "BE", value: 40 },
+      { sourceId: "ID", targetId: "US", value: 80 },
+      { sourceId: "HN", targetId: "DE", value: 60 },
+      { sourceId: "HN", targetId: "BE", value: 40 },
+      // Hubs > Consumer Markets
+      { sourceId: "DE", targetId: "FR", value: 150 },
+      { sourceId: "DE", targetId: "PL", value: 100 },
+      { sourceId: "DE", targetId: "SE", value: 80 },
+      { sourceId: "DE", targetId: "RU", value: 120 },
+      { sourceId: "BE", targetId: "GB", value: 100 },
+      { sourceId: "BE", targetId: "NL", value: 80 },
+      { sourceId: "IT", targetId: "GR", value: 50 },
+      { sourceId: "IT", targetId: "AT", value: 40 },
+      { sourceId: "US", targetId: "CA", value: 120 },
+      { sourceId: "US", targetId: "JP", value: 80 }
+    ]);
 
     // Set country names on auto-created nodes and animate bullets
     var countryNames = {
@@ -1270,31 +1262,27 @@ Demonstrates: `MapSankeySeries` with `sourceId`/`targetId` data (country codes),
         }
       });
 
-      // Defer bullet animation — bullets are not yet instantiated
-      // when datavalidated fires inside polygonSeries handler
-      setTimeout(function() {
-        am5.array.each(sankeySeries.dataItems, function(dataItem) {
-          var bullets = dataItem.bullets;
-          if (bullets) {
-            am5.array.each(bullets, function(bullet) {
-              var randomDur = 3000 + Math.random() * 3000;
-              var delay = Math.random() * randomDur;
-              setTimeout(function() {
-                var sprite = bullet.get("sprite");
-                if (sprite) sprite.set("visible", true);
-                bullet.animate({
-                  key: "locationX",
-                  from: 0,
-                  to: 1,
-                  duration: randomDur,
-                  easing: am5.ease.linear,
-                  loops: Infinity
-                });
-              }, delay);
-            });
-          }
-        });
-      }, 100);
+      am5.array.each(sankeySeries.dataItems, function(dataItem) {
+        var bullets = dataItem.bullets;
+        if (bullets) {
+          am5.array.each(bullets, function(bullet) {
+            var randomDur = 3000 + Math.random() * 3000;
+            var delay = Math.random() * randomDur;
+            setTimeout(function() {
+              var sprite = bullet.get("sprite");
+              if (sprite) sprite.set("visible", true);
+              bullet.animate({
+                key: "locationX",
+                from: 0,
+                to: 1,
+                duration: randomDur,
+                easing: am5.ease.linear,
+                loops: Infinity
+              });
+            }, delay);
+          });
+        }
+      });
     });
 
     // Title
@@ -1606,7 +1594,6 @@ Demonstrates: `MapSankeySeries` with explicit `sourceLongitude`/`sourceLatitude`
     var wpPortugal    = { longitude: -10, latitude: 39 };
     var viaAtlantic   = [wpHormuz, wpAden, wpSuez, wpSicily, wpPortugal];
 
-    // No datavalidated wrapper needed — explicit coordinates resolve immediately
     sankeySeries.data.setAll([
       // Ras Tanura (Saudi Arabia)
       flow(rasTanura, "Ras Tanura", ningbo,    "Ningbo",    1100, viaChina),
