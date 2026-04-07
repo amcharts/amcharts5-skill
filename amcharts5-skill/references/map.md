@@ -1074,220 +1074,659 @@ Demonstrates: orthographic projection, single-segment lines for per-segment anim
 </html>
 ```
 
-## Example 5: Map Sankey — trade flows between countries
+## Example 5: Map Sankey — Global Coffee Supply Chain (sourceId/targetId)
 
-Demonstrates: `MapSankeySeries` with geographic flow bands, node circles, tooltips, and multi-level flows.
+Demonstrates: `MapSankeySeries` with `sourceId`/`targetId` data (country codes), multi-level flows (producers > hubs > consumers), custom theme, country highlighting, animated coffee bean bullets, Globe/Map projection toggle, and auto-rotation. Based on the `map-sankey` shared example.
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Map Sankey — Trade Flows</title>
+  <title>Map Sankey — Global Coffee Supply Chain</title>
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-  <style>#chartdiv { width: 100%; height: 600px; }</style>
+  <style>body { margin: 0; background: #f0e6d6; } #chartdiv { width: 100%; height: 600px; }</style>
 </head>
 <body>
   <div id="chartdiv"></div>
   <script>
     var root = am5.Root.new("chartdiv");
-    root.setThemes([am5themes_Animated.new(root)]);
+
+    // Coffee theme — warm earth tones
+    var coffeeTheme = am5.Theme.new(root);
+    coffeeTheme.rule("InterfaceColors").setAll({
+      primaryButton: am5.color(0x8b5e3c),
+      primaryButtonHover: am5.color(0x5c3a1e),
+      primaryButtonDown: am5.color(0x3c1e0e),
+      primaryButtonActive: am5.color(0xc4956a),
+      primaryButtonText: am5.color(0xf5ece0),
+      secondaryButton: am5.color(0xe8d5b7),
+      secondaryButtonHover: am5.color(0xd4c4a8),
+      secondaryButtonDown: am5.color(0xc4956a),
+      secondaryButtonText: am5.color(0x3c1e0e),
+      background: am5.color(0xe8d5b7),
+      text: am5.color(0x3c1e0e)
+    });
+    root.setThemes([am5themes_Animated.new(root), coffeeTheme]);
+
+    // Grainy paper background
+    root.container.set("background", am5.Rectangle.new(root, {
+      fill: am5.color(0xf0e6d6),
+      fillPattern: am5.GrainPattern.new(root, {
+        density: 0.4,
+        maxOpacity: 0.07,
+        colors: [am5.color(0x000000)]
+      })
+    }));
+
+    // Coffee palette
+    var espresso = am5.color(0x3c1e0e);
+    var darkRoast = am5.color(0x5c3a1e);
+    var mediumRoast = am5.color(0x8b5e3c);
+    var lightRoast = am5.color(0xc4956a);
+    var crema = am5.color(0xe8d5b7);
+    var cream = am5.color(0xf5ece0);
 
     var chart = root.container.children.push(am5map.MapChart.new(root, {
       panX: "rotateX",
-      panY: "translateY",
-      projection: am5map.geoNaturalEarth1()
+      panY: "rotateY",
+      projection: am5map.geoOrthographic(),
+      rotationX: -15,
+      rotationY: -20,
+      minZoomLevel: 0.5,
+      zoomLevel: 0.9
     }));
 
-    // Background countries
+    // Ocean / globe background
+    var bgSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {}));
+    bgSeries.mapPolygons.template.setAll({
+      fill: am5.color(0xede4d4), fillOpacity: 1, strokeOpacity: 0
+    });
+    bgSeries.data.push({ geometry: am5map.getGeoRectangle(90, 180, -90, -180) });
+
+    // Graticule
+    var graticuleSeries = chart.series.push(am5map.GraticuleSeries.new(root, {}));
+    graticuleSeries.mapLines.template.setAll({
+      stroke: mediumRoast, strokeOpacity: 0.15, strokeWidth: 0.5
+    });
+
+    // Countries
     var polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
       geoJSON: am5geodata_worldLow
     }));
     polygonSeries.mapPolygons.template.setAll({
-      fill: am5.color(0xdddddd),
-      stroke: am5.color(0xffffff),
-      strokeWidth: 0.5
+      fill: cream, stroke: lightRoast, strokeWidth: 0.5, strokeOpacity: 0.5
     });
 
-    // Sankey flow series
+    // Highlight producer, hub, and consumer countries
+    var producerIds = ["BR", "VN", "CO", "ET", "ID", "HN"];
+    var hubIds = ["DE", "BE", "IT", "US"];
+    var consumerIds = ["FR", "PL", "SE", "RU", "GB", "NL", "GR", "AT", "CA", "JP"];
+
+    polygonSeries.events.on("datavalidated", function() {
+      am5.array.each(polygonSeries.dataItems, function(di) {
+        var id = di.get("id");
+        if (id && producerIds.indexOf(id) !== -1) {
+          di.get("mapPolygon").setAll({ fill: am5.color(0x8fae7e) });
+        } else if (id && hubIds.indexOf(id) !== -1) {
+          di.get("mapPolygon").setAll({ fill: am5.color(0xc4a878) });
+        } else if (id && consumerIds.indexOf(id) !== -1) {
+          di.get("mapPolygon").setAll({ fill: am5.color(0xddc8a0) });
+        }
+      });
+    });
+
+    // MapSankeySeries — coffee supply chain
     var sankeySeries = chart.series.push(am5map.MapSankeySeries.new(root, {
       polygonSeries: polygonSeries,
-      maxWidth: 4,
+      maxWidth: 2,
       controlPointDistance: 0.4,
-      autoSort: true
+      resolution: 60,
+      nodePadding: 0.3
     }));
 
-    // Band appearance
     sankeySeries.mapPolygons.template.setAll({
-      fill: am5.color(0xff6b35),
-      fillOpacity: 0.5,
+      fill: mediumRoast,
+      fillOpacity: 0.65,
       strokeOpacity: 0,
-      tooltipText: "{sourceId} > {targetId}: {value}B"
+      tooltipText: "{sourceNode.name} > {targetNode.name}\n{value}k tonnes"
     });
 
-    // Node appearance
     sankeySeries.nodes.mapPolygons.template.setAll({
-      fill: am5.color(0x8b5e3c),
-      fillOpacity: 0.9,
-      stroke: am5.color(0xffffff),
-      strokeWidth: 1.5
+      fill: espresso,
+      stroke: crema,
+      strokeWidth: 1.5,
+      fillOpacity: 0.95,
+      strokeOpacity: 1,
+      tooltipText: "{name}\n{sum}k tonnes"
     });
 
-    // Set data AFTER polygonSeries parses geoJSON (required for sourceId/targetId)
+    // Animated coffee bean bullets
+    sankeySeries.bullets.push(function() {
+      return am5.Bullet.new(root, {
+        locationX: 0,
+        autoRotate: true,
+        sprite: am5.Graphics.new(root, {
+          svgPath: "M-4,-2.5 C-4,-5 -1.5,-6.5 1,-6.5 C3.5,-6.5 5,-4.5 5,-2 C5,1 3,3.5 0.5,5 C-0.5,5.7 -1.5,5.7 -2.5,5 C-5,3.5 -6,1 -4,-2.5 Z M-1,-5 C-1,-1 -1,2 -0.5,4.5",
+          fill: espresso,
+          stroke: darkRoast,
+          strokeWidth: 0.5,
+          centerX: am5.p50,
+          centerY: am5.p50,
+          scale: 0.35,
+          visible: false
+        })
+      });
+    });
+
+    // Set data after polygonSeries loads (sourceId/targetId need centroid lookup)
+    // CRITICAL: data MUST be set inside datavalidated handler
     polygonSeries.events.once("datavalidated", function() {
       sankeySeries.data.setAll([
-        // Producers > Trade hubs
+        // Producers > Hubs
         { sourceId: "BR", targetId: "DE", value: 350 },
         { sourceId: "BR", targetId: "US", value: 450 },
-        { sourceId: "CN", targetId: "DE", value: 500 },
-        { sourceId: "CN", targetId: "US", value: 600 },
-        { sourceId: "AU", targetId: "JP", value: 200 },
-        { sourceId: "AU", targetId: "CN", value: 300 },
-        // Hubs > Consumers
-        { sourceId: "DE", targetId: "FR", value: 250 },
-        { sourceId: "DE", targetId: "GB", value: 300 },
-        { sourceId: "US", targetId: "CA", value: 400 },
-        { sourceId: "JP", targetId: "KR", value: 100 }
+        { sourceId: "BR", targetId: "IT", value: 200 },
+        { sourceId: "VN", targetId: "DE", value: 200 },
+        { sourceId: "VN", targetId: "BE", value: 150 },
+        { sourceId: "CO", targetId: "US", value: 250 },
+        { sourceId: "CO", targetId: "DE", value: 80 },
+        { sourceId: "ET", targetId: "DE", value: 60 },
+        { sourceId: "ET", targetId: "BE", value: 40 },
+        { sourceId: "ID", targetId: "US", value: 80 },
+        { sourceId: "HN", targetId: "DE", value: 60 },
+        { sourceId: "HN", targetId: "BE", value: 40 },
+        // Hubs > Consumer Markets
+        { sourceId: "DE", targetId: "FR", value: 150 },
+        { sourceId: "DE", targetId: "PL", value: 100 },
+        { sourceId: "DE", targetId: "SE", value: 80 },
+        { sourceId: "DE", targetId: "RU", value: 120 },
+        { sourceId: "BE", targetId: "GB", value: 100 },
+        { sourceId: "BE", targetId: "NL", value: 80 },
+        { sourceId: "IT", targetId: "GR", value: 50 },
+        { sourceId: "IT", targetId: "AT", value: 40 },
+        { sourceId: "US", targetId: "CA", value: 120 },
+        { sourceId: "US", targetId: "JP", value: 80 }
       ]);
     });
 
-    chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
+    // Set country names on auto-created nodes and animate bullets
+    var countryNames = {
+      BR: "Brazil", VN: "Vietnam", CO: "Colombia", ET: "Ethiopia",
+      ID: "Indonesia", HN: "Honduras", DE: "Germany", BE: "Belgium",
+      IT: "Italy", US: "United States", FR: "France", PL: "Poland",
+      SE: "Sweden", RU: "Russia", GB: "United Kingdom", NL: "Netherlands",
+      GR: "Greece", AT: "Austria", CA: "Canada", JP: "Japan"
+    };
+
+    sankeySeries.events.on("datavalidated", function() {
+      am5.array.each(sankeySeries.nodes.dataItems, function(di) {
+        var id = di.get("id");
+        if (id && countryNames[id]) {
+          di.set("name", countryNames[id]);
+        }
+      });
+
+      // Defer bullet animation — bullets are not yet instantiated
+      // when datavalidated fires inside polygonSeries handler
+      setTimeout(function() {
+        am5.array.each(sankeySeries.dataItems, function(dataItem) {
+          var bullets = dataItem.bullets;
+          if (bullets) {
+            am5.array.each(bullets, function(bullet) {
+              var randomDur = 3000 + Math.random() * 3000;
+              var delay = Math.random() * randomDur;
+              setTimeout(function() {
+                var sprite = bullet.get("sprite");
+                if (sprite) sprite.set("visible", true);
+                bullet.animate({
+                  key: "locationX",
+                  from: 0,
+                  to: 1,
+                  duration: randomDur,
+                  easing: am5.ease.linear,
+                  loops: Infinity
+                });
+              }, delay);
+            });
+          }
+        });
+      }, 100);
+    });
+
+    // Title
+    var titleCont = chart.children.push(am5.Container.new(root, {
+      layout: root.verticalLayout,
+      x: am5.p50, centerX: am5.p50,
+      y: am5.p100, centerY: am5.p100,
+      position: "absolute", paddingBottom: 16
+    }));
+    titleCont.children.push(am5.Label.new(root, {
+      text: "Global Coffee Supply Chain",
+      fontSize: 18, fontWeight: "600", fill: espresso,
+      x: am5.p50, centerX: am5.p50
+    }));
+    titleCont.children.push(am5.Label.new(root, {
+      text: "(Thousands of tonnes)",
+      fontSize: 11, fill: mediumRoast,
+      x: am5.p50, centerX: am5.p50
+    }));
+
+    // Globe / Map toggle
+    var switchCont = chart.children.push(am5.Container.new(root, {
+      layout: root.horizontalLayout, x: 20, y: 40
+    }));
+    switchCont.children.push(am5.Label.new(root, {
+      centerY: am5.p50, text: "Globe", fill: espresso, fontSize: 13
+    }));
+    var switchButton = switchCont.children.push(am5.Button.new(root, {
+      themeTags: ["switch"], centerY: am5.p50,
+      icon: am5.Circle.new(root, { themeTags: ["icon"] })
+    }));
+
+    var easing = am5.ease.inOut(am5.ease.cubic);
+    var duration = 1500;
+    var fadeDuration = 300;
+
+    function zoomToGlobe() {
+      chart.set("projection", am5map.geoOrthographic());
+      chart.set("panX", "rotateX");
+      chart.set("panY", "rotateY");
+      chart.animate({ key: "rotationX", to: -15, duration: duration, easing: easing });
+      chart.animate({ key: "rotationY", to: -20, duration: duration, easing: easing });
+      bgSeries.mapPolygons.template.set("fillOpacity", 1);
+      chart.set("minZoomLevel", 0.9);
+      chart.animate({ key: "zoomLevel", to: 0.9, duration: duration, easing: easing });
+    }
+
+    function zoomToMap() {
+      chart.set("projection", am5map.geoMercator());
+      chart.set("panX", "translateX");
+      chart.set("panY", "translateY");
+      chart.animate({ key: "rotationX", to: 0, duration: duration, easing: easing });
+      chart.animate({ key: "rotationY", to: 0, duration: duration, easing: easing });
+      bgSeries.mapPolygons.template.set("fillOpacity", 0);
+      chart.set("minZoomLevel", 1);
+      chart.animate({ key: "zoomLevel", to: 1.7, duration: duration, easing: easing });
+    }
+
+    switchButton.on("active", function() {
+      chart.goHome(duration);
+      setTimeout(function() {
+        chart.seriesContainer.animate({ key: "opacity", to: 0, duration: fadeDuration });
+      }, duration - fadeDuration);
+      setTimeout(function() {
+        if (switchButton.get("active")) { zoomToMap(); } else { zoomToGlobe(); }
+        chart.seriesContainer.animate({ key: "opacity", to: 1, duration: fadeDuration });
+      }, duration);
+    });
+
+    switchCont.children.push(am5.Label.new(root, {
+      centerY: am5.p50, text: "Map", fill: espresso, fontSize: 13
+    }));
+
+    // Zoom controls
+    var zoomControl = chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
+    zoomControl.homeButton.set("visible", true);
+
+    // Auto-rotate globe until user interaction
+    var rotationAnimation = chart.animate({
+      key: "rotationX", from: -15, to: -15 + 360,
+      duration: 120000, loops: Infinity, easing: am5.ease.linear
+    });
+    chart.chartContainer.events.on("pointerdown", function() {
+      if (rotationAnimation) { rotationAnimation.stop(); rotationAnimation = null; }
+    });
+
     chart.appear(1000, 100);
   </script>
 </body>
 </html>
 ```
 
-## Example 6: Map Sankey — explicit coordinates with waypoints
+## Example 6: Map Sankey — Oil Export Flows with Waypoints (explicit coordinates)
 
-Demonstrates: `MapSankeySeries` with explicit `sourceLongitude`/`sourceLatitude` coordinates, waypoints for routing, and animated bullets. No `datavalidated` timing needed when using explicit coordinates.
+Demonstrates: `MapSankeySeries` with explicit `sourceLongitude`/`sourceLatitude` coordinates, maritime waypoints for realistic shipping routes, oil drop SVG bullets with proportional animation speed, dark theme, country highlighting, and Globe/Map projection toggle. Based on the `map-sankey-waypoints` shared example.
+
+**IMPORTANT — waypoints must use `longitude`/`latitude` keys** (not shorthand like `lon`/`lat`). Source/target location objects can use any keys because the `flow()` helper maps them to `sourceLongitude`/`sourceLatitude`, but waypoints are read directly by the series via `wp.longitude` and `wp.latitude`.
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Map Sankey — Oil Flows</title>
+  <title>Map Sankey — Oil Export Flows</title>
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
-  <style>body { background: #1a2a3a; margin: 0; } #chartdiv { width: 100%; height: 600px; }</style>
+  <style>body { margin: 0; background: #0a0e12; } #chartdiv { width: 100%; height: 600px; }</style>
 </head>
 <body>
   <div id="chartdiv"></div>
   <script>
     var root = am5.Root.new("chartdiv");
-    root.setThemes([am5themes_Animated.new(root)]);
+
+    // Oil/dark theme
+    var oilTheme = am5.Theme.new(root);
+    oilTheme.rule("InterfaceColors").setAll({
+      primaryButton: am5.color(0x1e2824),
+      primaryButtonHover: am5.color(0x3a5040),
+      primaryButtonDown: am5.color(0x0a0e12),
+      primaryButtonActive: am5.color(0xc8890a),
+      primaryButtonText: am5.color(0xf5d090),
+      secondaryButton: am5.color(0x1e2824),
+      secondaryButtonHover: am5.color(0x3a5040),
+      secondaryButtonDown: am5.color(0x141a1a),
+      secondaryButtonText: am5.color(0xf5d090),
+      background: am5.color(0x0a0e12),
+      text: am5.color(0xf5d090)
+    });
+    root.setThemes([am5themes_Animated.new(root), oilTheme]);
+
+    // Palette
+    var deepCrude = am5.color(0x141a1a);
+    var slick = am5.color(0x1e2824);
+    var pipeline = am5.color(0x3a5040);
+    var amber = am5.color(0xc8890a);
+    var sulfur = am5.color(0xa89050);
+    var flare = am5.color(0xf5d090);
 
     var chart = root.container.children.push(am5map.MapChart.new(root, {
       panX: "rotateX",
       panY: "rotateY",
       projection: am5map.geoOrthographic(),
-      rotationX: -54,
-      rotationY: -25
+      homeGeoPoint: { longitude: 0, latitude: 0 },
+      homeRotationX: 0,
+      homeRotationY: 0,
+      homeZoomLevel: 1,
+      minZoomLevel: 0.8,
+      zoomLevel: 1
     }));
 
+    // Ocean
     var bgSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {}));
-    bgSeries.mapPolygons.template.setAll({ fill: am5.color(0x111d2d), fillOpacity: 1, strokeOpacity: 0 });
+    bgSeries.mapPolygons.template.setAll({
+      fill: deepCrude, fillOpacity: 1, strokeOpacity: 0
+    });
     bgSeries.data.push({ geometry: am5map.getGeoRectangle(90, 180, -90, -180) });
 
+    // Graticule
+    var graticuleSeries = chart.series.push(am5map.GraticuleSeries.new(root, {}));
+    graticuleSeries.mapLines.template.setAll({
+      stroke: pipeline, strokeOpacity: 0.25, strokeWidth: 0.5
+    });
+
+    // Countries
     var polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
       geoJSON: am5geodata_worldLow
     }));
     polygonSeries.mapPolygons.template.setAll({
-      fill: am5.color(0x2c4a6a),
-      stroke: am5.color(0x1a2a3a),
-      strokeWidth: 0.5
+      fill: slick, stroke: pipeline, strokeWidth: 0.5, strokeOpacity: 0.6
     });
 
+    // Highlight producer & importer countries
+    var producerIds = ["SA", "IQ", "AE", "KW", "IR", "QA"];
+    var importerIds = ["CN", "JP", "KR", "IN", "SG", "IT", "GR", "NL"];
+    polygonSeries.events.on("datavalidated", function() {
+      am5.array.each(polygonSeries.dataItems, function(di) {
+        var id = di.get("id");
+        if (producerIds.indexOf(id) !== -1) {
+          di.get("mapPolygon").setAll({ fill: am5.color(0x6b5a10), tooltipText: "{name}" });
+        } else if (importerIds.indexOf(id) !== -1) {
+          di.get("mapPolygon").setAll({ fill: am5.color(0x2a4030), tooltipText: "{name}" });
+        }
+      });
+    });
+
+    // MapSankeySeries
     var sankeySeries = chart.series.push(am5map.MapSankeySeries.new(root, {
       polygonSeries: polygonSeries,
-      maxWidth: 3,
-      controlPointDistance: 0.3,
-      resolution: 60
+      maxWidth: 0.8,
+      controlPointDistance: 0.4,
+      resolution: 60,
+      nodePadding: 0.1
     }));
 
     sankeySeries.mapPolygons.template.setAll({
-      fill: am5.color(0xd4a017),
-      fillOpacity: 0.6,
-      strokeOpacity: 0,
-      tooltipText: "{source} > {target}: {value}M barrels/day"
+      fill: amber, fillOpacity: 0.4, strokeOpacity: 0,
+      tooltipText: "{source} > {target}\n{value}k bbl/day"
     });
 
     sankeySeries.nodes.mapPolygons.template.setAll({
-      fill: am5.color(0xd4a017),
-      stroke: am5.color(0xf0e6d0),
-      strokeWidth: 1.5,
-      fillOpacity: 0.9,
-      tooltipText: "{name}"
+      fill: amber, stroke: flare, strokeWidth: 1.5,
+      fillOpacity: 0.95, strokeOpacity: 1, tooltipText: "{name}"
     });
 
-    // Helper for explicit-coordinate data with optional waypoints
-    function flow(src, srcName, tgt, tgtName, val, wp) {
-      var result = {
-        sourceLongitude: src.lon, sourceLatitude: src.lat,
-        targetLongitude: tgt.lon, targetLatitude: tgt.lat,
-        source: srcName, target: tgtName, value: val
-      };
-      if (wp) result.waypoints = wp;
-      return result;
-    }
-
-    var saudiPort  = { lon: 50.2, lat: 26.6 };
-    var hormuz     = { lon: 56.3, lat: 26.6 };
-    var india      = { lon: 72.8, lat: 19.1 };
-    var china      = { lon: 121.5, lat: 31.2 };
-    var japan      = { lon: 139.7, lat: 35.7 };
-    var europe     = { lon: 9.5, lat: 44.4 };
-    var suez       = { lon: 32.3, lat: 30.0 };
-
-    // No datavalidated wrapper needed — explicit coordinates resolve immediately
-    sankeySeries.data.setAll([
-      flow(saudiPort, "Saudi Arabia", china, "China", 1.8,
-        [hormuz, { lon: 65, lat: 20 }, { lon: 80, lat: 15 }, { lon: 105, lat: 20 }]),
-      flow(saudiPort, "Saudi Arabia", japan, "Japan", 1.2,
-        [hormuz, { lon: 70, lat: 22 }, { lon: 100, lat: 18 }, { lon: 125, lat: 28 }]),
-      flow(saudiPort, "Saudi Arabia", india, "India", 0.9,
-        [hormuz, { lon: 62, lat: 22 }]),
-      flow(saudiPort, "Saudi Arabia", europe, "Europe", 1.0,
-        [{ lon: 43, lat: 28 }, suez, { lon: 20, lat: 36 }])
-    ]);
-
-    // Animated bullets along flow paths
+    // Animated oil drop bullets
     sankeySeries.bullets.push(function() {
       return am5.Bullet.new(root, {
         locationX: 0,
         autoRotate: true,
-        sprite: am5.Circle.new(root, {
-          radius: 2,
-          fill: am5.color(0xd4a017)
+        autoRotateAngle: -90,
+        sprite: am5.Graphics.new(root, {
+          svgPath: "M0,-7 C2,-4 5,0 5,3 C5,6 3,8 0,8 C-3,8 -5,6 -5,3 C-5,0 -2,-4 0,-7 Z",
+          fill: amber, stroke: am5.color(0x8b6914), strokeWidth: 0.5,
+          centerX: am5.p50, centerY: am5.p50, scale: 0.45, visible: false
         })
       });
     });
 
     sankeySeries.events.on("datavalidated", function() {
+      // Scale animation duration proportionally to path length
+      var maxLength = 0;
       am5.array.each(sankeySeries.dataItems, function(dataItem) {
+        var len = sankeySeries.getPathLength(dataItem);
+        if (len > maxLength) maxLength = len;
+      });
+
+      var baseDuration = 8000;
+      var minDuration = 2000;
+
+      am5.array.each(sankeySeries.dataItems, function(dataItem) {
+        var pathLength = sankeySeries.getPathLength(dataItem) || maxLength;
+        var dur = maxLength > 0
+          ? Math.max(minDuration, (pathLength / maxLength) * baseDuration)
+          : baseDuration;
         var bullets = dataItem.bullets;
         if (bullets) {
           am5.array.each(bullets, function(bullet) {
-            bullet.animate({
-              key: "locationX",
-              from: 0, to: 1,
-              duration: 3000 + Math.random() * 3000,
-              easing: am5.ease.linear,
-              loops: Infinity
-            });
+            var randomDur = dur * (0.8 + Math.random() * 0.4);
+            var delay = Math.random() * randomDur;
+            setTimeout(function() {
+              var sprite = bullet.get("sprite");
+              if (sprite) sprite.set("visible", true);
+              bullet.animate({
+                key: "locationX", from: 0, to: 1,
+                duration: randomDur, easing: am5.ease.linear, loops: Infinity
+              });
+            }, delay);
           });
         }
       });
     });
 
-    chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
+    // Gulf export terminals (source/target objects can use any key names
+    // because the flow() helper maps them to sourceLongitude/sourceLatitude)
+    var rasTanura   = { lon: 50.17, lat: 26.64 };
+    var basra       = { lon: 48.80, lat: 29.69 };
+    var fujairah    = { lon: 56.33, lat: 25.12 };
+    var minaAhmadi  = { lon: 48.17, lat: 29.08 };
+    var khargIsland = { lon: 50.32, lat: 29.23 };
+    var rasLaffan   = { lon: 51.56, lat: 25.93 };
+
+    // Import terminals
+    var ningbo    = { lon: 121.97, lat: 29.87 };
+    var qingdao   = { lon: 120.38, lat: 36.07 };
+    var yokohama  = { lon: 139.64, lat: 35.44 };
+    var chiba     = { lon: 140.10, lat: 35.60 };
+    var ulsan     = { lon: 129.38, lat: 35.50 };
+    var jamnagar  = { lon: 69.66, lat: 22.42 };
+    var mumbai    = { lon: 72.88, lat: 19.08 };
+    var singapore = { lon: 103.84, lat: 1.26 };
+    var trieste   = { lon: 13.78, lat: 45.65 };
+    var piraeus   = { lon: 23.63, lat: 37.94 };
+    var rotterdam = { lon: 4.12, lat: 51.95 };
+
+    function flow(src, srcName, tgt, tgtName, value, wp) {
+      var result = {
+        sourceLongitude: src.lon, sourceLatitude: src.lat,
+        targetLongitude: tgt.lon, targetLatitude: tgt.lat,
+        source: srcName, target: tgtName, value: value
+      };
+      if (wp) result.waypoints = wp;
+      return result;
+    }
+
+    // IMPORTANT: waypoints must use { longitude: ..., latitude: ... }
+    // (NOT shorthand like { lon, lat }) — the series reads wp.longitude / wp.latitude directly
+    var wpHormuz     = { longitude: 58,  latitude: 24 };
+    var wpArabianSea = { longitude: 64,  latitude: 18 };
+    var wpSouthIndia = { longitude: 78,  latitude: 6 };
+    var wpMalacca    = { longitude: 101, latitude: 3 };
+    var wpAden       = { longitude: 47,  latitude: 12 };
+    var wpSuez       = { longitude: 34,  latitude: 29 };
+
+    // Route templates
+    var viaJapan      = [{ longitude: 58, latitude: 26 }, { longitude: 80, latitude: 9 },  { longitude: 104, latitude: 7 }];
+    var viaKorea      = [{ longitude: 58, latitude: 24 }, { longitude: 78, latitude: 6 },  { longitude: 101, latitude: 3 }];
+    var viaChina      = [{ longitude: 58, latitude: 22 }, { longitude: 76, latitude: 3 },  { longitude: 99, latitude: 1 }];
+    var viaChinaNorth = [{ longitude: 58, latitude: 22 }, { longitude: 76, latitude: 3 },  { longitude: 99, latitude: 1 }, { longitude: 124, latitude: 32 }];
+    var viaIndiaNear  = [wpHormuz];
+    var viaIndiaFar   = [wpHormuz, wpArabianSea];
+    var viaSingapore  = [wpHormuz, wpSouthIndia];
+    var viaSuez       = [wpHormuz, wpAden, wpSuez];
+    var wpSouthGreece = { longitude: 22, latitude: 35 };
+    var wpOtranto     = { longitude: 18.5, latitude: 40 };
+    var viaSuezItaly  = [wpHormuz, wpAden, wpSuez, wpSouthGreece, wpOtranto];
+    var wpSicily      = { longitude: 13, latitude: 37 };
+    var wpPortugal    = { longitude: -10, latitude: 39 };
+    var viaAtlantic   = [wpHormuz, wpAden, wpSuez, wpSicily, wpPortugal];
+
+    // No datavalidated wrapper needed — explicit coordinates resolve immediately
+    sankeySeries.data.setAll([
+      // Ras Tanura (Saudi Arabia)
+      flow(rasTanura, "Ras Tanura", ningbo,    "Ningbo",    1100, viaChina),
+      flow(rasTanura, "Ras Tanura", qingdao,   "Qingdao",    600, viaChinaNorth),
+      flow(rasTanura, "Ras Tanura", yokohama,  "Yokohama",   700, viaJapan),
+      flow(rasTanura, "Ras Tanura", chiba,     "Chiba",      300, viaJapan),
+      flow(rasTanura, "Ras Tanura", ulsan,     "Ulsan",      800, viaKorea),
+      flow(rasTanura, "Ras Tanura", jamnagar,  "Jamnagar",   500, viaIndiaNear),
+      flow(rasTanura, "Ras Tanura", mumbai,    "Mumbai",     300, viaIndiaFar),
+      flow(rasTanura, "Ras Tanura", rotterdam, "Rotterdam",  350, viaAtlantic),
+      // Basra Oil Terminal (Iraq)
+      flow(basra, "Basra", ningbo,   "Ningbo",    700, viaChina),
+      flow(basra, "Basra", qingdao,  "Qingdao",   400, viaChinaNorth),
+      flow(basra, "Basra", jamnagar, "Jamnagar",  600, viaIndiaNear),
+      flow(basra, "Basra", mumbai,   "Mumbai",    400, viaIndiaFar),
+      flow(basra, "Basra", ulsan,    "Ulsan",     400, viaKorea),
+      flow(basra, "Basra", trieste,  "Trieste",   350, viaSuezItaly),
+      flow(basra, "Basra", piraeus,  "Piraeus",   250, viaSuez),
+      // Fujairah (UAE) — already outside Hormuz
+      flow(fujairah, "Fujairah", yokohama,  "Yokohama",   400, viaJapan.slice(1)),
+      flow(fujairah, "Fujairah", chiba,     "Chiba",      200, viaJapan.slice(1)),
+      flow(fujairah, "Fujairah", jamnagar,  "Jamnagar",   300),
+      flow(fujairah, "Fujairah", mumbai,    "Mumbai",     200, [wpArabianSea]),
+      flow(fujairah, "Fujairah", ningbo,    "Ningbo",     250, viaChina.slice(1)),
+      flow(fujairah, "Fujairah", ulsan,     "Ulsan",      350, viaKorea.slice(1)),
+      flow(fujairah, "Fujairah", singapore, "Singapore",  250, [wpSouthIndia]),
+      // Mina Al Ahmadi (Kuwait)
+      flow(minaAhmadi, "Mina Al Ahmadi", ulsan,    "Ulsan",    400, viaKorea),
+      flow(minaAhmadi, "Mina Al Ahmadi", yokohama, "Yokohama", 300, viaJapan),
+      flow(minaAhmadi, "Mina Al Ahmadi", ningbo,   "Ningbo",   300, viaChina),
+      flow(minaAhmadi, "Mina Al Ahmadi", jamnagar, "Jamnagar", 200, viaIndiaNear),
+      // Kharg Island (Iran)
+      flow(khargIsland, "Kharg Island", ningbo,   "Ningbo",   400, viaChina),
+      flow(khargIsland, "Kharg Island", qingdao,  "Qingdao",  200, viaChinaNorth),
+      flow(khargIsland, "Kharg Island", jamnagar, "Jamnagar", 200, viaIndiaNear),
+      flow(khargIsland, "Kharg Island", piraeus,  "Piraeus",  100, viaSuez),
+      // Ras Laffan (Qatar)
+      flow(rasLaffan, "Ras Laffan", yokohama, "Yokohama",  300, viaJapan),
+      flow(rasLaffan, "Ras Laffan", ulsan,    "Ulsan",     200, viaKorea),
+      flow(rasLaffan, "Ras Laffan", jamnagar, "Jamnagar",  150, viaIndiaNear),
+      flow(rasLaffan, "Ras Laffan", singapore,"Singapore",  120, viaSingapore)
+    ]);
+
+    // Title
+    var titleCont = chart.children.push(am5.Container.new(root, {
+      layout: root.verticalLayout,
+      x: am5.p50, centerX: am5.p50, y: 0,
+      position: "absolute", paddingTop: 16
+    }));
+    titleCont.children.push(am5.Label.new(root, {
+      text: "Strait of Hormuz — Oil Export Flows",
+      fontSize: 18, fontWeight: "600", fill: amber,
+      x: am5.p50, centerX: am5.p50
+    }));
+    titleCont.children.push(am5.Label.new(root, {
+      text: "Gulf Producers > Major Importers  (thousands of barrels/day)",
+      fontSize: 11, fill: sulfur,
+      x: am5.p50, centerX: am5.p50
+    }));
+
+    // Globe / Map toggle
+    var switchCont = chart.children.push(am5.Container.new(root, {
+      layout: root.horizontalLayout, x: 20, y: 40
+    }));
+    switchCont.children.push(am5.Label.new(root, {
+      centerY: am5.p50, text: "Globe", fill: flare, fontSize: 13
+    }));
+    var switchButton = switchCont.children.push(am5.Button.new(root, {
+      themeTags: ["switch"], centerY: am5.p50,
+      icon: am5.Circle.new(root, { themeTags: ["icon"] })
+    }));
+
+    var easing = am5.ease.inOut(am5.ease.cubic);
+    var duration = 1500;
+    var fadeDuration = 300;
+
+    function zoomToGlobe() {
+      chart.set("projection", am5map.geoOrthographic());
+      chart.set("panX", "rotateX");
+      chart.set("panY", "rotateY");
+      chart.animate({ key: "rotationX", to: -74, duration: duration, easing: easing });
+      chart.animate({ key: "rotationY", to: -30, duration: duration, easing: easing });
+      chart.animate({ key: "zoomLevel", to: 1.6, duration: duration, easing: easing });
+      bgSeries.mapPolygons.template.set("fillOpacity", 1);
+    }
+
+    function zoomToMap() {
+      chart.set("projection", am5map.geoMercator());
+      chart.set("panX", "translateX");
+      chart.set("panY", "translateY");
+      chart.animate({ key: "rotationY", to: 0, duration: duration, easing: easing });
+      setTimeout(function() {
+        chart.zoomToGeoPoint({ longitude: 67, latitude: 32 }, 3.5, true, duration);
+      }, 100);
+      bgSeries.mapPolygons.template.set("fillOpacity", 0);
+    }
+
+    switchButton.on("active", function() {
+      chart.goHome(duration);
+      setTimeout(function() {
+        chart.seriesContainer.animate({ key: "opacity", to: 0, duration: fadeDuration });
+      }, duration - fadeDuration);
+      setTimeout(function() {
+        if (switchButton.get("active")) { zoomToMap(); } else { zoomToGlobe(); }
+        chart.seriesContainer.animate({ key: "opacity", to: 1, duration: fadeDuration });
+      }, duration);
+    });
+
+    switchCont.children.push(am5.Label.new(root, {
+      centerY: am5.p50, text: "Map", fill: flare, fontSize: 13
+    }));
+
+    // Zoom controls
+    var zoomControl = chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
+    zoomControl.homeButton.set("visible", true);
+
     chart.appear(1000, 100);
+
+    // Initial animation: rotate to globe position
+    setTimeout(function() { zoomToGlobe(); }, 1000);
   </script>
 </body>
 </html>
