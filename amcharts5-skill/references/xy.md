@@ -81,6 +81,8 @@ The field name combines the **value type** + **axis direction**:
 - Date axis on X → `valueXField: "date"` (dates are numeric timestamps)
 - Open/high/low/close → `openValueYField`, `highValueYField`, `lowValueYField`, `valueYField`
 
+**There is NO `dateXField` in v5** (a common wrong guess carried over from v4). A `DateAxis` series reads its date from `valueXField`, pointing at a numeric timestamp (`new Date(...).getTime()`).
+
 ## Common additions
 
 ### Cursor
@@ -109,7 +111,11 @@ legend.data.setAll(chart.series.values);
 series.set("tooltip", am5.Tooltip.new(root, {
   labelText: "{name}: {valueY}"
 }));
+
+// For column/bar series the tooltip text often lives on the columns template instead:
+series.columns.template.set("tooltipText", "{categoryX}: {valueY}");
 ```
+A tooltip enabled with no `labelText`/`tooltipText` shows an empty bubble — always give it text. See SKILL.md → Tooltip for background/text styling.
 
 ### Stacking
 ```js
@@ -251,6 +257,11 @@ renderer.labels.template.setAll({
   centerY: am5.percent(50),
   centerX: am5.percent(100)
 });
+```
+
+**Axis sub-element defaults:** grid and labels are visible by default; **ticks default to `visible:false`**. To show ticks you must raise `visible` (and give them a non-zero `strokeOpacity`) — toggling `forceHidden` won't reveal them:
+```js
+renderer.ticks.template.setAll({ visible: true, strokeOpacity: 0.5, length: 5 });
 ```
 
 ## LineSeries

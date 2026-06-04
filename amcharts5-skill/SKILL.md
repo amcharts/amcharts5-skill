@@ -164,6 +164,34 @@ series.set("tooltip", am5.Tooltip.new(root, {
 
 **Inline formatting:** `"[bold]{name}[/]: [fontSize: 20px]{value}[/]"`
 
+**A tooltip with no text renders as an empty bubble.** Enabling a `am5.Tooltip` without `labelText` (or `series.tooltipText`) shows a blank tooltip. Series text lives on `tooltip.labelText` or `series.set("tooltipText", ...)`; for column/bar charts the text usually goes on `series.columns.template.set("tooltipText", "{categoryX}: {valueY}")`.
+
+### Styling a tooltip
+
+The tooltip background is a **`PointedRectangle`** (NOT a `RoundedRectangle`), so it has a single `cornerRadius` — there are no `cornerRadiusTL/TR/BL/BR`:
+
+```js
+const tooltip = am5.Tooltip.new(root, { labelText: "{valueY}" });
+
+// Background color + shape — must turn OFF getFillFromSprite, else bg copies the series color
+tooltip.set("getFillFromSprite", false);
+tooltip.get("background").setAll({
+  fill: am5.color(0x000000),
+  fillOpacity: 0.8,
+  stroke: am5.color(0xffffff),
+  strokeOpacity: 0.3,
+  cornerRadius: 6        // single radius — PointedRectangle, not four corners
+});
+
+// Text color — must turn OFF autoTextColor (it auto-picks for contrast), then set on the label
+tooltip.set("autoTextColor", false);
+tooltip.label.setAll({ fill: am5.color(0xffffff) });   // tooltip.label is read-only accessor
+
+series.set("tooltip", tooltip);
+```
+
+`getStrokeFromSprite` (default `false`) copies the sprite's stroke color when `true`.
+
 ## Chart title
 
 Do NOT add titles as HTML elements — they are outside the canvas and won't appear in exports. Add an `am5.Label` to the container BEFORE the chart, and set `verticalLayout`:
@@ -358,7 +386,14 @@ sprite.setAll({ fill: am5.color(0xff0000), strokeWidth: 2 });
 // Read current value
 const fill = sprite.get("fill");
 const width = sprite.getPrivate("width"); // read-only internal values
+
+// set() RETURNS the value — handy for capturing the created object inline:
+const cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
 ```
+
+**Reading back a `Percent`:** a `Percent` exposes two numbers — `.percent` is the 0–100 value, `.value` is the normalized 0–1 fraction. `am5.percent(50).percent === 50` but `am5.percent(50).value === 0.5`. When you read a percent setting back (e.g. `sprite.get("x")` after setting `am5.percent(50)`), use `.percent` for a 0–100 number; `.value` gives `0.5`.
+
+**Reading animated settings is unreliable mid-animation.** Right after `series.appear()` / `chart.appear()`, animated settings like `opacity` are still transitioning — `get("opacity")` can return `0` (the start value). Read such settings after the animation completes, or don't persist values read during appear (a common way to accidentally bake `opacity:0` into generated code).
 
 ## Dynamic data
 
@@ -639,7 +674,7 @@ onUnmounted(() => { root.dispose(); });
 26. **`VoronoiTreemap` has NO `.rectangles` property** — Unlike `Treemap` (which has `series.rectangles.template`), `VoronoiTreemap` renders organic polygon cells. Style via `series.nodes.template` and its children, not `.rectangles`.
 27. **Labels with data placeholders need `populateText: true`** — When a Label uses data field placeholders like `text: "{name}"`, you MUST also set `populateText: true`. Without it, the placeholder is not resolved and the label appears blank. This applies everywhere Labels display dynamic data — bullet labels, map point labels, etc. Example: `am5.Label.new(root, { text: "{name}", populateText: true, ... })`.
 28. **Easing: `am5.ease.in()` does NOT exist** — amCharts 5 provides base easing functions (`am5.ease.cubic`, `am5.ease.bounce`, `am5.ease.elastic`, `am5.ease.linear`, `am5.ease.quad`, `am5.ease.sine`, `am5.ease.circle`, `am5.ease.exp`, `am5.ease.pow`) and three modifiers: `am5.ease.out()`, `am5.ease.inOut()`, `am5.ease.yoyo()`. Usage: `am5.ease.cubic` (ease-in by default), `am5.ease.out(am5.ease.cubic)` (ease-out), `am5.ease.inOut(am5.ease.cubic)` (ease in+out). There is NO `am5.ease.in()` — using it throws a runtime error. The base functions already ease-in by default.
-29. **Use `forceHidden` instead of `visible: false` when you need to guarantee something stays hidden** — amCharts internally manages `visible` on many elements (cursor lines, labels, ticks, tooltips, grid, etc.), toggling them on/off in response to user interaction or data changes. If you set `visible: false`, the library may set it back to `true`. `forceHidden: true` overrides all system visibility changes and keeps the element hidden regardless. Examples: `cursor.lineX.set("forceHidden", true)`, `yRenderer.labels.template.set("forceHidden", true)`, `xRenderer.grid.template.set("forceHidden", true)`. For cursor lines specifically, always access `cursor.lineX`/`cursor.lineY` after creation — do NOT pass them as constructor options.
+29. **`forceHidden` vs `visible`** — `forceHidden: true` ALWAYS hides an element, immune to states, themes/library and even `show()`. `visible` is weaker: amCharts re-manages it on many elements (notably cursor lines, but also labels, ticks, tooltips, grid) in response to interaction or data changes, so a `visible: false` you set may be flipped back to `true`. Rules of thumb: for a **persistent hide**, use `forceHidden: true` (`cursor.lineX.set("forceHidden", true)`, `yRenderer.labels.template.set("forceHidden", true)`, `xRenderer.grid.template.set("forceHidden", true)`). To **reveal** an element that defaults hidden — notably **axis ticks** (`ticks.template` defaults to `visible:false`) — you must raise `visible: true`; flipping `forceHidden` alone won't show it. For cursor lines specifically, always access `cursor.lineX`/`cursor.lineY` after creation — do NOT pass them as constructor options.
 30. **`snapTooltip: true` on series for cursor tooltip snapping** — When using a cursor and you want tooltips to snap to data points, set `snapTooltip: true` on the series in addition to (or instead of) `snapToSeries` on the cursor. This is especially useful for timeline/curve charts.
 31. **Globe rotation uses negative coordinates** — To center the globe (`geoOrthographic`) on a geographic point, set `rotationX` to **-longitude** and `rotationY` to **-latitude**. E.g., to center on Paris (48.86°N, 2.35°E): `chart.animate({ key: "rotationX", to: -2.35 }); chart.animate({ key: "rotationY", to: -48.86 });`. Using positive values rotates the globe the wrong way.
 32. **`positionOnLine` with multi-segment lines limits per-segment control** — `MapPointSeries` data items can animate along a line via `positionOnLine` (0→1). If the line has 3+ points (multi-segment), position 0.5 is the midpoint of the *entire* path, making per-segment effects (scaling at each segment midpoint, pausing between segments, etc.) difficult. For advanced per-segment animations, use **single-segment lines** (2 points each) and animate the bullet across them sequentially. E.g., instead of one line [A,B,C,D], create [A,B], [B,C], [C,D].
