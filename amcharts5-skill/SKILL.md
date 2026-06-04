@@ -714,6 +714,32 @@ If you have the ability to run shell commands, validate your generated chart cod
 
 Skip this step entirely if you cannot execute code (e.g., chat-only context with no tool access).
 
+## Recent API changes (newer than the bundled class reference)
+
+The bundled per-class API reference was snapshotted on **2026-03-15**, so it predates the changes below. Prefer these names/settings; for anything newer, verify against the live docs (see next section).
+
+**Renamed settings (old name still works but is deprecated — use the new one):**
+
+| Class(es) | Old | New | Since |
+|-----------|-----|-----|-------|
+| `MovingAverage`, `MovingAverageDeviation`, `MovingAverageEnvelope`, `BollingerBands` | `type` | `maType` | 5.18.0 |
+| `VoronoiTreemap` | `type` | `shapeType` | 5.18.0 |
+
+```js
+// Moving-average indicators: use maType, not type
+am5stock.MovingAverage.new(root, { maType: "exponential", period: 20 });
+am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
+```
+
+**New settings / methods worth knowing:**
+- `Tree`: `fitNodes` (5.18.0, exclude hidden nodes from layout), `nodeSeparation` (5.16.2, custom node-spacing fn), `clustered` (5.16.2, dendrogram layout — leaves at same depth).
+- `ValueAxis`: `syncZeros` (5.16.2, align zero across synced axes — needs `syncWithAxis`).
+- `Hierarchy`: `parentIdField` setting + `setFlatData(data)` method (5.16.2) — feed flat `{id, parentId}` data instead of nested `children`.
+- All entities: `onDebounced(key, cb, delay)` / `offDebounced(key, cb?)` and `onPrivateDebounced` / `offDebouncedPrivate` (5.17.3) — fire once after rapid changes settle.
+- `Label`: `fontFamily: "inherit"` (5.17.3) uses the chart container's computed font.
+- `MapSankeySeries` (5.17.0) — Sankey overlaid on a map; auto-resolves `sourceId`/`targetId` once `polygonSeries` geoJSON loads (5.17.1), so no `datavalidated` wrapper needed. See `references/map.md`.
+- `MapPointSeries` defaults changed to `longitudeField: "longitude"`, `latitudeField: "latitude"` (5.16.1).
+
 ## Verify unfamiliar API before using it
 
 If you are unsure whether a method, property, or setting exists on an amCharts 5 class, **verify it before using it**. Check the class reference (class name in lowercase, e.g. `LineSeries` → `lineseries`):
