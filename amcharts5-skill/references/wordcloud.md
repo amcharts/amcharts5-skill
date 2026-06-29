@@ -57,10 +57,10 @@ series.appear(1000);
 |---------|------|---------|-------------|
 | `categoryField` | string | — | Data field for word text (required) |
 | `valueField` | string | — | Data field for word weight/size (required) |
-| `maxFontSize` | percent/number | `am5.percent(20)` | Maximum font size |
-| `minFontSize` | percent/number | `am5.percent(2)` | Minimum font size |
-| `angles` | number[] | `[0, -90]` | Allowed rotation angles for words |
-| `randomness` | number (0–1) | `0.2` | Layout randomness (0 = ordered by value, 1 = fully random) |
+| `maxFontSize` | number \| Percent | `100` | Maximum font size (a `Percent` is relative to the smaller chart dimension) |
+| `minFontSize` | number \| Percent | `10` | Minimum font size (a `Percent` is relative to the smaller chart dimension) |
+| `angles` | number[] | `[0]` | Allowed rotation angles for words |
+| `randomness` | number (0–1) | `0` | Layout randomness (0 = ordered by value, 1 = fully random) |
 | `minWordLength` | number | `1` | Skip words shorter than this |
 | `maxCount` | number | — | Maximum number of words to display |
 | `excludeWords` | string[] | `[]` | Words to exclude |

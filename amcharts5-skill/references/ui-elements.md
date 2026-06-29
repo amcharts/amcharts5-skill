@@ -81,14 +81,16 @@ button.get("background").states.create("down", {
 ### Togglable button
 
 ```js
+// There is no `togglable` setting on Button. Make it a toggle by setting
+// `toggleKey: "active"` (a Sprite setting) — clicks then flip the `active` boolean.
 var button = container.children.push(am5.Button.new(root, {
-  togglable: true,
+  toggleKey: "active",
   label: am5.Label.new(root, { text: "Toggle" })
 }));
 
-// Check active state
+// Check active state via the `active` setting (there is no isActive() method)
 button.events.on("click", function(ev) {
-  var isActive = ev.target.isActive();
+  var isActive = ev.target.get("active");
   console.log("Active:", isActive);
 });
 ```

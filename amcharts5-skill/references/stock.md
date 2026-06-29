@@ -216,7 +216,7 @@ stockChart.indicators.push(am5stock.Volume.new(root, {
 | Indicator | Class | Needs volumeSeries |
 |-----------|-------|--------------------|
 | Moving Average | `MovingAverage` | No |
-| Moving Average Cross | `MovingAverageCross` | No |
+| Moving Average Cross | `MACross` | No |
 | Moving Average Envelope | `MovingAverageEnvelope` | No |
 | Moving Average Deviation | `MovingAverageDeviation` | No |
 | Bollinger Bands | `BollingerBands` | No |
@@ -281,8 +281,9 @@ var data = [
 ## Events
 
 ```js
-// Period changed
-stockChart.events.on("periodselected", (ev) => {
+// Period changed — the `periodselected` event fires on the PeriodSelector
+// instance, NOT on stockChart. Attach the handler to the selector you created.
+periodSelector.events.on("periodselected", (ev) => {
   console.log("Period:", ev.period);
 });
 

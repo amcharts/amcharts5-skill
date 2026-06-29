@@ -325,7 +325,7 @@ valueSeries.data.setAll(data);
 ```js
 const chart = root.container.children.push(am5timeline.SerpentineChart.new(root, {
   orientation: "vertical", levelCount: 3,
-  yAxisRadius: am5.percent(25), yAxisInnerRadius: -25
+  yAxisRadius: am5.percent(50) // Percent; no yAxisInnerRadius setting exists
 }));
 const yRenderer = am5timeline.AxisRendererCurveY.new(root, {}); // create Y renderer FIRST
 const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {

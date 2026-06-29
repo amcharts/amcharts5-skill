@@ -47,10 +47,10 @@ var chart = root.container.children.push(
 | `editable` | boolean | `true` | Allow user to add, edit, remove, drag tasks |
 | `durationUnit` | string | `"day"` | `"year"`, `"month"`, `"week"`, `"day"`, `"hour"`, `"minute"`, `"second"` |
 | `weekends` | number[] | `[0, 6]` | Non-working days (0=Sun, 1=Mon, ... 6=Sat) |
-| `excludeWeekends` | boolean | `true` | Whether to exclude weekends from task durations |
+| `excludeWeekends` | boolean | `false` | Whether to exclude weekends from task durations |
 | `holidays` | Date[] | `[]` | Specific non-working dates |
 | `snapThreshold` | number | `0.5` | Drag snap position within a period (0–1) |
-| `sidebarWidth` | number | — | Sidebar width in pixels or Percent |
+| `sidebarWidth` | number \| Percent | `30%` | Sidebar width in pixels or Percent |
 
 ## Data structure
 
@@ -134,7 +134,7 @@ Set `duration: 0` to create milestone markers.
 ```js
 chart.yAxis.setAll({
   minCellHeight: 80,    // row height in pixels (default: 70)
-  childCellSize: 1,     // child row size relative to parent (default: 0.7, 1 = same)
+  childCellSize: 1,     // child row size relative to parent (default: 0.8, 1 = same)
   childShift: 0         // child label indent in pixels (default: 25)
 });
 ```

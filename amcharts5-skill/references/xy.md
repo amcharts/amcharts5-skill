@@ -670,7 +670,7 @@ am5xy.XYChart.new(root, {
   wheelX: "panX",                 // mouse wheel: "panX", "panY", "zoomX", "zoomY", "none"
   wheelY: "zoomX",                // mouse wheel vertical
   pinchZoomX: true,               // mobile pinch zoom on X
-  arrangeFields: false,           // auto-arrange overlapping fields
+  arrangeTooltips: true,          // de-overlap stacked series tooltips (NOTE: there is no `arrangeFields` setting)
   maxTooltipDistance: 0,           // show tooltips for nearby series (-1 = all)
 })
 ```

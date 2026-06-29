@@ -48,20 +48,24 @@ const chart = root.container.children.push(
   am5timeline.SerpentineChart.new(root, {
     orientation: "vertical",  // "vertical" | "horizontal"
     levelCount: 3,            // number of bends/turns
-    yAxisRadius: am5.percent(25),   // curve thickness
-    yAxisInnerRadius: -25,          // inner radius (negative = percentage of radius)
+    startLocation: 0,         // relative start of the "road" (0-1)
+    endLocation: 1,           // relative end of the "road" (0-1)
+    yAxisRadius: am5.percent(50),   // band thickness (Percent); applied to the Y axes' radius
   })
 );
 ```
 
-**Serpentine settings:**
+**Serpentine settings** (`ISerpentineChartSettings`):
 
-| Setting | Type | Description |
-|---------|------|-------------|
-| `orientation` | `"vertical"` \| `"horizontal"` | Direction of the snake pattern |
-| `levelCount` | number | Number of turns/bends |
-| `yAxisRadius` | percent/number | Outer radius of the curve |
-| `yAxisInnerRadius` | number | Inner radius (0 = filled, negative = relative) |
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `orientation` | `"vertical"` \| `"horizontal"` | `"vertical"` | Direction of the snake pattern |
+| `levelCount` | number | `3` | Number of turns/bends |
+| `startLocation` | number | `0` | Relative location (0-1) of the start |
+| `endLocation` | number | `1` | Relative location (0-1) of the end |
+| `yAxisRadius` | `Percent` | `50%` | Band thickness — applied to every Y axis renderer's radius |
+
+> There is no `yAxisInnerRadius` setting on the chart. Band thickness is controlled by `yAxisRadius` (a `Percent`). For a plain `CurveChart` (no Serpentine/Spiral wrapper) the Y-axis band length is set via `AxisRendererCurveY`'s `axisLength` instead.
 
 ### SpiralChart
 
@@ -71,23 +75,25 @@ Wraps the chart into a spiral shape.
 const chart = root.container.children.push(
   am5timeline.SpiralChart.new(root, {
     levelCount: 3,             // number of spiral rings
-    inversed: true,            // spiral direction
+    startAngle: -90,           // start angle in degrees
     endAngle: -135,            // end angle in degrees
-    yAxisRadius: am5.percent(70),
-    yAxisInnerRadius: 0,
-    innerRadius: am5.percent(30),  // inner hole radius
+    yAxisRadius: am5.percent(60),  // band thickness (Percent)
+    innerRadius: am5.percent(30),  // inner hole radius (Percent)
   })
 );
 ```
 
-**Spiral settings:**
+**Spiral settings** (`ISpiralChartSettings`):
 
-| Setting | Type | Description |
-|---------|------|-------------|
-| `levelCount` | number | Number of spiral rings |
-| `inversed` | boolean | Spiral direction |
-| `endAngle` | number | Where the spiral ends (degrees) |
-| `innerRadius` | percent/number | Size of the center hole |
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `levelCount` | number | `3` | Number of spiral rings |
+| `startAngle` | number | `-90` | Where the spiral starts (degrees) |
+| `endAngle` | number | `0` | Where the spiral ends (degrees) |
+| `innerRadius` | `Percent` | `60%` | Size of the center hole |
+| `yAxisRadius` | `Percent` | `50%` | Band thickness — applied to every Y axis renderer's radius |
+
+> There is no `inversed` or `yAxisInnerRadius` setting on `SpiralChart`. To reverse direction use the `startAngle`/`endAngle` pair. (`inversed` is a valid axis-renderer setting, but not a chart setting.)
 
 ### CurveChart
 
@@ -306,8 +312,7 @@ chart.get("cursor").events.on("cursormoved", function(ev) {
       am5timeline.SerpentineChart.new(root, {
         orientation: "vertical",
         levelCount: 3,
-        yAxisRadius: am5.percent(25),
-        yAxisInnerRadius: -25
+        yAxisRadius: am5.percent(50)
       })
     );
 
@@ -399,10 +404,9 @@ chart.get("cursor").events.on("cursormoved", function(ev) {
     var chart = root.container.children.push(
       am5timeline.SpiralChart.new(root, {
         levelCount: 3,
-        inversed: true,
+        startAngle: -90,
         endAngle: -135,
-        yAxisRadius: am5.percent(70),
-        yAxisInnerRadius: 0,
+        yAxisRadius: am5.percent(60),
         innerRadius: am5.percent(30)
       })
     );
