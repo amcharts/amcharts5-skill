@@ -185,7 +185,10 @@ stockChart.indicators.push(am5stock.MovingAverage.new(root, {
   stockSeries: valueSeries,
   legend: legend,
   period: 20,
-  type: "simple"  // "simple", "weighted", "exponential", "dema", "tema"
+  maType: "simple"  // "simple", "weighted", "exponential", "dema", "tema"
+                    // NOTE: `type` was renamed to `maType` in 5.18.0 — `type` still
+                    // works but is deprecated. Same for MovingAverageDeviation,
+                    // MovingAverageEnvelope and BollingerBands.
 }));
 
 // RSI (creates its own panel)
@@ -243,6 +246,43 @@ stockChart.indicators.push(am5stock.Volume.new(root, {
 | Volume | `Volume` | Yes |
 
 All classes are under `am5stock.*` (e.g., `am5stock.BollingerBands`).
+
+### Indicator changes in 5.19.0–5.20.0
+
+Several indicators changed behavior. If you have hardcoded expectations or saved settings, re-check them:
+
+| Indicator | Change | Version |
+|-----------|--------|---------|
+| `VolumeProfile` | Each bar's volume is now distributed across the full high/low range it traded, instead of being placed entirely at the closing price. Also no longer errors in `ticks` count mode when the visible price range is flat. | 5.20.0 |
+| `MACross` | Default fast/slow periods were inverted; defaults are now `fastPeriod: 9`, `period: 21`. | 5.20.0 |
+| `WilliamsR` | Used a `period + 1` lookback and treated a missing high/low as `0`; now uses exactly `period` bars. | 5.20.0 |
+| `Momentum` | Skipped its first computable value; now plots from `period` bars onward. | 5.20.0 |
+| `RelativeStrengthIndex` | Returned `0` (max "oversold") for a perfectly flat market; now returns a neutral `50`. | 5.20.0 |
+| `AccelerationBands` | `factor` now displays as the conventional `1` instead of `0.001` in both the settings modal and the legend; upper/lower bands were swapped so `upperColor`/`lowerColor` apply correctly. | 5.20.0–5.20.1 |
+| `CommodityChannelIndex` | Typical price was computed as `(high + low + close) / 2` instead of `/ 3`, inflating values. | 5.19.0 |
+
+All indicators now enforce min/max limits on their numeric settings, so extreme values entered in the settings modal can no longer freeze the page (e.g. a Volume Profile row count of 24,000).
+
+### Custom indicator editable settings (5.20.0)
+
+`IIndicatorEditableSetting` gained three properties for the settings modal:
+
+```js
+_editableSettings: [{
+  key: "period",
+  name: "Period",
+  type: "number",
+  minValue: 1,
+  maxValue: 200,   // 5.20.0 — upper bound enforced by the input
+  step: 1          // 5.20.0 — step; a step of 1 also marks the value as an integer
+}, {
+  key: "factor",
+  name: "Factor",
+  type: "number",
+  scale: 1000      // 5.20.0 — display multiplier for the modal ONLY:
+                   // shown value = stored × scale, divided back on save
+}]
+```
 
 ## Data format
 

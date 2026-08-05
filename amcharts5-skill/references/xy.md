@@ -382,6 +382,17 @@ chart.set("cursor", am5xy.XYCursor.new(root, { snapToSeries: [series] }));
 
 **Do NOT** pass `lineX`/`lineY` as constructor options to `XYCursor.new()`. Always access `cursor.lineX` / `cursor.lineY` after creation.
 
+**Easier edge selections (`clickTolerance`, 5.20.0)** — by default a zoom/select drag can only begin inside the plot area, which makes selecting right up to an edge fiddly. `clickTolerance` widens the area where a press may *start*:
+
+```js
+chart.set("cursor", am5xy.XYCursor.new(root, {
+  behavior: "selectX",
+  clickTolerance: 20    // px outside the plot area where a drag may start (default 0)
+}));
+```
+
+The selection itself still starts at the plot edge — the press point is clamped into the plot area.
+
 For timeline charts, use `am5timeline.CurveCursor` instead — see `references/timeline.md`.
 
 ## Scrollbar
@@ -674,6 +685,45 @@ am5xy.XYChart.new(root, {
   maxTooltipDistance: 0,           // show tooltips for nearby series (-1 = all)
 })
 ```
+
+## Distinguishing line series without color (5.20.0)
+
+`XYChart` can cycle stroke widths and dash patterns across line series as they are added, exactly the way `colors` cycles series colors. Useful for print, for color-blind-safe output, or with the `Patterns` theme.
+
+```js
+const chart = root.container.children.push(am5xy.XYChart.new(root, {
+  strokeWidths: [3, 2, 2],                    // px, cycled per line series
+  strokeDasharrays: [0, [6, 3], [2, 2]]       // 0 or [] = solid line
+}));
+```
+
+Each added line series takes the next entry by position, wrapping around when the array runs out.
+
+## Series gradients (5.20.0)
+
+`Series` accepts `fillGradient` and `strokeGradient`:
+
+```js
+series.set("fillGradient", am5.LinearGradient.new(root, {
+  stops: [{ opacity: 0.6 }, { opacity: 0 }],
+  rotation: 90
+}));
+```
+
+A bullet `Graphics` that sets none of `fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient` now inherits all of them from its series, so bullets pick up series gradients and patterns automatically.
+
+## Changing fields and axes after creation (5.20.0)
+
+```js
+// Swap which data field a series plots — then re-set the data
+series.set("valueYField", "profit");
+series.data.setAll(data);
+
+// Move a series to a different axis
+series.set("yAxis", secondaryYAxis);
+```
+
+Both were previously fixed at creation time. Re-setting the series data is required for a value-field change to take effect.
 
 ---
 

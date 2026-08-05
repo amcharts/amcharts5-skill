@@ -140,6 +140,35 @@ root.setThemes([
 
 **Rule:** Only add Dark theme when background is clearly dark. Default to white/light with no Dark theme unless the user asks.
 
+## Available themes (as of 5.20.0)
+
+- **Behavioral:** `Animated`, `Micro`, `Responsive`
+- **Light palettes:** `Dataviz`, `Frozen`, `Kelly`, `Material`, `Moonrise`, `Spirited`, `Ember`, `Nord`, `Pastel`, `Petroleum`, `Savanna`, `Colorblind` (Okabe-Ito, color-blindness safe), `Patterns` (pattern fills instead of flat colors)
+- **Dark:** `Dark`, `Midnight`, plus dark variants of most palettes — `DatavizDark`, `FrozenDark`, `KellyDark`, `MaterialDark`, `MoonriseDark`, `SpiritedDark`, `NordDark`, `PastelDark`, `ColorblindDark`, `PatternsDark`
+
+Palette themes are additive — combine with `Animated`. The `*Dark` variants already carry dark interface colors, so do NOT also add `Dark`.
+
+**Parameterized themes (5.20.0)** — `Monochrome` and `Adaptive` generate a palette from colors you pass in. They are **factory functions**, not classes:
+
+```js
+import am5themes_Monochrome from "@amcharts/amcharts5/themes/Monochrome";
+import am5themes_Adaptive from "@amcharts/amcharts5/themes/Adaptive";
+
+// Single-hue lightness ramp, optional accent on the first series
+root.setThemes([
+  am5themes_Animated.new(root),
+  am5themes_Monochrome(root, { color: 0x2c6e91, accent: 0xff7f0e, count: 7, dark: false })
+]);
+
+// Full palette generated from one or two base colors (first color IS baseColor)
+root.setThemes([
+  am5themes_Animated.new(root),
+  am5themes_Adaptive(root, { baseColor: 0x2c6e91, baseColor2: 0xffdd00, count: 10, dark: false })
+]);
+```
+
+Both handle dark mode via `dark: true` — do not also add the `Dark` theme.
+
 ## Colors — use defaults, don't invent palettes
 
 amCharts assigns colors automatically. Do NOT create custom color palettes unless the user explicitly requests specific colors.
@@ -722,18 +751,21 @@ series.bullets.push(function(root, series, dataItem) {
 });
 ```
 
-15. **`MapPointSeries` needs `latitudeField`/`longitudeField` when using `data.setAll()`** — Without these settings, points silently won't appear:
+15. **`MapPointSeries` needs `latitudeField`/`longitudeField` unless your data fields are named exactly `latitude`/`longitude`** — Since 5.16.1 those are the defaults, so matching data works undeclared. Any other naming silently renders nothing:
 ```js
-// WRONG — points won't show
+// FINE since 5.16.1 — data uses "latitude"/"longitude", which are the defaults
+am5map.MapPointSeries.new(root, {})
+
+// WRONG — data uses lat/lng, points won't show
 am5map.MapPointSeries.new(root, {})
 
 // CORRECT — tell the series which fields hold coordinates
 am5map.MapPointSeries.new(root, {
-  latitudeField: "latitude",
-  longitudeField: "longitude"
+  latitudeField: "lat",
+  longitudeField: "lng"
 })
 ```
-This is NOT needed when using `pushDataItem({ latitude: ..., longitude: ... })` which passes coordinates directly to the data item.
+Neither is needed when using `pushDataItem({ latitude: ..., longitude: ... })`, which passes coordinates directly to the data item. On amCharts older than 5.16.1 there were no defaults — declare both fields explicitly if you need to support those versions.
 
 16. **`data.setAll()` does NOT animate — use `data.setIndex()` for animated updates** — `series.data.setAll(newData)` replaces everything instantly with no transition. To update data with smooth animation, use `series.data.setIndex(i, newItem)` per item:
 ```js
@@ -826,6 +858,32 @@ ngOnDestroy() { this.root?.dispose(); }
 // Vue
 onUnmounted(() => { root.dispose(); });
 ```
+
+## Recent API changes (5.16 → 5.20.1)
+
+**Renamed settings** (old name still works but is deprecated):
+
+| Class(es) | Old | New | Since |
+|-----------|-----|-----|-------|
+| `MovingAverage`, `MovingAverageDeviation`, `MovingAverageEnvelope`, `BollingerBands` | `type` | `maType` | 5.18.0 |
+| `VoronoiTreemap` | `type` | `shapeType` | 5.18.0 |
+
+**Breaking — WordCloud (5.20.1):** layout is now computed synchronously in one pass. The per-data-item `ghostLabel` is gone and labels live in an internal container — use `series.labels` / `dataItem.get("label")` instead of walking `series.children`.
+
+**New settings worth knowing:**
+
+- New fill patterns `am5.StarPattern` and `am5.TrianglePattern` (5.20.0). `rotateShapes: true` on `RectanglePattern`/`StarPattern`/`TrianglePattern` rotates each shape around its own center instead of the whole grid — tiles seamlessly and is much faster.
+- `XYChart`: `strokeWidths` and `strokeDasharrays` — arrays cycled across line series as they are added, like `colors`. Distinguish series without relying on color.
+- `XYCursor`: `clickTolerance` (default `0`) — pixels outside the plot area where a zoom/select drag may start.
+- `Series`: `fillGradient` / `strokeGradient`. Bullets with no paint of their own inherit fill/stroke/gradient/pattern from the series — or from their own slice/node on pie, funnel, flow and hierarchy charts.
+- `XYSeries`: value fields (`valueYField`, …) can be changed after creation (re-set the data afterwards), and a series can be moved to a different `xAxis`/`yAxis`.
+- `WordCloud` (5.20.1): `svgPath` arranges words into a shape, with `maskByShape` and `shapeTolerance`; `randomizeAngles: false` and `randomness: 0` give a reproducible layout; `allowNesting: false` packs non-overlapping bounding boxes (use with opaque label backgrounds). `angles` now accepts **any** angle (e.g. `[0, -30, -45]`) — the old `0`/`±90`-only restriction is gone.
+- New `globalpointerdown` event on all elements (mirrors `globalpointermove`/`globalpointerup`).
+- `Root`: `sanitizeHTML` (default `true`, 5.19.0) sanitizes dynamically-set HTML; exports gained `escapeFormulas` (default `true`) against CSV/XLSX formula injection.
+- `MapChart`: `projectionName` string setting (5.19.0), e.g. `"geoOrthographic"` — mainly for JSON config; `am5map.registerProjection()` adds more.
+- `Tree`: `fitNodes` (5.18.0), `nodeSeparation` / `clustered` (5.16.2). `Hierarchy`: `parentIdField` + `setFlatData()` (5.16.2). `ValueAxis`: `syncZeros` (5.16.2).
+- All entities: `onDebounced(key, cb, delay)` / `offDebounced()` (5.17.3). `Label`: `fontFamily: "inherit"` (5.17.3).
+- Stock indicators enforce min/max limits on numeric settings (5.20.0); `IIndicatorEditableSetting` gained `scale`, `maxValue`, `step`. Volume Profile now spreads volume across each bar's high/low range.
 
 ## Verify unfamiliar API before using it
 

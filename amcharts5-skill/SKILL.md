@@ -105,7 +105,16 @@ root.dateFormatter.setAll({ dateFormat: "yyyy-MM-dd" });
 root.numberFormatter.setAll({ numberFormat: "#,###.##" });
 ```
 
-**Available themes:** `Animated`, `Dark`, `Frozen`, `Dataviz`, `Material`, `Moonrise`, `Spirited`, `Kelly`, `Micro`, `Responsive`.
+**Available themes** (as of 5.20.0):
+
+| Kind | Themes |
+|------|--------|
+| Behavioral | `Animated` (animations), `Micro` (stripped-down micro charts), `Responsive` (size-based rules) |
+| Light palettes | `Dataviz`, `Frozen`, `Kelly`, `Material`, `Moonrise`, `Spirited`, `Ember`, `Nord`, `Pastel`, `Petroleum`, `Savanna`, `Colorblind` (Okabe-Ito, color-blindness safe), `Patterns` (pattern fills instead of flat colors) |
+| Dark | `Dark`, `Midnight`, plus a dark variant of most palettes: `DatavizDark`, `FrozenDark`, `KellyDark`, `MaterialDark`, `MoonriseDark`, `SpiritedDark`, `NordDark`, `PastelDark`, `ColorblindDark`, `PatternsDark` |
+| Parameterized (5.20.0) | `Monochrome`, `Adaptive` — see below |
+
+Palette themes are additive: combine with `Animated`, e.g. `root.setThemes([am5themes_Animated.new(root), am5themes_Nord.new(root)])`. The `*Dark` variants already carry dark interface colors, so do NOT also add `Dark`.
 
 ## Colors
 
@@ -458,6 +467,39 @@ series.columns.template.states.create("active", {
 // State animation: stateAnimationDuration, stateAnimationEasing
 ```
 
+## Parameterized themes — Monochrome & Adaptive (5.20.0)
+
+Two themes generate their palette from colors you pass in (OKLCH-based, so the result stays perceptually balanced). Because a theme cannot take constructor parameters, these ship as **factory functions** — call them with `(root, settings)`; `.new(root, settings)` also works.
+
+```js
+import am5themes_Monochrome from "@amcharts/amcharts5/themes/Monochrome";
+import am5themes_Adaptive from "@amcharts/amcharts5/themes/Adaptive";
+
+// Monochrome — single-hue lightness ramp
+root.setThemes([
+  am5themes_Animated.new(root),
+  am5themes_Monochrome(root, {
+    color: 0x2c6e91,   // base hue (default: blue #2e7c9e)
+    accent: 0xff7f0e,  // optional — applied to the FIRST series only, so it pops
+    count: 7,          // steps in the ramp (default 7)
+    dark: false        // true = dark background + light-to-mid ramp
+  })
+]);
+
+// Adaptive — full palette generated from one or two base colors
+root.setThemes([
+  am5themes_Animated.new(root),
+  am5themes_Adaptive(root, {
+    baseColor: 0x2c6e91,   // first generated color IS this color (good for brand colors)
+    baseColor2: 0xffdd00,  // optional — palette spans the two colors
+    count: 10,             // number of series colors (default 10)
+    dark: false
+  })
+]);
+```
+
+Both are additive (they do not modify built-in themes) and both handle dark mode themselves via `dark: true` — do not also add the `Dark` theme.
+
 ## Custom themes
 
 ```js
@@ -660,7 +702,7 @@ onUnmounted(() => { root.dispose(); });
 12. **CDN script load order** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` → `xy.js` → `radar.js` / `timeline.js` / `gantt.js` → `themes/*.js`.
 13. **No `minorGrid` / `minorTicks` / `minorLabels` objects** — These do not exist on axes. Minor grid is enabled via boolean flags on the **renderer**: `minorGridEnabled: true` and optionally `minorLabelsEnabled: true`. Styling is done through theme rules targeting the `"minor"` tag, not through separate object properties.
 14. **Flow chart animated bullets go on `series.bullets`, NOT `series.links.template.bullets`** — To animate labels/circles flowing along Sankey or Chord links, use `series.bullets.push(function(...) { ... })`. Animate `bullet.locationX` (Sankey) or `bullet.locationY` (Chord) from 0→1 with `loops: Infinity`. Use an adapter on opacity for fade effect. See `references/flow.md` → "Animated bullets along links".
-15. **`MapPointSeries` needs `latitudeField`/`longitudeField` when using `data.setAll()`** — If point data has `latitude`/`longitude` fields, the series must declare them: `am5map.MapPointSeries.new(root, { latitudeField: "latitude", longitudeField: "longitude" })`. Without these, points silently won't appear. This is NOT needed when using `pushDataItem({ latitude: ..., longitude: ... })` which passes coordinates directly.
+15. **`MapPointSeries` needs `latitudeField`/`longitudeField` when your data fields are named anything other than `latitude`/`longitude`** — Since 5.16.1 the series defaults to `latitudeField: "latitude"`, `longitudeField: "longitude"`, so data using exactly those names works with no declaration. Any other naming (`lat`/`lng`, `y`/`x`, …) must be declared or the points silently won't appear: `am5map.MapPointSeries.new(root, { latitudeField: "lat", longitudeField: "lng" })`. Neither is needed with `pushDataItem({ latitude: ..., longitude: ... })`, which passes coordinates directly. On amCharts **older than 5.16.1** there were no defaults, so declare the fields explicitly if you must support those versions.
 16. **`data.setAll()` does NOT animate — use `data.setIndex()` for animated updates** — When the user asks to update/refresh data with animation, do NOT use `series.data.setAll(newData)` — it replaces everything instantly with no transition. Instead, update each item with `series.data.setIndex(i, newItem)` which triggers smooth value animation. For full replacement with animation, loop: `newData.forEach(function(item, i) { series.data.setIndex(i, item); })`.
 17. **`color.lighten()` / `color.darken()` are NOT instance methods** — `am5.color(0xff0000).lighten(0.3)` does NOT work. Use static methods: `am5.Color.lighten(color, 0.3)` to lighten, `am5.Color.lighten(color, -0.3)` to darken. There is NO `darken()` method — use negative lighten. Also available: `am5.Color.brighten()`, `am5.Color.saturate()`.
 18. **Venn diagram has no `VennDiagram` class** — `am5venn.Venn` is pushed directly into a `Container`, NOT into a chart's `series`. See `references/venn.md`.
@@ -716,7 +758,7 @@ Skip this step entirely if you cannot execute code (e.g., chat-only context with
 
 ## Recent API changes (newer than the bundled class reference)
 
-The bundled per-class API reference was snapshotted on **2026-03-15**, so it predates the changes below. Prefer these names/settings; for anything newer, verify against the live docs (see next section).
+The bundled per-class API reference was snapshotted on **2026-03-15**, so it predates the changes below. Latest release covered here: **5.20.1** (2026-08-03). Prefer these names/settings; for anything newer, verify against the live docs (see next section).
 
 **Renamed settings (old name still works but is deprecated — use the new one):**
 
@@ -731,14 +773,50 @@ am5stock.MovingAverage.new(root, { maType: "exponential", period: 20 });
 am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 ```
 
+**Breaking change — WordCloud internals (5.20.1):** the layout is now computed synchronously in one pass (much faster). The per-data-item `ghostLabel` is gone and labels live in an internal container, so `dataItem.get("ghostLabel")` and any code walking `series.children` to find labels must be updated — use `series.labels` / `dataItem.get("label")` instead.
+
 **New settings / methods worth knowing:**
+
+*Themes & styling*
+- 20+ new themes (5.20.0): `Midnight`, `Ember`, `Nord`, `Pastel`, `Colorblind`, `Patterns`, `Petroleum`, `Savanna`, plus `*Dark` variants of most palettes. Two parameterized factory themes, `Monochrome` and `Adaptive` — see "Parameterized themes" above.
+- New fill patterns (5.20.0): `am5.StarPattern` (`radius`, `innerRadius`, `spikes`, `gap`, `checkered`) and `am5.TrianglePattern` (`maxWidth`, `maxHeight`, `gap`, `checkered`).
+- `rotateShapes` (5.20.0) on `RectanglePattern`/`StarPattern`/`TrianglePattern`: `rotation` then spins each shape around its own center instead of the whole grid — tiles seamlessly and is much faster. Prefer it over a whole-pattern `rotation` on large tiles.
+- `Series`: `fillGradient` / `strokeGradient` settings. A bullet `Graphics` with no paint of its own (`fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient`) now inherits all of them from its series — and on pie, funnel, flow and hierarchy charts, from its own slice/node (5.20.0–5.20.1).
+
+*XY charts*
+- `XYChart`: `strokeWidths` (array of pixel widths) and `strokeDasharrays` (array of dash arrays) — cycled across line series as they are added, exactly like `colors`. Lets series be told apart without relying on color, e.g. with the `Patterns` theme.
+- `XYCursor`: `clickTolerance` (default `0`) — how many pixels outside the plot area a press may start and still begin a zoom/selection. The selection itself still starts at the plot edge.
+- `XYSeries`: a value field (`valueYField`, `openValueYField`, …) can now be changed after creation — re-set the series data afterwards for it to take effect. A series can also be reassigned to a different `xAxis`/`yAxis` after creation.
+
+*WordCloud (5.20.1)*
+- `svgPath` arranges words into a shape (experimental), with `maskByShape` to clip them to the outline and `shapeTolerance` to control spill (negative = padding inside). See `references/wordcloud.md`.
+- `randomizeAngles: false` cycles `angles` in order for a reproducible layout; `allowNesting: false` packs words as non-overlapping bounding boxes (use it when labels have opaque backgrounds).
+- `angles` now accepts **any** angle (e.g. `[0, -30, -45]`). Before 5.20.1 only `0`/`±90` were handled, and the old docs said so explicitly — that restriction is gone.
+
+*Core / events*
+- New `globalpointerdown` event on all elements — fires on a press anywhere on the chart surface, mirroring `globalpointermove`/`globalpointerup`.
+- `Root`: `sanitizeHTML` (5.19.0, default `true`) — dynamically-set HTML (`html`/`labelHTML`, HTML tooltips, modal content) is sanitized; set `false` to opt out. Exports gained `escapeFormulas` (default `true`) to guard CSV/XLSX against formula injection.
+- `Root`: `ariaLabel` is now applied to the `<div>` holding the chart's focusable elements (5.20.0).
+- `Label`: `oversizedBehavior: "truncate"` now ignores `maxHeight` (there is no way to truncate text vertically).
+- A `Container`'s `Rectangle`/`RoundedRectangle` background now defaults `crisp` to `true` unless set explicitly (5.20.0).
+
+*Maps*
+- `MapChart`: `projectionName` (5.19.0) — string alternative to `projection`, e.g. `"geoOrthographic"`, mainly for JSON config. Register extra ones with `am5map.registerProjection()`. Bundled projections are no longer eagerly imported, so unused ones tree-shake away.
+- `MapSankeySeries` (5.17.0) — Sankey overlaid on a map; auto-resolves `sourceId`/`targetId` once `polygonSeries` geoJSON loads (5.17.1), so no `datavalidated` wrapper needed. See `references/map.md`.
+- `MapPointSeries` defaults changed to `longitudeField: "longitude"`, `latitudeField: "latitude"` (5.16.1).
+
+*Hierarchy & axes*
 - `Tree`: `fitNodes` (5.18.0, exclude hidden nodes from layout), `nodeSeparation` (5.16.2, custom node-spacing fn), `clustered` (5.16.2, dendrogram layout — leaves at same depth).
 - `ValueAxis`: `syncZeros` (5.16.2, align zero across synced axes — needs `syncWithAxis`).
 - `Hierarchy`: `parentIdField` setting + `setFlatData(data)` method (5.16.2) — feed flat `{id, parentId}` data instead of nested `children`.
-- All entities: `onDebounced(key, cb, delay)` / `offDebounced(key, cb?)` and `onPrivateDebounced` / `offDebouncedPrivate` (5.17.3) — fire once after rapid changes settle.
+
+*Stock*
+- Indicator numeric settings now enforce min/max limits, so extreme values can no longer freeze the page. `IIndicatorEditableSetting` gained `scale`, `maxValue` and `step` (5.20.0).
+- Volume Profile now spreads each bar's volume across its full high/low range instead of placing it all at the close. Several indicator math fixes (Williams %R, Momentum, RSI, Moving Average Cross defaults, Commodity Channel Index) landed in 5.19.0–5.20.0 — see `references/stock.md`.
+
+*All entities*
+- `onDebounced(key, cb, delay)` / `offDebounced(key, cb?)` and `onPrivateDebounced` / `offDebouncedPrivate` (5.17.3) — fire once after rapid changes settle.
 - `Label`: `fontFamily: "inherit"` (5.17.3) uses the chart container's computed font.
-- `MapSankeySeries` (5.17.0) — Sankey overlaid on a map; auto-resolves `sourceId`/`targetId` once `polygonSeries` geoJSON loads (5.17.1), so no `datavalidated` wrapper needed. See `references/map.md`.
-- `MapPointSeries` defaults changed to `longitudeField: "longitude"`, `latitudeField: "latitude"` (5.16.1).
 
 ## Verify unfamiliar API before using it
 

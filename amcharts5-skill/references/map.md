@@ -166,7 +166,9 @@ pointSeries.bullets.push(function() {
   });
 });
 
-// Add points via data — requires latitudeField/longitudeField on the series
+// Add points via data. Fields named "latitude"/"longitude" are the series
+// defaults since 5.16.1; any other naming must be declared via
+// latitudeField/longitudeField or the points silently won't render.
 pointSeries.data.setAll([
   { latitude: 48.8566, longitude: 2.3522, name: "Paris" },
   { latitude: 40.7128, longitude: -74.0060, name: "New York" },
