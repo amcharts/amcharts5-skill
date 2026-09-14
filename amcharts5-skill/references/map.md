@@ -123,6 +123,28 @@ polygonSeries.data.setAll([
 ]);
 ```
 
+**Custom GeoJSON: exterior rings must be CLOCKWISE.** amCharts projects on a sphere (d3-geo), where a ring's winding order decides which side is "inside". The GeoJSON spec (RFC 7946) winds exterior rings counter-clockwise, and d3-geo reads a CCW ring as *the whole globe minus the polygon* — so every polygon fills the entire viewport and the real shape shows only as a sliver (looks like a zoom/fit bug, is not). GIS exports are usually already clockwise; programmatically generated GeoJSON (grids, cells, buffers) usually is not. amCharts does **not** auto-rewind, so reverse the rings yourself:
+
+```js
+// Fix winding before handing custom GeoJSON to MapPolygonSeries
+geojson.features.forEach(function(feature) {
+  var g = feature.geometry;
+  if (g.type === "Polygon") {
+    g.coordinates = g.coordinates.map(function(ring) { return ring.slice().reverse(); });
+  } else if (g.type === "MultiPolygon") {
+    g.coordinates = g.coordinates.map(function(poly) {
+      return poly.map(function(ring) { return ring.slice().reverse(); });
+    });
+  }
+});
+polygonSeries.set("geoJSON", geojson);
+
+// Fit the map to a custom region (no country geodata needed): left/right = longitude, top/bottom = latitude
+chart.zoomToGeoBounds({ left: -8.6, right: 1.8, top: 60.9, bottom: 49.9 }, 500);
+```
+
+`zoomToGeoBounds(bounds, duration?)` is more reliable than `homeGeoPoint` + `homeZoomLevel` + `goHome()` when the only series is custom polygons.
+
 ### Choropleth (heat map) via heat rules
 
 ```js
@@ -145,6 +167,17 @@ const heatLegend = chart.children.push(am5.HeatLegend.new(root, {
 }));
 ```
 
+**Styling heat-legend segments.** With `stepCount: N` the legend draws N discrete `RoundedRectangle` markers inside `heatLegend.markerContainer`, all styled through `heatLegend.markers.template` (it accepts the usual Graphics settings — `stroke`, `strokeWidth`, `strokeOpacity`, `fillOpacity`, `cornerRadius*`, `tooltipText` for a per-block hover tooltip). Segment **thickness** is the marker's cross-axis size: a **vertical** legend uses the marker `width` (default `15`) with `height: 100%`; a **horizontal** legend uses `height` (default `15`) with `width: 100%`. Style via the template — `heatLegend.markers.values` can read empty even while `markerContainer.children` holds the rectangles.
+
+```js
+heatLegend.markers.template.setAll({
+  width: 30,                 // thicker bar on a vertical legend (use height on a horizontal one)
+  stroke: am5.color(0xffffff),
+  strokeWidth: 1,
+  tooltipText: "{value}"
+});
+```
+
 ### MapPointSeries (markers, bubbles, labels)
 
 ```js
@@ -156,7 +189,7 @@ const pointSeries = chart.series.push(
 );
 
 // Define bullet appearance
-pointSeries.bullets.push(function() {
+pointSeries.bullets.push(function(root, series, dataItem) {
   return am5.Bullet.new(root, {
     sprite: am5.Circle.new(root, {
       radius: 5,
@@ -214,7 +247,23 @@ lineSeries.pushDataItem({
     coordinates: [[-74.01, 40.71], [-0.45, 51.47]]  // [lng, lat] pairs
   }
 });
+
+// OR (5.20.3) name the points by id — data-driven, JSON-friendly, no data-item references needed
+const pointSeries2 = chart.series.push(am5map.MapPointSeries.new(root, {}));   // ids come from the "id" data field
+pointSeries2.data.setAll([
+  { id: "JFK", latitude: 40.64, longitude: -73.78 },
+  { id: "LAX", latitude: 33.94, longitude: -118.41 }
+]);
+const lineSeries2 = chart.series.push(am5map.MapLineSeries.new(root, {
+  pointSeries: pointSeries2          // where pointIds are looked up
+  // pointIdsField: "pointIds"       // default field name
+}));
+lineSeries2.data.setAll([
+  { pointIds: ["JFK", "LAX"] }       // the line waits until every id has a point, then draws
+]);
 ```
+
+`pointsToConnect` wins if a data item has both. Fixed points (`fixed: true`) cannot be used with either.
 
 ### MapSankeySeries (geographic flow bands)
 
@@ -365,7 +414,7 @@ var sankeySeries = chart.series.push(
 #### Animated bullets along bands
 
 ```js
-sankeySeries.bullets.push(function() {
+sankeySeries.bullets.push(function(root, series, dataItem) {
   return am5.Bullet.new(root, {
     locationX: 0,
     autoRotate: true,
@@ -420,7 +469,7 @@ sankeySeries.data.setAll([
 ```js
 // Create a point that follows a line
 var planeSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
-planeSeries.bullets.push(function() {
+planeSeries.bullets.push(function(root, series, dataItem) {
   return am5.Bullet.new(root, {
     sprite: am5.Graphics.new(root, {
       svgPath: "m2,106h28l24,30h72l-44,-133h35l80,132h98c21,0 21,34 0,34l-98,0 -80,134h-35l43,-133h-71l-24,30h-28l15,-47",
@@ -471,6 +520,19 @@ chart.chartContainer.children.push(am5.Button.new(root, {
 })).events.on("click", function() {
   chart.goHome();
 });
+
+// Fit to a lat/long box (left/right = longitude, top/bottom = latitude)
+chart.zoomToGeoBounds({ left: -10, right: 40, top: 70, bottom: 35 }, 800);
+```
+
+**Pointer zoom behaviors (5.20.2):** a double click/tap zooms in and shift + double click zooms out **by default** (`doubleClickZoom: true`; set `false` to turn it off). `boxZoom` lets the user drag a rectangle to zoom into — its value is the key that must be held: `"shift"`, `"ctrl"`, `"alt"`, or `"drag"` for no key (then set `panX`/`panY: "none"`, since a plain drag otherwise pans); default `"none"`. The rectangle being drawn is `chart.boxZoomSelection` (a `Rectangle`, style its `fill`/`stroke`).
+
+```js
+am5map.MapChart.new(root, {
+  boxZoom: "shift",          // hold shift and drag to zoom into the box
+  doubleClickZoom: false     // opt out of the default double-click zoom
+});
+chart.boxZoomSelection.setAll({ fill: am5.color(0x1e88e5), fillOpacity: 0.15 });
 ```
 
 ## Globe (orthographic projection)
@@ -552,6 +614,8 @@ am5map.MapChart.new(root, {
   rotationZ: 0,             // tilt
   wheelY: "zoom",           // "zoom", "none"
   wheelSensitivity: 1,      // zoom speed multiplier
+  doubleClickZoom: true,    // (5.20.2) double click zooms in, shift+double click out — default true
+  boxZoom: "none",          // (5.20.2) "none" | "drag" | "shift" | "ctrl" | "alt" — key held to drag a zoom box
 })
 ```
 
@@ -783,7 +847,7 @@ root.dispose();
 
     // Point series for airports
     var pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
-    pointSeries.bullets.push(function() {
+    pointSeries.bullets.push(function(root, series, dataItem) {
       return am5.Bullet.new(root, {
         sprite: am5.Circle.new(root, {
           radius: 4,
@@ -895,7 +959,7 @@ Demonstrates: orthographic projection, single-segment lines for per-segment anim
 
     // City points with pulse + label
     var pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
-    pointSeries.bullets.push(function () {
+    pointSeries.bullets.push(function(root, series, dataItem) {
       var container = am5.Container.new(root, {});
       container.children.push(am5.Circle.new(root, {
         radius: 3.5, fill: cityColor, fillOpacity: 0.9,
@@ -932,7 +996,7 @@ Demonstrates: orthographic projection, single-segment lines for per-segment anim
 
     // Plane series — one per segment, all hidden initially
     var planeSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
-    planeSeries.bullets.push(function () {
+    planeSeries.bullets.push(function(root, series, dataItem) {
       return am5.Bullet.new(root, {
         sprite: am5.Graphics.new(root, {
           svgPath: "m2,106h28l24,30h72l-44,-133h35l80,132h98c21,0 21,34 0,34l-98,0 -80,134h-35l43,-133h-71l-24,30h-28l15,-47",
@@ -1201,7 +1265,7 @@ Demonstrates: `MapSankeySeries` with `sourceId`/`targetId` data (country codes),
     });
 
     // Animated coffee bean bullets
-    sankeySeries.bullets.push(function() {
+    sankeySeries.bullets.push(function(root, series, dataItem) {
       return am5.Bullet.new(root, {
         locationX: 0,
         autoRotate: true,
@@ -1492,7 +1556,7 @@ Demonstrates: `MapSankeySeries` with explicit `sourceLongitude`/`sourceLatitude`
     });
 
     // Animated oil drop bullets
-    sankeySeries.bullets.push(function() {
+    sankeySeries.bullets.push(function(root, series, dataItem) {
       return am5.Bullet.new(root, {
         locationX: 0,
         autoRotate: true,

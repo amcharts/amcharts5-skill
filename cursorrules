@@ -495,7 +495,7 @@ series.set("heatRules", [{
 
 // Scale bullet radius by value — bullets need am5.Template
 var circleTemplate = am5.Template.new({});
-series.bullets.push(function() {
+series.bullets.push(function(root, series, dataItem) {
   return am5.Bullet.new(root, {
     sprite: am5.Circle.new(root, {
       fill: series.get("fill")
@@ -840,6 +840,16 @@ var sbSeries = scrollbar.chart.series.push(am5xy.LineSeries.new(root, {
 
 31. **Do NOT exclude Antarctica (`exclude: ["AQ"]`) by default** — Many amCharts demos exclude Antarctica because they use Mercator projection where it appears disproportionately large. This is a demo-specific choice, not a best practice. Unless the user explicitly asks to exclude Antarctica, or references a demo that does so, keep Antarctica in the map. With non-Mercator projections (`geoNaturalEarth1`, `geoEqualEarth`, `geoOrthographic`, `geoEquirectangular`), Antarctica renders at a reasonable size.
 
+32. **Custom GeoJSON for `MapPolygonSeries` needs CLOCKWISE exterior rings** — the RFC 7946 counter-clockwise default is read by the spherical projection as "the globe minus the polygon", so every polygon floods the whole map. amCharts does not rewind; reverse each ring: `g.coordinates = g.coordinates.map(ring => ring.slice().reverse())`. To fit a custom region use `chart.zoomToGeoBounds({ left, right, top, bottom }, duration)` (left/right = longitude, top/bottom = latitude).
+
+33. **`axis.dispose()` does NOT remove the axis from `chart.xAxes`/`yAxes`** — use `chart.yAxes.removeValue(axis)` / `removeIndex(i)` (the list disposes it). `series.dispose()` does self-remove from `chart.series`; axes are the exception.
+
+34. **Declare bullet callbacks as `function(root, series, dataItem)`** — closing over an outer `root` breaks JSON round-trips through `ChartSerializer`. A `ColorSet` must always contain ≥1 color (`set("colors", [])` crashes `next()`); swap in a fresh `am5.ColorSet.new(root, {})` instead.
+
+35. **Tooltips on non-XY charts need no `am5.Tooltip` instance** — just `tooltipText` on the right template (`slices.template`, `nodes.template`, flow `nodes.nodes.template` / `links.template`, wordcloud `labels.template`, `mapPolygons.template`); the root's shared tooltip (`root.container.get("tooltip")`) is used. Create a `Tooltip` only when it must look different, or on XY charts where series/axis tooltips are cursor-driven. Heat rules on bullets: `target` must be the `am5.Template` the sprite is built from, `dataField` is the property key (`"valueY"`, not the column name), and `calculateAggregates: true` is required — otherwise every bullet silently gets the same size.
+
+36. **Serialize the chart's top container child, never a bare series** (`serializer.serializeAll(root.container.children.getIndex(0))`) — a bare series with `selectedDataItem` set is cyclic and overflows `_pruneEmptyObjects` / breaks `JSON.stringify`. `ChartSerializer` does not capture a `ZoomableContainer`'s `contents` (use `am5.SerialChartContainer`), Venn `hoverGraphics`/slice states, or adapters — re-apply those after `JsonParser.parse()`.
+
 ## Disposal (SPA / React / Angular / Vue)
 
 **Always call `root.dispose()`** — this cleans up all children, series, and event listeners.
@@ -859,7 +869,7 @@ ngOnDestroy() { this.root?.dispose(); }
 onUnmounted(() => { root.dispose(); });
 ```
 
-## Recent API changes (5.16 → 5.20.1)
+## Recent API changes (5.16 → 5.20.5)
 
 **Renamed settings** (old name still works but is deprecated):
 
@@ -884,6 +894,15 @@ onUnmounted(() => { root.dispose(); });
 - `Tree`: `fitNodes` (5.18.0), `nodeSeparation` / `clustered` (5.16.2). `Hierarchy`: `parentIdField` + `setFlatData()` (5.16.2). `ValueAxis`: `syncZeros` (5.16.2).
 - All entities: `onDebounced(key, cb, delay)` / `offDebounced()` (5.17.3). `Label`: `fontFamily: "inherit"` (5.17.3).
 - Stock indicators enforce min/max limits on numeric settings (5.20.0); `IIndicatorEditableSetting` gained `scale`, `maxValue`, `step`. Volume Profile now spreads volume across each bar's high/low range.
+- `MapChart` (5.20.2): `doubleClickZoom` defaults to **true** (double click zooms in, shift + double click out — set `false` to opt out). `boxZoom: "none" | "drag" | "shift" | "ctrl" | "alt"` (default `"none"`, **not a boolean**) names the key held while dragging a zoom rectangle (`chart.boxZoomSelection`). No keyboard-navigation settings exist.
+- `MapLineSeries` (5.20.3): `pointIds: ["JFK", "LAX"]` data field names the points a line connects, looked up in the `pointSeries` setting; `pointIdsField` renames the field. `pointsToConnect` wins if both are set.
+- Column series (5.20.4): `colorByDataItem: true` colors each column from the series' `colors` (`ColorSet`) — prefer it over a `fill` adapter (adapters do not survive JSON serialization).
+- `Scrollbar` (5.20.2): `opposite: true` puts `scrollbarX` below the plot / `scrollbarY` on the left. Different from the axis renderer's `opposite`.
+- `Root` (5.20.2): `fontFamily`, `fontSize`, `fontWeight` settings — defaults for all text elements.
+- `am5.SerialChartContainer` (5.20.2, `am5` root module): a `SerialChart` whose `seriesContainer` is a `ZoomableContainer` (`chart.zoomableContainer`), for zoomable/pannable `ForceDirected` etc.; optional `zoomTools` setting.
+- All entities: `once(key, cb)` / `onceDebounced(key, cb, delay)` (5.20.4) — settings-change handler that fires once then removes itself.
+- JSON (5.20.2–5.20.4): `ChartSerializer` emits **only user-set settings**; `includeRoot: true` writes a top-level `root` section (also accepted in hand-written configs); `parser.parse(config, { updateTargets: "soft" })` updates an existing same-type object instead of replacing it; Gantt is serializable; adapters that did not survive JSON are skipped on parse (they never round-trip).
+- Bullets (5.20.2): flow node bullets are children of the node (above shape, below label), `ArcDiagram` node bullets sit on the node circle, funnel/pyramid bullets follow the slice's sloping edges. An unpainted bullet takes its **own slice/node color** on pie, funnel, flow and hierarchy charts — same color as what it sits on, so give it a contrasting `fill`/`stroke`.
 
 ## Verify unfamiliar API before using it
 

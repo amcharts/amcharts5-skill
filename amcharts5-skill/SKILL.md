@@ -201,6 +201,27 @@ series.set("tooltip", tooltip);
 
 `getStrokeFromSprite` (default `false`) copies the sprite's stroke color when `true`.
 
+### Shared vs per-sprite tooltip
+
+Setting **only** `tooltipText` on a sprite (no `tooltip:` instance anywhere on it) is enough to get a hover tooltip: the sprite lazily resolves the **Root's shared default `Tooltip`** (`sprite.getTooltip()` returns it). You only need your own `am5.Tooltip.new(root, {...})` when that element's tooltip must **look different** from the shared one, or on XY charts, where series/axis tooltips are **cursor-driven** rather than hover-driven and need their own instance.
+
+So for non-XY charts do not create a Tooltip per series — set `tooltipText` on the right template and style the look once on the shared tooltip:
+
+```js
+// Where tooltipText goes on non-XY charts
+pieSeries.slices.template.set("tooltipText", "{category}: {value}");   // pie / funnel / venn slices
+hierarchySeries.nodes.template.set("tooltipText", "{category}: {sum}"); // hierarchy nodes
+flowSeries.nodes.nodes.template.set("tooltipText", "{name}");           // flow nodes
+flowSeries.links.template.set("tooltipText", "{sourceId} → {targetId}: {value}"); // flow links
+wordCloud.labels.template.set("tooltipText", "{category}: {value}");    // word cloud words
+polygonSeries.mapPolygons.template.set("tooltipText", "{name}");        // map polygons (map points: the bullet sprite)
+
+// Style the shared tooltip once — it lives on root.container (applies everywhere no dedicated Tooltip was set)
+var shared = root.container.get("tooltip");
+shared.set("getFillFromSprite", false);
+shared.get("background").setAll({ fill: am5.color(0x000000), fillOpacity: 0.8 });
+```
+
 ## Chart title
 
 Do NOT add titles as HTML elements — they are outside the canvas and won't appear in exports. Add an `am5.Label` to the container BEFORE the chart, and set `verticalLayout`:
@@ -300,12 +321,12 @@ series.set("heatRules", [{
 | `maxValue` | number | Override auto-calculated max (skips `calculateAggregates`) |
 | `customFunction` | function | `(sprite, min, max, value)` — full control over the rule |
 
-**Using heat rules on bullets** — bullets need an explicit `am5.Template`:
+**Using heat rules on bullets** — bullets need an explicit `am5.Template`, and the series must track the field the rule reads:
 
 ```js
 var circleTemplate = am5.Template.new({});
 
-series.bullets.push(function() {
+series.bullets.push(function(root, series, dataItem) {
   return am5.Bullet.new(root, {
     sprite: am5.Circle.new(root, {
       fill: series.get("fill"),
@@ -322,6 +343,13 @@ series.set("heatRules", [{
   key: "radius"
 }]);
 ```
+
+Rules that make bullet heat rules work (each failure is **silent** — every bullet just comes out the same size):
+- `target` must be the **`Template`** the bullet sprites are built from (3rd argument of `am5.Circle.new(...)`), not the sprite and not `series.bullets`.
+- `dataField` is the data item **property key** (`"valueY"`, `"valueX"`, `"value"`, …), **not** the raw column name. To size XY bullets by a column that is not already an axis value, register it as the base value field: `series.set("valueField", "population")` and use `dataField: "value"`.
+- `calculateAggregates: true` is required (unless `minValue`/`maxValue` are given) — without it `valueLow`/`valueHigh` are never computed and every bullet gets the midpoint size.
+- Setting `valueField` (or any `*Field`) **after** the series has processed data does not re-read the data — re-set it: `series.data.setAll(series.data.values.slice())`.
+- `ChartSerializer` calls the bullet factory with a sample data item to introspect the sprite. That throwaway sprite joins the template but has no `dataItem`, and (as of 5.20.5) the heat-rule loop then throws on `target.dataItem` — on a `LineSeries` the stroke silently disappears. If you serialize charts that have bullet heat rules, have the factory call `sprite._setDataItem(dataItem)` itself, or serialize before adding the rule.
 
 **HeatLegend:**
 
@@ -403,6 +431,23 @@ const cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
 **Reading back a `Percent`:** a `Percent` exposes two numbers — `.percent` is the 0–100 value, `.value` is the normalized 0–1 fraction. `am5.percent(50).percent === 50` but `am5.percent(50).value === 0.5`. When you read a percent setting back (e.g. `sprite.get("x")` after setting `am5.percent(50)`), use `.percent` for a 0–100 number; `.value` gives `0.5`.
 
 **Reading animated settings is unreliable mid-animation.** Right after `series.appear()` / `chart.appear()`, animated settings like `opacity` are still transitioning — `get("opacity")` can return `0` (the start value). Read such settings after the animation completes, or don't persist values read during appear (a common way to accidentally bake `opacity:0` into generated code).
+
+## Settings that already equal the default — omit them
+
+Generated code routinely spells out settings that equal the amCharts default (verified against the default themes of 5.20.5). They add noise and mislead readers into thinking they matter. Do not emit these unless changing them:
+
+| Class | Setting(s) that are already the default |
+|-------|------------------------------------------|
+| All hierarchy series | `childDataField: "children"`, `downDepth: 1`, `initialDepth: 5` |
+| `Sunburst`, `Partition`, `Treemap`, `VoronoiTreemap` | `singleBranchOnly: true` (`Partition`/`Treemap` also `upDepth: 0`; `VoronoiTreemap` also `shapeType: "polygon"`) |
+| `Tree`, `ForceDirected` | `singleBranchOnly: false`, `upDepth: Infinity`, `topDepth: 0` (`Tree` also `orientation: "vertical"`) |
+| `PieSeries`, `FunnelSeries` | `alignLabels: true` (`FunnelSeries` also `orientation: "vertical"`, `startLocation: 0`, `endLocation: 1`, `bottomRatio: 0`) |
+| `XYSeries` (all XY series) | `maskBullets: true` — note the default is **true**, so `maskBullets: false` is a real change |
+| `LineSeries` (incl. smoothed/step) | `connect: true`; `StepLineSeries` `noRisers: false` |
+| `XYChart` | `maxTooltipDistance` — leave **unset** (unset shows tooltips for all items in the category; `0` is *not* the same) |
+| `HeatLegend` | `stepCount: 1` |
+
+Runtime-mutated settings (`visible`, `x`/`y`, `opacity`, `scale`, cursor line `visible`, physics/random layouts, computed `AxisRendererCurve.points`) cannot be checked by "remove and re-`get()`" — amCharts rewrites them after render. User-set values live in `entity._userProperties` (what `ChartSerializer` reads), separate from the full `_settings` bag that includes theme and internal values.
 
 ## Dynamic data
 
@@ -555,6 +600,8 @@ colors.set("colors", [
 ]);
 ```
 
+**A `ColorSet` must always hold at least one color.** `colorSet.set("colors", [])` crashes the next `next()`/`getIndex()` call (`Cannot read properties of undefined (reading 'toHSL')` inside `generateColors`) as soon as a series iterates the palette — as of 5.20.5 the empty list is not guarded. To "reset" a palette, swap in a fresh `am5.ColorSet.new(root, {})` instead of emptying the list. The theme's `baseColor` also resolves lazily, so a **synchronous** re-color right after swapping a `ColorSet` can read a transient value (sprites momentarily black); re-set the series data and let amCharts' own data pass recolor the sprites.
+
 ## Data processor
 
 ```js
@@ -568,6 +615,17 @@ series.data.processor = am5.DataProcessor.new(root, {
 });
 // Configure processor BEFORE setting data
 ```
+
+## Serializing to JSON (ChartSerializer / JsonParser)
+
+`am5plugins_json.ChartSerializer` turns a live chart into a JSON config and `am5plugins_json.JsonParser` rebuilds it (`await parser.parse(config, { parent: root.container })`). Rules that keep round-trips working:
+
+- **Serialize the chart's top-level container child, never a bare series.** `serializer.serializeAll(root.container.children.getIndex(0))`. Serializing an unwrapped series whose settings point back at itself (`selectedDataItem` holds a `DataItem` whose `component` is the series) produces a cycle: `_pruneEmptyObjects` overflows the stack (`removeEmptyObjects: true`, the default) or `JSON.stringify` throws "Converting circular structure". With the container as root the series becomes a `#series-0` reference and the cycle disappears.
+- **Adapters do not round-trip.** `includeAdapters: true` writes each adapter as `{ key, callback: "function (…) {…}" }`; the parser does not turn that string back into a function (and the closure's `chart`/`series`/`root` would not exist anyway). Before 5.20.4 the string was registered as a callback and crashed the chart (`i[s] is not a function` in `Entity.fold`); since 5.20.4 such adapters are skipped. Either way the effect is lost — replace palette-coloring adapters with declarative equivalents: `colorByDataItem: true` on column series (5.20.4), a per-item `fill` data field + `templateField`, or `heatRules`.
+- **Only user-set settings are serialized (5.20.3)** — theme and library defaults are left out, so a serialized config is much smaller than before and a value you never set will not appear in it. Add `includeRoot: true` (5.20.2) to also write a top-level `root` section (Root settings/properties, `interfaceColors`, formatters).
+- **Re-parsing into an existing chart:** `parser.parse(config, { updateTargets: "soft" })` (5.20.3) applies settings onto an existing object of the same `type` instead of replacing it. The default `"strict"` replaces.
+- **Not captured by `ChartSerializer` (as of 5.20.5)** — re-apply these in code after `parse()`: a `ZoomableContainer`'s `contents.children` and its `ZoomTools` (the serialized container comes back empty — track "chart is zoomable" out-of-band, or use `am5.SerialChartContainer` which builds the zoomable wrapper itself); Venn `hoverGraphics` and Venn slice-template `states` (a custom Venn hover cannot be expressed in JSON); custom elements without `themeTags: ["serialize"]`.
+- **Bullets** are captured by calling the factory with a sample data item — write factories as `function(root, series, dataItem)` (pitfall #36) and see the heat-rule caveat under "Heat rules".
 
 ## Accessibility
 
@@ -721,6 +779,10 @@ onUnmounted(() => { root.dispose(); });
 31. **Globe rotation uses negative coordinates** — To center the globe (`geoOrthographic`) on a geographic point, set `rotationX` to **-longitude** and `rotationY` to **-latitude**. E.g., to center on Paris (48.86°N, 2.35°E): `chart.animate({ key: "rotationX", to: -2.35 }); chart.animate({ key: "rotationY", to: -48.86 });`. Using positive values rotates the globe the wrong way.
 32. **`positionOnLine` with multi-segment lines limits per-segment control** — `MapPointSeries` data items can animate along a line via `positionOnLine` (0→1). If the line has 3+ points (multi-segment), position 0.5 is the midpoint of the *entire* path, making per-segment effects (scaling at each segment midpoint, pausing between segments, etc.) difficult. For advanced per-segment animations, use **single-segment lines** (2 points each) and animate the bullet across them sequentially. E.g., instead of one line [A,B,C,D], create [A,B], [B,C], [C,D].
 33. **Do NOT exclude Antarctica (`exclude: ["AQ"]`) by default** — Many amCharts demos exclude Antarctica because they use Mercator projection where it appears disproportionately large. This is a demo-specific choice, not a best practice. Unless the user explicitly asks to exclude Antarctica, or references a demo that does so, keep Antarctica in the map. With non-Mercator projections (`geoNaturalEarth1`, `geoEqualEarth`, `geoOrthographic`, `geoEquirectangular`), Antarctica renders at a reasonable size.
+34. **Custom GeoJSON for `MapPolygonSeries` needs CLOCKWISE exterior rings** — amCharts projects on a sphere (d3-geo), where ring winding decides which side is "inside". The RFC 7946 default is counter-clockwise, which d3-geo reads as *the whole globe minus the polygon*, so every polygon floods the entire map and the real shape shows only as a sliver. Programmatically generated GeoJSON (grids, cells, buffers) is usually CCW. amCharts does **not** auto-rewind — reverse each ring yourself: `feature.geometry.coordinates = feature.geometry.coordinates.map(ring => ring.slice().reverse())` (for `MultiPolygon`, one level deeper). See `references/map.md`.
+35. **`axis.dispose()` does NOT remove the axis from `chart.xAxes`/`chart.yAxes`** — unlike `series.dispose()`, which self-removes from `chart.series`. A disposed axis stays in the list, keeps showing up in anything built from `chart.yAxes`, and makes `ChartSerializer` throw `Template is disposed`. Remove axes with `chart.yAxes.removeValue(axis)` (or `removeIndex(i)`) — the list auto-disposes the removed axis, no separate `dispose()` needed.
+36. **Declare bullet callbacks as `function(root, series, dataItem)`** — amCharts passes all three; closing over an outer `root` works at runtime but breaks JSON round-trips (`ChartSerializer` captures the function source, and the outer `root` dangles on re-bind). Every `series.bullets.push(...)` in these references uses the parameter form — copy it.
+37. **A `ColorSet` must contain at least one color** — `colors.set("colors", [])` crashes the next `next()`/`getIndex()`. Swap in a fresh `am5.ColorSet.new(root, {})` instead. See "ColorSet" above.
 
 ## Easing functions
 
@@ -758,7 +820,7 @@ Skip this step entirely if you cannot execute code (e.g., chat-only context with
 
 ## Recent API changes (newer than the bundled class reference)
 
-The bundled per-class API reference was snapshotted on **2026-03-15**, so it predates the changes below. Latest release covered here: **5.20.1** (2026-08-03). Prefer these names/settings; for anything newer, verify against the live docs (see next section).
+The bundled per-class API reference was snapshotted on **2026-03-15**, so it predates the changes below. Latest release covered here: **5.20.5** (2026-09-03). Prefer these names/settings; for anything newer, verify against the live docs (see next section).
 
 **Renamed settings (old name still works but is deprecated — use the new one):**
 
@@ -787,6 +849,8 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - `XYChart`: `strokeWidths` (array of pixel widths) and `strokeDasharrays` (array of dash arrays) — cycled across line series as they are added, exactly like `colors`. Lets series be told apart without relying on color, e.g. with the `Patterns` theme.
 - `XYCursor`: `clickTolerance` (default `0`) — how many pixels outside the plot area a press may start and still begin a zoom/selection. The selection itself still starts at the plot edge.
 - `XYSeries`: a value field (`valueYField`, `openValueYField`, …) can now be changed after creation — re-set the series data afterwards for it to take effect. A series can also be reassigned to a different `xAxis`/`yAxis` after creation.
+- Column series (`ColumnSeries`, `CandlestickSeries`, `OHLCSeries`, …) (5.20.4): `colorByDataItem: true` (default `false`) gives each column its own color from the series' new `colors` (`ColorSet`) setting — the series makes its own `ColorSet` if none is given. The color lands on the data item's `fill` field. Prefer this over the old "adapter on `columns.template` `fill`" recipe: it is declarative and survives JSON serialization.
+- `Scrollbar` (5.20.2): `opposite: true` (default `false`) puts a chart's `scrollbarX` **below** the plot and `scrollbarY` to the **left**, instead of above / right. Only affects scrollbars set via `chart.set("scrollbarX"/"scrollbarY", …)`. This is a **different** setting from the long-standing `opposite` on `AxisRendererX`/`AxisRendererY`.
 
 *WordCloud (5.20.1)*
 - `svgPath` arranges words into a shape (experimental), with `maskByShape` to clip them to the outline and `shapeTolerance` to control spill (negative = padding inside). See `references/wordcloud.md`.
@@ -799,8 +863,23 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - `Root`: `ariaLabel` is now applied to the `<div>` holding the chart's focusable elements (5.20.0).
 - `Label`: `oversizedBehavior: "truncate"` now ignores `maxHeight` (there is no way to truncate text vertically).
 - A `Container`'s `Rectangle`/`RoundedRectangle` background now defaults `crisp` to `true` unless set explicitly (5.20.0).
+- `Root` (5.20.2): `fontFamily`, `fontSize` (number or string) and `fontWeight` (`"normal" | "bold" | "bolder" | "lighter" | "100"…`"900"`) settings — defaults for **all** text elements unless overridden on an element. Set them in `am5.Root.new("chartdiv", { fontFamily: "Inter" })` or `root.setAll({...})` instead of a custom theme rule on `Label`.
+- `am5.SerialChartContainer` (5.20.2) — a directly usable `SerialChart` whose `seriesContainer` sits inside a `ZoomableContainer` (exposed as `chart.zoomableContainer`), so series such as `ForceDirected` can be zoomed and panned. Exported from the **`am5` root module**, not a chart package. Optional `zoomTools` setting takes a `ZoomTools` instance whose `target` is pointed at the series container automatically. Bullets added to its series are drawn (5.20.4) and flow-chart bullets are placed correctly inside it (5.20.5). See `references/hierarchy.md`.
+
+*JSON config / serialization (5.20.2 – 5.20.4)*
+- `ChartSerializer` now emits **only user-set settings** (5.20.3) — theme and library defaults are left out. Anything diffing or post-processing serializer output must expect much smaller configs.
+- A JSON config may carry a top-level **`root`** section (5.20.2) that applies settings and properties to the `Root` object before the chart is parsed; `ChartSerializer` writes it when `includeRoot: true` (default `false`). A `Root`'s `interfaceColors`, `utc`, `fps`, formatters and `tabindex` round-trip through it (5.20.3).
+- `JsonParser.parse(config, { updateTargets: "soft" })` (5.20.3) — an option on the **second argument of `parse()`**, not a parser setting. `"soft"` applies settings onto an existing object of the same `type` instead of replacing it; default `"strict"` replaces. `parse()` is async and returns a Promise.
+- Gantt charts are now serializable/parsable (5.20.3). Cross-references are written as references (`"@series.get('fill')"`) instead of copies; large values (a map's `geoJSON`, a `Root`'s locale) are written as the name of the pack they came from and rebuilt on parse.
+- An adapter whose callback did not survive the JSON round-trip is now **skipped** on parse instead of breaking the chart (5.20.4) — adapters still do not round-trip, see "Serializing to JSON" above.
+
+*Bullets on non-XY charts (5.20.2)*
+- `ArcDiagram`: bullets on nodes are now placed on the node circle, `locationX`/`locationY` being fractions of it (before 5.20.2 they were created but never positioned). Flow charts (`Sankey`/`Chord`): node bullets are children of the node, drawn above its shape and below its label, positioned relative to the node. `FunnelSeries`/`PyramidSeries`: bullet `locationX`/`locationY` follow the slice's sloping edges instead of its bounding box.
+- A bullet `Graphics` with no paint of its own takes the color of **its own slice or node** on pie, funnel, flow and hierarchy charts — so it is the same color as what it sits on and **invisible** unless offset, stroked, or given a contrasting `fill` deliberately. Setting `fill` on the bullet sprite turns the inheritance off.
 
 *Maps*
+- `MapChart` (5.20.2): `doubleClickZoom` (default **`true`** — a behavior change: a double click/tap zooms in, shift + double click zooms out; set `false` to opt out). On maps panned by rotating (`panX: "rotateX"` / `panY: "rotateY"`) the clicked point rotates to the center, otherwise it stays under the pointer. `boxZoom: "none" | "drag" | "shift" | "ctrl" | "alt"` (default `"none"`) is **not a boolean** — it names the key held while dragging a rectangle to zoom into; `"drag"` needs no key, so pair it with `panX`/`panY: "none"`. The rectangle is the readonly `chart.boxZoomSelection` element (a `Rectangle`). There are no keyboard-navigation settings on `MapChart`.
+- `MapLineSeries` (5.20.3): `pointIds` data field (`{ pointIds: ["JFK", "LAX"] }`) names the `MapPointSeries` points a line connects, looked up in the series given by the new `pointSeries` setting; `pointIdsField` (default `"pointIds"`) renames the field. `pointsToConnect` wins if both are set. See `references/map.md`.
 - `MapChart`: `projectionName` (5.19.0) — string alternative to `projection`, e.g. `"geoOrthographic"`, mainly for JSON config. Register extra ones with `am5map.registerProjection()`. Bundled projections are no longer eagerly imported, so unused ones tree-shake away.
 - `MapSankeySeries` (5.17.0) — Sankey overlaid on a map; auto-resolves `sourceId`/`targetId` once `polygonSeries` geoJSON loads (5.17.1), so no `datavalidated` wrapper needed. See `references/map.md`.
 - `MapPointSeries` defaults changed to `longitudeField: "longitude"`, `latitudeField: "latitude"` (5.16.1).
@@ -816,6 +895,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 
 *All entities*
 - `onDebounced(key, cb, delay)` / `offDebounced(key, cb?)` and `onPrivateDebounced` / `offDebouncedPrivate` (5.17.3) — fire once after rapid changes settle.
+- `once(key, cb)` and `onceDebounced(key, cb, delay)` (5.20.4) — like `on()`/`onDebounced()` for a **settings** key, but the callback fires only the first time that setting changes, then removes itself. Both return an `IDisposer`. (Distinct from `events.once("eventName", …)`, which has existed for events all along.)
 - `Label`: `fontFamily: "inherit"` (5.17.3) uses the chart container's computed font.
 
 ## Verify unfamiliar API before using it

@@ -260,6 +260,22 @@ am5percent.PictorialStackedSeries.new(root, {
 })
 ```
 
+## Bullets on slices
+
+```js
+series.bullets.push(function(root, series, dataItem) {
+  return am5.Bullet.new(root, {
+    locationX: 0.5, locationY: 0.5,          // fractions of the slice (funnel/pyramid: along the sloping edges since 5.20.2)
+    sprite: am5.Circle.new(root, {
+      radius: 6,
+      fill: am5.color(0xffffff)              // set a paint — an unpainted bullet takes its own slice's color and is invisible
+    })
+  });
+});
+```
+
+Percent series have **no series-level `fill`**: a bullet `Graphics` with no `fill`/`stroke` is auto-colored per data item from its own slice (5.20.0+), so it blends in unless stroked, offset, or given a contrasting fill. Slice tooltips need no `am5.Tooltip` instance — `series.slices.template.set("tooltipText", "{category}: {value}")` uses the root's shared tooltip.
+
 ## Legend (for all percent charts)
 
 ```js

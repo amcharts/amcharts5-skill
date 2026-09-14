@@ -254,6 +254,10 @@ series.links.template.events.on("click", function(ev) {
 });
 ```
 
+## Bullets on nodes (5.20.2)
+
+Bullets pushed to `series.nodes.bullets` are children of the node since 5.20.2: drawn above the node shape and below its label, positioned relative to the node (`locationX`/`locationY` as fractions of it). On `ArcDiagram` they sit on the node circle — before 5.20.2 they were created but never placed. A bullet `Graphics` with no `fill`/`stroke` of its own takes the **node's** color, i.e. the same color as what it sits on — give it a contrasting `fill`, a `stroke`, or an offset or it is invisible. Node/link tooltips need no `am5.Tooltip` instance: set `tooltipText` on `series.nodes.nodes.template` / `series.links.template` and the root's shared tooltip is used.
+
 ## Animated bullets along links
 
 Animated labels/circles that flow along Sankey or Chord links use `series.bullets.push()` — **NOT** `series.links.template.bullets.push()`. The bullet position (0 = source, 1 = target) is animated in a loop, and an adapter fades opacity based on position.

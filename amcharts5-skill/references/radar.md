@@ -286,7 +286,7 @@ columnSeries.columns.template.events.on("click", function(ev) {
 });
 
 // Pointer over/out on radar line data points (via bullets)
-series.bullets.push(function() {
+series.bullets.push(function(root, series, dataItem) {
   var circle = am5.Circle.new(root, {
     radius: 5,
     fill: series.get("fill"),

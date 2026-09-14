@@ -95,6 +95,7 @@ chart.set("cursor", am5xy.XYCursor.new(root, {
 ### Scrollbar
 ```js
 chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
+// opposite: true (5.20.2) puts scrollbarX below the plot / scrollbarY on the left
 ```
 
 ### Legend
@@ -190,6 +191,10 @@ const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
 - `groupIntervals` — array of allowed group intervals
 - `markUnitChange: true` — highlights when time unit changes on axis labels (e.g., new month)
 - `tooltipDateFormat` — format string for cursor tooltip
+
+**Live updates — two settings that do not refresh on `set()`:**
+- **Date format maps** (`dateFormats`, `periodChangeDateFormats`, `minorDateFormats`): after `axis.set("dateFormats", {...})` already-rendered labels keep their old text. `axis.markDirtyValues()` is not enough — call **`axis.markDirtySize()`** to make the axis re-run label formatting.
+- **`groupIntervals`** (with `groupData: true`): amCharts only (re)computes grouping when a series' data is set, so changing the allowed intervals on an already-grouped axis does nothing until you re-set the data on every series bound to the axis: `series.data.setAll(series.data.values.slice())`.
 
 **Data format:**
 ```js
@@ -324,7 +329,12 @@ series.columns.template.setAll({
   width: am5.percent(80),        // column width
 });
 
-// Individual column colors from data:
+// Individual column colors (5.20.4) — declarative, serializes to JSON:
+series.set("colorByDataItem", true);          // each column takes the next color from series.get("colors")
+// series.set("colors", am5.ColorSet.new(root, { colors: [...] }));   // optional own palette (the series makes one if absent)
+// Per-item color from data instead: templateField + a `fill` in each data item (see pie.md "Data-driven slice colors")
+
+// Pre-5.20.4 fallback — an adapter (does NOT survive JSON serialization):
 series.columns.template.adapters.add("fill", (fill, target) => {
   return chart.get("colors").getIndex(series.columns.indexOf(target));
 });
@@ -403,6 +413,7 @@ Enables zooming/panning via scrollbar. Can optionally include a preview chart.
 // Simple scrollbar:
 chart.set("scrollbarX", am5.Scrollbar.new(root, {
   orientation: "horizontal"
+  // opposite: true   // (5.20.2) place below the plot instead of above (scrollbarY: left instead of right)
 }));
 
 // Scrollbar with preview chart:
@@ -610,7 +621,12 @@ var series2 = chart.series.push(am5xy.LineSeries.new(root, {
   xAxis: xAxis, yAxis: yAxis2,
   valueYField: "units", valueXField: "date"
 }));
+
+// Removing an axis — go through the list, NOT axis.dispose():
+chart.yAxes.removeValue(yAxis2);   // the list auto-disposes the removed axis
 ```
+
+`axis.dispose()` marks the axis disposed but **leaves it in `chart.yAxes`/`chart.xAxes`** (unlike `series.dispose()`, which removes itself from `chart.series`). The stale entry keeps rendering in anything built from the list and makes `ChartSerializer` throw `Template is disposed`. Always use `removeValue(axis)` / `removeIndex(i)`.
 
 ## Axis titles
 

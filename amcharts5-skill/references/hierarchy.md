@@ -319,6 +319,27 @@ series.events.on("datavalidated", function() {
 });
 ```
 
+## Zoomable / pannable hierarchy — `SerialChartContainer` (5.20.2)
+
+`am5.SerialChartContainer` (exported from the **`am5` root module**, not `am5hierarchy`) is a directly usable `SerialChart` whose `seriesContainer` sits inside a `ZoomableContainer`, so a large `ForceDirected`, `Tree` or `Pack` can be wheel-zoomed and dragged. Prefer it over hand-wrapping the chart in `am5.ZoomableContainer` — it also survives `ChartSerializer` round-trips, which a manual `ZoomableContainer` does not (its `contents` are not serialized).
+
+```js
+const chart = root.container.children.push(am5.SerialChartContainer.new(root, {
+  zoomTools: am5.ZoomTools.new(root, {})      // optional +/−/home buttons, target is wired automatically
+}));
+
+const series = chart.series.push(am5hierarchy.ForceDirected.new(root, {
+  valueField: "value",
+  categoryField: "name",
+  childDataField: "children"
+}));
+series.data.setAll(data);
+
+chart.zoomableContainer.setAll({ maxZoomLevel: 8 });   // the ZoomableContainer holding the series
+```
+
+Bullets on series inside a `SerialChartContainer` are drawn as of 5.20.4, and flow-chart (`Sankey`/`Chord`/`ArcDiagram`) bullets are placed correctly inside one as of 5.20.5.
+
 ## Disposal
 
 ```js

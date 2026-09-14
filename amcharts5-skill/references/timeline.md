@@ -214,7 +214,7 @@ series.set("snapTooltip", true);
 Bullets on timeline charts work the same as XY charts:
 
 ```js
-series.bullets.push(function() {
+series.bullets.push(function(root, series, dataItem) {
   return am5.Bullet.new(root, {
     sprite: am5.Circle.new(root, {
       radius: 5,
@@ -258,7 +258,7 @@ series.bullets.push(function(root, series, dataItem) {
 
 ```js
 // Click on data points (via bullets)
-series.bullets.push(function() {
+series.bullets.push(function(root, series, dataItem) {
   var circle = am5.Circle.new(root, {
     radius: 5,
     fill: series.get("fill"),
@@ -346,7 +346,7 @@ chart.get("cursor").events.on("cursormoved", function(ev) {
     series.fills.template.setAll({ visible: true, fillOpacity: 0.3 });
 
     // Add bullets
-    series.bullets.push(function() {
+    series.bullets.push(function(root, series, dataItem) {
       return am5.Bullet.new(root, {
         sprite: am5.Circle.new(root, {
           radius: 4,
