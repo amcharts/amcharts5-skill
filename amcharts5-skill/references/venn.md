@@ -149,7 +149,7 @@ series.labels.template.adapters.add("text", function(text, target) {
 
 ## Serialization gotcha: custom hover is not captured
 
-`series.hoverGraphics` (the dashed set outline used in the amCharts venn demo) and `slices.template.states.create("hover", …)` are **not** written by `am5plugins_json.ChartSerializer` as of 5.20.5 — a venn rebuilt from JSON loses any custom hover look (`slices.template.tooltipText` does round-trip). Re-apply `hoverGraphics.setAll({...})` in code after `JsonParser.parse()`.
+`series.hoverGraphics` (the dashed set outline used in the amCharts venn demo) and `slices.template.states.create("hover", …)` are **not** written by `am5plugins_json.ChartSerializer` as of 5.20.8 — a venn rebuilt from JSON loses any custom hover look (`slices.template.tooltipText` does round-trip). Re-apply `hoverGraphics.setAll({...})` in code after `JsonParser.parse()`.
 
 ## Click events
 
@@ -159,6 +159,8 @@ series.slices.template.events.on("click", function(ev) {
   console.log("Clicked:", dataItem.get("category"));
 });
 ```
+
+To open a URL on click, no handler is needed (5.20.7): `am5venn.Venn.new(root, { …, urlField: "url", linkTarget: "_blank" })` (`linkTarget` default `"_self"`) links each slice — sets and intersections — to the `url` in its data row; the pointer cursor is set automatically.
 
 ## Legend
 

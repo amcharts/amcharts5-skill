@@ -346,7 +346,13 @@ series.slices.template.events.on("pointerover", function(ev) {
 series.slices.template.events.on("pointerout", function(ev) {
   ev.target.set("scale", 1);
 });
+
+// Open a URL on click without a handler (5.20.7) — pie, funnel, pyramid and pictorial slices (and bullets)
+series.set("urlField", "url");          // data row: { category: "A", value: 40, url: "https://…" }
+series.set("linkTarget", "_blank");     // default "_self"
 ```
+
+`urlField` has no default (links off until set); the pointer cursor is set automatically unless you set `cursorOverStyle`; `javascript:`/`data:`/`vbscript:` URLs are never opened; override `series.openUrl(dataItem)` to intercept.
 
 ## Disposal
 

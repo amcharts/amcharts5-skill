@@ -218,6 +218,8 @@ pointSeries2.data.setAll([
 ]);
 ```
 
+**Points on lines as data rows (5.20.6):** `MapPointSeries` has `lineIdField` (default `"lineId"`), `positionOnLineField` (default `"positionOnLine"`), `autoRotateField` (default `"autoRotate"`) and `autoRotateAngleField` (default `"autoRotateAngle"`), so a point on a `MapLine` can be a plain row — `{ lineId: "jfk-lhr", positionOnLine: 0.5, autoRotate: true }`, where `lineId` is the line's data `id` in a `MapLineSeries` of the same chart — instead of `pushDataItem({ lineDataItem, positionOnLine })`. Data values of `autoRotate`/`autoRotateAngle` win over the bullet's own setting. `polygonIdField` still has **no** default — declare it as above. See "Animating bullets along lines".
+
 ### MapLineSeries (connections, routes)
 
 ```js
@@ -464,7 +466,7 @@ sankeySeries.data.setAll([
 
 ### Animating bullets along lines (positionOnLine)
 
-`MapPointSeries` data items have a `positionOnLine` setting (0–1) that positions the point along a line. Combined with `lineDataItem` and `autoRotate`, this enables flight-path-style animations.
+`MapPointSeries` data items have a `positionOnLine` setting (0–1) that positions the point along a line. Combined with `lineDataItem` (or, since 5.20.6, a `lineId` data field) and `autoRotate`, this enables flight-path-style animations.
 
 ```js
 // Create a point that follows a line
@@ -495,6 +497,30 @@ plane.on("positionOnLine", function(pos) {
   chart.set("rotationY", -plane.get("latitude"));
 });
 ```
+
+**Data-row form + declared flight (5.20.6 / 5.20.8)** — no data-item references and no `animate()` call, so the whole thing survives `ChartSerializer` (points added with `pushDataItem()` are not serialized; `data` rows are):
+
+```js
+var lineSeries = chart.series.push(am5map.MapLineSeries.new(root, {}));   // push before the point series
+lineSeries.data.setAll([{ id: "jfk-lhr",
+  geometry: { type: "LineString", coordinates: [[-73.78, 40.64], [-0.45, 51.47]] } }]);
+
+var planeSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
+planeSeries.bullets.push(function (root, series, dataItem) {
+  return am5.Bullet.new(root, {
+    sprite: am5.Graphics.new(root, {
+      svgPath: "m2,106h28l24,30h72l-44,-133h35l80,132h98c21,0 21,34 0,34l-98,0 -80,134h-35l43,-133h-71l-24,30h-28l15,-47",
+      scale: 0.06, centerX: am5.p50, centerY: am5.p50,
+      // loops: 0 = forever; yoyo flies back; keep `from` explicit (a row without positionOnLine would jump to `to`)
+      animations: [{ target: "dataItem", key: "positionOnLine", from: 0, to: 1,
+                     duration: 6000, loops: 0, yoyo: true, easing: "cubic", ease: "inOut" }]
+    })
+  });
+});
+planeSeries.data.setAll([{ lineId: "jfk-lhr", positionOnLine: 0, autoRotate: true }]);
+```
+
+**Direction on the way back (5.20.8):** an `autoRotate` point turns round to face its travel direction **only** while an `animations` entry on its bullet sprite (`target: "dataItem"`, `key: "positionOnLine"`) moves it back toward the line start. A point moved by `dataItem.animate()` from code keeps facing the line's direction — that code has to turn it (Example 4 rotates its plane between segments itself). A loop started on a data item in code is also **not** saved by `ChartSerializer` in 5.20.8; the declared entry is.
 
 **IMPORTANT — Multi-segment lines and `positionOnLine`:**
 - `positionOnLine` treats the entire line as one unit (0 = start, 1 = end). If a line has multiple segments (i.e. `pointsToConnect` has 3+ points), position 0.5 is the midpoint of the *entire* path.
@@ -644,7 +670,15 @@ pointSeries.bullets.push(function(root, series, dataItem) {
 chart.on("zoomLevel", function(zoomLevel) {
   console.log("Zoom:", zoomLevel);
 });
+
+// Links without a click handler (5.20.7): urlField on MapPolygonSeries, MapLineSeries or MapPointSeries (bullets)
+var linkedSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
+  geoJSON: am5geodata_worldLow, urlField: "url", linkTarget: "_blank"   // linkTarget default "_self"
+}));
+linkedSeries.data.setAll([{ id: "US", url: "https://en.wikipedia.org/wiki/United_States" }]);
 ```
+
+`urlField` has no default (links are off until set); the pointer cursor is set automatically unless you set `cursorOverStyle`; `javascript:`/`data:`/`vbscript:` URLs are never opened; override `series.openUrl(dataItem)` to intercept. `MapSankeySeries` nodes are not linked — keep a `click` handler there.
 
 ## Disposal
 

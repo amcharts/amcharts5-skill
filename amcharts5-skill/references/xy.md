@@ -167,7 +167,7 @@ xAxis.data.setAll(data);
 - `tooltip` — shows category under cursor
 
 **Gotchas:**
-- Category order in axis data and series data must match
+- Since 5.20.6 series data need **not** follow the axis-category order for every item to be drawn (before, out-of-order items — e.g. Gantt-like column charts sorted by date — could silently disappear). Line series still connect points in **data** order, so keep line data in category order.
 - Forgetting `xAxis.data.setAll()` is the #1 mistake — the chart will render empty
 
 ## DateAxis
@@ -590,6 +590,14 @@ series.bullets.push(function(root, series, dataItem) {
 
 // Auto-hide bullets when too close together
 series.set("minBulletDistance", 20);
+
+// Pulsing bullet declared as data (5.20.8) — survives JSON serialization, unlike animate()
+series.bullets.push(function(root, series, dataItem) {
+  return am5.Bullet.new(root, {
+    sprite: am5.Circle.new(root, { radius: 5, fill: series.get("fill"),
+      animations: [{ key: "scale", from: 1, to: 1.6, duration: 800, loops: 0, yoyo: true, easing: "sine" }] })
+  });
+});
 ```
 
 ## Dual Y-axis (multiple value axes)
@@ -685,7 +693,13 @@ series.bullets.push(function(root, series, dataItem) {
 xAxis.events.on("rangechanged", function() {
   console.log("Axis range changed (zoomed/scrolled)");
 });
+
+// Open a URL on click without a handler (5.20.7): columns and bullets of the series are linked
+series.set("urlField", "url");          // data row: { category: "A", value: 10, url: "https://…" }
+series.set("linkTarget", "_blank");     // default "_self"
 ```
+
+`urlField` has no default (links off until set) and works on every series' bullets and on all column-type series (`ColumnSeries`, `CandlestickSeries`, `OHLCSeries`, Gantt). The pointer cursor is set automatically unless you set `cursorOverStyle`; `javascript:`/`data:`/`vbscript:` URLs are never opened; override `series.openUrl(dataItem)` to intercept.
 
 ## Chart settings reference
 
