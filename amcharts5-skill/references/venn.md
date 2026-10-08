@@ -147,9 +147,9 @@ series.labels.template.adapters.add("text", function(text, target) {
 });
 ```
 
-## Serialization gotcha: custom hover is not captured
+## Serialization gotcha: `hoverGraphics` is not captured
 
-`series.hoverGraphics` (the dashed set outline used in the amCharts venn demo) and `slices.template.states.create("hover", …)` are **not** written by `am5plugins_json.ChartSerializer` as of 5.20.8 — a venn rebuilt from JSON loses any custom hover look (`slices.template.tooltipText` does round-trip). Re-apply `hoverGraphics.setAll({...})` in code after `JsonParser.parse()`.
+`series.hoverGraphics` (the dashed set outline used in the amCharts venn demo) is **not** written by `am5plugins_json.ChartSerializer` as of 5.21.0 — a venn rebuilt from JSON loses that outline. Re-apply `hoverGraphics.setAll({...})` in code after `JsonParser.parse()`. Slice-template states (`slices.template.states.create("hover", …)`) and `slices.template.tooltipText` do round-trip. Before 5.21.0 a `Venn` pushed straight into `root.container` could not be serialized on its own (stack overflow) — wrap it in a `Container` or upgrade.
 
 ## Click events
 

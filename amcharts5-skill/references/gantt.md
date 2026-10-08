@@ -94,9 +94,12 @@ Customize field names:
 ```js
 chart.yAxis.setAll({
   nameField: "task",
+  colorField: "barColor",
   collapsedField: "closed"
 });
 ```
+
+`nameField` and `colorField` are fully honored since 5.21.0. Before, bar colors were always read from (and color-picker changes written to) `color` whatever `colorField` said — on older versions keep the field named `color`.
 
 ### Series data fields
 
@@ -199,6 +202,8 @@ chart.controls.hide(0);
 // Show edit toggle
 chart.editButton.show(0);
 ```
+
+**Keyboard (5.21.0):** tasks with subtasks expose `aria-expanded` (`ariaExpanded`), the expand/collapse button of a task without subtasks is no longer a TAB stop, toolbar and task buttons have screen-reader names, scrollbar grips include the category in their name, and an `EditableLabel` (task names) no longer stops ENTER working elsewhere on the page.
 
 ## Series customization
 

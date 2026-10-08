@@ -6,7 +6,7 @@
 ## Version
 
 Always use **amCharts 5** (not v3 or v4). The APIs are completely different.
-amCharts 5 uses Canvas rendering (not SVG like v4).
+amCharts 5 draws on canvas by default (v4 was SVG); since 5.21.0 SVG is optional via `am5.Root.new("chartdiv", { renderer: am5.SVGRenderer })`.
 
 ## Object creation
 
@@ -543,6 +543,8 @@ series.columns.template.setAll({
 // focusableGroup: "series1" — TAB to first, arrows within group
 ```
 
+Windows High Contrast (5.21.0): interface colors (labels, grid, axes, buttons) follow the system colors by default; `am5.Root.new("chartdiv", { forcedColors: false })` opts out. `am5.Modal` takes an `ariaLabel` (dialog name); `ariaExpanded` is a new element setting.
+
 ## Container & Layout
 
 ```js
@@ -628,7 +630,7 @@ series.data.processor = am5.DataProcessor.new(root, {
   dateFields: ["date"],
   dateFormat: "yyyy-MM-dd",
   numericFields: ["value"],
-  emptyAs: 0
+  emptyAs: 0   // replaces null, undefined and "" (5.21.0: no longer 0/false)
 });
 // Configure BEFORE setting data
 ```
@@ -666,7 +668,7 @@ series.set("tooltip", am5.Tooltip.new(root, {
 ```
 
 ### Chart title
-Do NOT add titles as HTML — they won't be part of the canvas or exports. Use `am5.Label` in the container BEFORE the chart, with `verticalLayout`:
+Do NOT add titles as HTML — they won't be part of the chart or exports. Use `am5.Label` in the container BEFORE the chart, with `verticalLayout`:
 ```js
 root.container.children.push(am5.Label.new(root, {
   text: "Chart Title",
@@ -690,7 +692,7 @@ var chart = root.container.children.push(am5xy.XYChart.new(root, { ... }));
 | `am4core.color("#f00")` | `am5.color(0xff0000)` or `am5.color("#f00")` |
 | `new am4charts.Legend()` | `am5.Legend.new(root, {})` |
 | `chart.cursor = new am4charts.XYCursor()` | `chart.set("cursor", am5xy.XYCursor.new(root, {}))` |
-| SVG-based rendering | Canvas-based rendering |
+| SVG-based rendering | Canvas by default; SVG optional since 5.21.0 (`renderer: am5.SVGRenderer`) |
 | `am4core.useTheme(am4themes_animated)` | `root.setThemes([am5themes_Animated.new(root)])` |
 
 ## Common pitfalls
@@ -711,7 +713,7 @@ var chart = root.container.children.push(am5xy.XYChart.new(root, { ... }));
 
 8. **children.push()** — Adding elements to containers uses `.children.push()` which returns the element. Always capture the return value.
 
-9. **No CSS styling** — amCharts 5 renders to Canvas, not DOM/SVG. You cannot style chart elements with CSS. Use themes or `.set()`/`.setAll()`.
+9. **No CSS styling** — amCharts 5 draws on canvas by default, so CSS cannot reach chart elements; even with `am5.SVGRenderer` (5.21.0) the shapes have no per-element classes, are rewritten on redraw, and exports ignore page CSS. Use themes or `.set()`/`.setAll()`.
 
 10. **Hierarchy charts are chart-less** — Treemap, force-directed, etc. add series directly to `root.container` (or a wrapper Container), not to a chart object.
 
@@ -811,7 +813,7 @@ chart.series.data.setAll([
 
 21. **No continent-level geodata at top-level CDN** — `geodata/europeLow.js` does NOT exist. Use `geodata/region/world/europeLow.js` (global: `am5geodata_region_world_europeLow`) or filter `worldLow` with `include: ["FR", "DE", "ES", ...]`.
 
-22. **Do not add chart titles as HTML** — HTML titles are outside the canvas and won't appear in exports. Use `am5.Label` pushed into the container BEFORE the chart, with `verticalLayout` on the container. See "Chart title" in Common components above.
+22. **Do not add chart titles as HTML** — HTML titles are outside the chart and won't appear in exports. Use `am5.Label` pushed into the container BEFORE the chart, with `verticalLayout` on the container. See "Chart title" in Common components above.
 
 23. **`XYChartScrollbar` axes — never use `scrollbar.get("xAxis")`** — Axes passed to the scrollbar constructor are NOT stored as gettable settings. Create axes as separate variables, pass them to the scrollbar, and reuse those same variables for the scrollbar's inner series:
 ```js
@@ -850,7 +852,7 @@ var sbSeries = scrollbar.chart.series.push(am5xy.LineSeries.new(root, {
 
 35. **Tooltips on non-XY charts need no `am5.Tooltip` instance** — just `tooltipText` on the right template (`slices.template`, `nodes.template`, flow `nodes.nodes.template` / `links.template`, wordcloud `labels.template`, `mapPolygons.template`); the root's shared tooltip (`root.container.get("tooltip")`) is used. Create a `Tooltip` only when it must look different, or on XY charts where series/axis tooltips are cursor-driven. Heat rules on bullets: `target` must be the `am5.Template` the sprite is built from, `dataField` is the property key (`"valueY"`, not the column name), and `calculateAggregates: true` is required — otherwise every bullet silently gets the same size.
 
-36. **Serialize the chart's top container child, never a bare series** (`serializer.serializeAll(root.container.children.getIndex(0))`) — a bare series with `selectedDataItem` set is cyclic and overflows `_pruneEmptyObjects` / breaks `JSON.stringify`. `ChartSerializer` does not capture a `ZoomableContainer`'s `contents` (use `am5.SerialChartContainer`), Venn `hoverGraphics`/slice states, adapters, data items added with `pushDataItem()`, or a loop started on a data item in code — re-apply those after `JsonParser.parse()`. It does save user `themeTags` (5.20.6), declared `animations`, and endless code-started loops (`loops: Infinity`, named easing) as `animations` entries (5.20.8, `runningAnimations`, default `true`) — prefer a declared `animations` entry over `animate()` for effects that must survive JSON.
+36. **Serialize the chart's top container child** (`serializer.serializeAll(root.container.children.getIndex(0))` — the chart, or the series on chart-less types). Before 5.21.0 a series straight in `root.container` or one with `selectedDataItem` set overflowed the stack; 5.21.0 handles both (a drilled-down hierarchy selection is still not restored). `ChartSerializer` does not capture adapters, Venn `hoverGraphics`, a `ZoomTools` you added to a hand-made `ZoomableContainer` (use `am5.SerialChartContainer`), or data items added with `pushDataItem()` — re-apply those after `JsonParser.parse()`. It does save user `themeTags` (5.20.6), declared `animations`, endless code-started loops (`loops: Infinity`, named easing) as `animations` entries (5.20.8, `runningAnimations`, default `true`), and since 5.21.0 a data-item loop started in code (the first one found, onto the bullet sprite), hidden series, elements added to plot/axis containers, a `ZoomableContainer`'s `contents`, `Date` values, and `root.interfaceColors` colors as `"@root.interfaceColors.get('…')"` references. Prefer a declared `animations` entry over `animate()` for effects that must survive JSON; for the opening animation use `autoAppear: true` (5.21.0).
 
 ## Disposal (SPA / React / Angular / Vue)
 
@@ -871,7 +873,7 @@ ngOnDestroy() { this.root?.dispose(); }
 onUnmounted(() => { root.dispose(); });
 ```
 
-## Recent API changes (5.16 → 5.20.8)
+## Recent API changes (5.16 → 5.21.0)
 
 **Renamed settings** (old name still works but is deprecated):
 
@@ -881,6 +883,18 @@ onUnmounted(() => { root.dispose(); });
 | `VoronoiTreemap` | `type` | `shapeType` | 5.18.0 |
 
 **Breaking — WordCloud (5.20.1):** layout is now computed synchronously in one pass. The per-data-item `ghostLabel` is gone and labels live in an internal container — use `series.labels` / `dataItem.get("label")` instead of walking `series.children`.
+
+**New in 5.21.0 (2026-10-08):**
+
+- SVG rendering: `am5.Root.new("chartdiv", { renderer: am5.SVGRenderer })` (only when the root is created) or `am5.Root.defaultRenderer = am5.SVGRenderer` before creating roots. Canvas stays the default; charts look and behave the same; blend modes `DST_OVER`/`SRC_ATOP`/`XOR` are canvas-only. Keep canvas unless SVG in the page is asked for.
+- SVG export from either renderer: `am5.renderToSVG(root)` (or an element, e.g. `series`) returns markup of the chart as last drawn — call it after `root.events.once("frameended", …)`; options `width`, `height`, `precision` (3), `idPrefix`, `title`, `background`. Exporting plugin: `exporting.download("svg")` / `getSVG()` / `exportSVG()`; `ExportingMenu` lists "SVG" by default (`svgOptions: { disabled: true }` removes it).
+- `<am5-chart>` element: `<am5-chart themes="Animated" renderer="svg" config='{ "type": "PieChart", … }'>` (or `src="chart.json"`). Script tags: `index.js` > `plugins/json.js` > `element.js` > every chart package the config uses > themes. npm: `import "@amcharts/amcharts5/element"`, then `el.themes = [am5themes_Animated]; el.config = {…}`. `el.whenReady()` resolves `{ root, chart }`; events `ready`/`error`; 400 px high without a CSS height.
+- `autoAppear: true` (+ `appearDuration`, `appearDelay`) on a chart/series plays the `appear()` animation when first drawn — the way to animate JSON configs. A series waits for its first data; plays once.
+- `Root` `forcedColors` (default `true`), `Scrollbar` `outsideAxes` (`true` beyond the axes, `false` between axes and plot; only for `scrollbarX`/`scrollbarY`), `Modal` `ariaLabel`, element `ariaExpanded`.
+- Maps: `am5map.PixelMapSeries` (polygons as a pixel grid: `pixelType` `"square"`/`"circle"`/`"diamond"`/`"hexagon"`, `step` (2°), `uniform`, `columnHeight` + `MapPolygon` `pixelHeight` via heat rule; style `mapPolygons.template`), `am5map.MapRasterSeries` (equirectangular world image `src`, optional `nightSrc` + `sunDate: "now"`), `am5map.NightSeries` (`sunDate`/`sunPosition`, `sunAltitude`), `am5map.getSunPosition(date)`, `MapLine` `altitude` (metres, one arc per leg), `MapPointSeries` `altitudeField` (no default) and `surfaceBullets`, `MapChart` `autoHome`, `MapPolygonSeries` `clickZoom` (click zooms to a polygon, again/background goes home; zoomed polygon is `active`). See references/map.md.
+- JSON: colors from `root.interfaceColors` are written as `"@root.interfaceColors.get('…')"` references (follow the theme on parse); hidden series, plot/axis-container elements, data-item loops, `Date` values and more are now saved.
+
+**Behavior changes (5.21.0):** a hidden element (`visible: false`/`forceHidden`/`hide()`) no longer takes space in a content-sized container (a hidden XY scrollbar leaves no band); `emptyAs` replaces only `null`/`undefined`/`""`; `Label` `fillOpacity: 0` hides text; `strokeWidth: 0` / `shadowOpacity: 0` draw nothing; heat rule `minValue: 0`/`maxValue: 0` honored; `stacked: "up"` bullets on vertical series stack; `calculateAggregates` change fields work on non-XY series; Gantt `colorField`/`nameField` honored; `Sunburst` ignores `singleBranchOnly`; `StockToolbar` `focusable` defaults to `true`; Responsive theme hides minor labels only at ≤ 600 px; `PatternSet` wraps past its last pattern; `DurationFormatter` codes `H`/`D`/`Y`/`K`/`k`/`n` work and month–year durations use month formats; `CSVParser` honors `skipEmpty: false`; `series.updateData([])` removes all items; `fontSize: "8"` = 8 px; a log `ValueAxis` with values ≤ 0 warns in the console (set `treatZeroAs`); `innerRadius: am5.percent(0)` works on pie/radar; `AxisRendererRadial` negative `radius` is measured in from the chart radius.
 
 **New settings worth knowing:**
 
@@ -905,12 +919,12 @@ onUnmounted(() => { root.dispose(); });
 - All entities: `once(key, cb)` / `onceDebounced(key, cb, delay)` (5.20.4) — settings-change handler that fires once then removes itself.
 - JSON (5.20.2–5.20.4): `ChartSerializer` emits **only user-set settings**; `includeRoot: true` writes a top-level `root` section (also accepted in hand-written configs); `parser.parse(config, { updateTargets: "soft" })` updates an existing same-type object instead of replacing it; Gantt is serializable; adapters that did not survive JSON are skipped on parse (they never round-trip).
 - Bullets (5.20.2): flow node bullets are children of the node (above shape, below label), `ArcDiagram` node bullets sit on the node circle, funnel/pyramid bullets follow the slice's sloping edges. An unpainted bullet takes its **own slice/node color** on pie, funnel, flow and hierarchy charts — same color as what it sits on, so give it a contrasting `fill`/`stroke`.
-- All elements: `animations` setting (5.20.8; typings say `@since 5.21.0`) — array of `{ key, from?, to, duration, delay?, loops?, yoyo?, easing?, ease?, target? }`: `loops: 0` = forever (default `1`), `easing` is a **name** (default `"linear"`), `ease: "in" | "out" | "inOut"` (default `"in"`), `target: "dataItem"` animates a data-item value such as `positionOnLine`. Declarative, so it lives in JSON configs. Give `from` explicitly unless the setting has a theme default (`scale`/`opacity`/`rotation`) — with `from` omitted and an `undefined` current value it jumps straight to `to`. E.g. a pulsing bullet: `am5.Circle.new(root, { radius: 6, animations: [{ key: "scale", from: 1, to: 1.6, duration: 800, loops: 0, yoyo: true, easing: "sine" }] })`.
+- All elements: `animations` setting (5.20.8) — array of `{ key, from?, to, duration, delay?, loops?, yoyo?, easing?, ease?, target? }`: `loops: 0` = forever (default `1`), `easing` is a **name** (default `"linear"`), `ease: "in" | "out" | "inOut"` (default `"in"`), `target: "dataItem"` animates a data-item value such as `positionOnLine`. Declarative, so it lives in JSON configs. Give `from` explicitly unless the setting has a theme default (`scale`/`opacity`/`rotation`) — with `from` omitted and an `undefined` current value it jumps straight to `to`. E.g. a pulsing bullet: `am5.Circle.new(root, { radius: 6, animations: [{ key: "scale", from: 1, to: 1.6, duration: 800, loops: 0, yoyo: true, easing: "sine" }] })`.
 - `am5.ease.byName("cubic", "out")` / `am5.ease.easingInfo(fn)` (5.20.8) — only `linear`, `quad`, `cubic`, `exp`, `sine`, `circle`, `bounce`, `elastic` (and `out`/`inOut`/`yoyo` of them) have names; unknown names become linear. `am5.ease.pow(t, e)` needs an exponent — wrap it as `(t) => am5.ease.pow(t, 3)`, never pass it bare.
 - `Series` links (5.20.7): `urlField` (no default — off until set) + `linkTarget` (default `"_self"`; `"_blank"` opens with `noopener`). Clicking a bullet, column, slice (pie/funnel/pyramid/pictorial/Venn), map polygon or map line opens the data item's `url`; pointer cursor is automatic; `javascript:`/`data:`/`vbscript:` URLs are ignored; override `series.openUrl(dataItem)` to intercept. Not linked: hierarchy nodes, flow nodes/links, word-cloud labels, `MapSankeySeries` nodes.
 - `MapPointSeries` (5.20.6): `lineIdField`, `positionOnLineField`, `autoRotateField`, `autoRotateAngleField` (defaults `"lineId"`, `"positionOnLine"`, `"autoRotate"`, `"autoRotateAngle"`) — points on lines can be data rows instead of `pushDataItem({ lineDataItem })`. An auto-rotating point turns round on the way back only while a bullet-sprite `animations` entry moves it (5.20.8).
 - Fixes (5.20.6–5.20.7): series data no longer has to follow `CategoryAxis` category order (line series still connect in data order); log `ValueAxis` labels use round powers of ten; `axisHeader` content added later makes the axis leave room; `am5.CSVParser.parse("")` no longer hangs (returns `[]` with `useColumnNames: true`, `[{}]` by default); a `Container` `background` with its own `templateField` reads the container's data item (per-bullet label backgrounds work).
-- JSON (5.20.6–5.20.8): user `themeTags` (passed to `.new()`) are serialized; `JsonParser` resolves refs that point further down the config (a legend in an `axisHeader` round-trips; axis-range `axis`/`series` lookups still need ordering); map data rows drop geodata properties (`name`, `CNTRY`, `TYPE`); declared `animations` round-trip and endless code-started loops with a named easing are saved as `animations` entries (`ChartSerializer` `runningAnimations`, default `true`). A loop started on a data item in code is not saved.
+- JSON (5.20.6–5.20.8): user `themeTags` (passed to `.new()`) are serialized; `JsonParser` resolves refs that point further down the config (a legend in an `axisHeader` round-trips; axis-range `axis`/`series` lookups still need ordering); map data rows drop geodata properties (`name`, `CNTRY`, `TYPE`); declared `animations` round-trip and endless code-started loops with a named easing are saved as `animations` entries (`ChartSerializer` `runningAnimations`, default `true`). A loop started on a data item in code is saved only since 5.21.0.
 
 ## Verify unfamiliar API before using it
 

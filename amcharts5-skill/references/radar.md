@@ -44,9 +44,11 @@ const chart = root.container.children.push(
 | Setting | Type | Description |
 |---------|------|-------------|
 | `radius` | percent/number | Outer radius (default: `am5.percent(80)`) |
-| `innerRadius` | percent/number | Inner radius / hole size (default: 0) |
+| `innerRadius` | percent/number | Inner radius / hole size (default: 0). `am5.percent(0)` broke the chart before 5.21.0 — use `0` there |
 | `startAngle` | number | Start angle in degrees (default: -90) |
 | `endAngle` | number | End angle in degrees (default: 270) |
+
+Since 5.21.0 the radar's radius also leaves room for a legend placed inside the chart (it ignored it).
 
 ## Axes — use circular + radial renderers
 
@@ -68,6 +70,8 @@ const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
 }));
 ```
 
+`AxisRendererRadial` takes its own `radius`/`innerRadius` (pixels or `Percent` of the chart's radius) and `startAngle`/`endAngle`; unset, the chart's are used. A **negative** `radius` is measured in from the chart's radius, as on `AxisRendererCircular` — e.g. `radius: -20` leaves a 20 px ring outside the axis (it broke the axis before 5.21.0); a negative `innerRadius` is measured in from the axis' outer radius. With an `innerRadius` on a renderer, `RadarColumnSeries` tooltips point at the right place since 5.21.0.
+
 ### Circular renderer label options
 
 ```js
@@ -87,7 +91,7 @@ xAxis.get("renderer").labels.template.setAll({
 |-------|---------|
 | `am5radar.RadarLineSeries` | Lines on radar chart (spider chart) |
 | `am5radar.RadarColumnSeries` | Columns on radar chart |
-| `am5radar.SmoothedRadarLineSeries` | Smoothed/curved radar lines |
+| `am5radar.SmoothedRadarLineSeries` | Smoothed/curved radar lines (`tension`, default `0.5`; `1` = straight — changing it after creation works since 5.21.0) |
 
 ```js
 // Radar line series (spider chart)

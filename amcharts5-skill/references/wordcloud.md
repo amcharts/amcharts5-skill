@@ -79,7 +79,7 @@ series.appear(1000);
 | `sequencedInterpolation` | boolean | `true` | Stagger the word reveal instead of showing all at once |
 | `sequencedDelay` | number | `15` | Milliseconds between words when `sequencedInterpolation` is on |
 
-**Parser settings and `text`:** `minValue`, `maxCount`, `minWordLength` and `excludeWords` are consumed when `text` is parsed. Since **5.20.0** changing any of them on a live series re-parses `text` automatically. On older versions they only took effect on the next `text` assignment — set them **before** `text`, or re-assign `text` after changing them.
+**Parser settings and `text`:** `minValue`, `maxCount`, `minWordLength` and `excludeWords` are consumed when `text` is parsed. Since **5.20.0** changing any of them on a live series re-parses `text` automatically. On older versions they only took effect on the next `text` assignment — set them **before** `text`, or re-assign `text` after changing them. Before **5.21.0** a word failing more than one of `minValue`, `minWordLength` and `excludeWords` also removed a neighbouring word — if you filtered words out of the data yourself to avoid that, the settings are safe to use now.
 
 ### excludeWords example
 

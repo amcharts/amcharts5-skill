@@ -60,6 +60,8 @@ chart.appear(1000, 100);
 | `am5xy.DurationAxis` | Duration values | `value` | No |
 | `am5xy.GaplessDateAxis` | Time data without gaps | `value` (timestamps) | No |
 
+`DurationAxis` values are amounts of its `baseUnit` (e.g. `"second"`), labelled by `root.durationFormatter` (`durationFormat`, `durationFormats`). Since 5.21.0 durations between a month and a year use the month formats again (`1m 15d 00:00:00`, not `45d 00:00:00`), and format codes `H`, `D`, `Y`, `K`, `k`, `n` work (they gave `NaN`, e.g. `"HH:mm:ss"`). `GaplessDateAxis` with grouped data and `root.timezone` set no longer stays blank (5.21.0).
+
 ## Series types
 
 | Series class | Use for |
@@ -96,6 +98,7 @@ chart.set("cursor", am5xy.XYCursor.new(root, {
 ```js
 chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
 // opposite: true (5.20.2) puts scrollbarX below the plot / scrollbarY on the left
+// outsideAxes: true (5.21.0) puts it beyond the axes on its side, false between them and the plot
 ```
 
 ### Legend
@@ -226,6 +229,8 @@ const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
   maxPrecision: 0            // max decimal places in axis labels
 }));
 ```
+
+A `logarithmic` axis cannot show values ≤ 0. Since 5.21.0 such data logs a console warning ("…Set `treatZeroAs` to show them.") instead of silently drawing nothing — set `treatZeroAs` (e.g. `0.1`) when the data has zeros.
 
 ## AxisRendererX / AxisRendererY
 
@@ -413,8 +418,10 @@ Enables zooming/panning via scrollbar. Can optionally include a preview chart.
 // Simple scrollbar:
 chart.set("scrollbarX", am5.Scrollbar.new(root, {
   orientation: "horizontal"
-  // opposite: true   // (5.20.2) place below the plot instead of above (scrollbarY: left instead of right)
+  // opposite: true     // (5.20.2) place below the plot instead of above (scrollbarY: left instead of right)
+  // outsideAxes: true  // (5.21.0) beyond the axes on that side; false = between axes and plot; unset = chart decides
 }));
+// Hiding it (visible: false / forceHidden / hide()) leaves no empty band above the plot since 5.21.0
 
 // Scrollbar with preview chart:
 const scrollbar = am5xy.XYChartScrollbar.new(root, {
@@ -590,6 +597,9 @@ series.bullets.push(function(root, series, dataItem) {
 
 // Auto-hide bullets when too close together
 series.set("minBulletDistance", 20);
+
+// Bullets at the same spot can stack instead of overlapping: am5.Bullet.new(root, { stacked: "up" | "down" | "auto", ... })
+// (XY only; "up", and "auto" in the lower half, overlapped on vertical series before 5.21.0)
 
 // Pulsing bullet declared as data (5.20.8) — survives JSON serialization, unlike animate()
 series.bullets.push(function(root, series, dataItem) {

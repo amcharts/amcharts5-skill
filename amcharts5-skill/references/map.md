@@ -56,7 +56,8 @@ const chart = root.container.children.push(
     panY: "translateY",        // "translateY", "rotateY", "none"
     projection: am5map.geoMercator(),
     // homeGeoPoint: { latitude: 48.8566, longitude: 2.3522 },
-    // homeZoomLevel: 5
+    // homeZoomLevel: 5,
+    // autoHome: true              // (5.21.0) start at the home position
   })
 );
 
@@ -143,7 +144,7 @@ polygonSeries.set("geoJSON", geojson);
 chart.zoomToGeoBounds({ left: -8.6, right: 1.8, top: 60.9, bottom: 49.9 }, 500);
 ```
 
-`zoomToGeoBounds(bounds, duration?)` is more reliable than `homeGeoPoint` + `homeZoomLevel` + `goHome()` when the only series is custom polygons.
+`zoomToGeoBounds(bounds, duration?)` is the most direct way to fit custom polygons. Since 5.21.0 it uses the `duration` you pass (it rotated with `animationDuration`) and no longer modifies the bounds object; `goHome()` also works when called before the map is ready or on a rotated map, and `autoHome: true` does the initial trip for you (see "Zoom controls").
 
 ### Choropleth (heat map) via heat rules
 
@@ -218,6 +219,8 @@ pointSeries2.data.setAll([
 ]);
 ```
 
+`surfaceBullets: true` (5.21.0) lays the bullets onto the map surface, and `altitudeField` (5.21.0) raises points — see "Bullets on the surface" and "Raised lines and points" below.
+
 **Points on lines as data rows (5.20.6):** `MapPointSeries` has `lineIdField` (default `"lineId"`), `positionOnLineField` (default `"positionOnLine"`), `autoRotateField` (default `"autoRotate"`) and `autoRotateAngleField` (default `"autoRotateAngle"`), so a point on a `MapLine` can be a plain row — `{ lineId: "jfk-lhr", positionOnLine: 0.5, autoRotate: true }`, where `lineId` is the line's data `id` in a `MapLineSeries` of the same chart — instead of `pushDataItem({ lineDataItem, positionOnLine })`. Data values of `autoRotate`/`autoRotateAngle` win over the bullet's own setting. `polygonIdField` still has **no** default — declare it as above. See "Animating bullets along lines".
 
 ### MapLineSeries (connections, routes)
@@ -265,7 +268,7 @@ lineSeries2.data.setAll([
 ]);
 ```
 
-`pointsToConnect` wins if a data item has both. Fixed points (`fixed: true`) cannot be used with either.
+`pointsToConnect` wins if a data item has both. Fixed points (`fixed: true`) cannot be used with either. `altitude` on `mapLines.template` (5.21.0) arcs lines above the surface — see "Raised lines and points". Changing `lineType` on the series or a data item redraws lines already drawn since 5.21.0.
 
 ### MapSankeySeries (geographic flow bands)
 
@@ -447,7 +450,7 @@ sankeySeries.events.on("datavalidated", function() {
 });
 ```
 
-Bullets automatically hide on the back side of the globe (orthographic projection).
+Bullets automatically hide on the back side of the globe (orthographic projection). Since 5.21.0 they are drawn above the flows, and bullets that are not moving along their flow follow the map when it moves (before, they stayed behind).
 
 #### Multi-level flows
 
@@ -520,22 +523,180 @@ planeSeries.bullets.push(function (root, series, dataItem) {
 planeSeries.data.setAll([{ lineId: "jfk-lhr", positionOnLine: 0, autoRotate: true }]);
 ```
 
-**Direction on the way back (5.20.8):** an `autoRotate` point turns round to face its travel direction **only** while an `animations` entry on its bullet sprite (`target: "dataItem"`, `key: "positionOnLine"`) moves it back toward the line start. A point moved by `dataItem.animate()` from code keeps facing the line's direction — that code has to turn it (Example 4 rotates its plane between segments itself). A loop started on a data item in code is also **not** saved by `ChartSerializer` in 5.20.8; the declared entry is.
+**Direction on the way back (5.20.8):** an `autoRotate` point turns round to face its travel direction **only** while an `animations` entry on its bullet sprite (`target: "dataItem"`, `key: "positionOnLine"`) moves it back toward the line start. A point moved by `dataItem.animate()` from code keeps facing the line's direction — that code has to turn it (Example 4 rotates its plane between segments itself). An endless loop started on a data item in code is saved by `ChartSerializer` since 5.21.0 (not in 5.20.8), but only the first one found, written onto the bullet sprite — after parsing every point of the series plays it; a declared entry per bullet is the predictable form. Since 5.21.0 every point placed on a line follows the line when it changes (e.g. gets an `altitude`), not just one of them.
 
 **IMPORTANT — Multi-segment lines and `positionOnLine`:**
 - `positionOnLine` treats the entire line as one unit (0 = start, 1 = end). If a line has multiple segments (i.e. `pointsToConnect` has 3+ points), position 0.5 is the midpoint of the *entire* path.
 - For advanced per-segment animations (e.g., scaling the bullet differently at the midpoint of each segment, or pausing between segments), use **single-segment lines** (2 points each) instead of one multi-segment line. This gives you full control: animate `positionOnLine` from 0 to 1 on each segment line sequentially, with independent timing, easing, and callbacks per segment.
 - Example: instead of one line with points [A, B, C, D], create three lines: [A,B], [B,C], [C,D] and animate the bullet across them one at a time.
 
+### Raised lines and points — `altitude` (5.21.0)
+
+`altitude` on a `MapLine` lifts each leg (one point to the next) into an arc, in **metres** at its middle (`400000` ≈ the ISS). Once set (even `0`), the line's ends sit at the `altitude` of the points it connects (or the third value of their coordinates); without it the line stays on the surface. Not applied to `lineType: "straight"`. On flat maps lines rise up the screen.
+
+```js
+var pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
+pointSeries.bullets.push(function (root, series, dataItem) {
+  return am5.Bullet.new(root, {
+    sprite: am5.Circle.new(root, { radius: 5, fill: am5.color(0xff621f), tooltipText: "{title}" })
+  });
+});
+pointSeries.data.setAll([
+  { id: "london", title: "London", latitude: 51.5072, longitude: -0.1276 },
+  { id: "new-york", title: "New York", latitude: 40.7128, longitude: -74.006 },
+  { id: "singapore", title: "Singapore", latitude: 1.3521, longitude: 103.8198 }
+]);
+
+var lineSeries = chart.series.push(am5map.MapLineSeries.new(root, { pointSeries: pointSeries }));
+lineSeries.mapLines.template.setAll({
+  altitude: 1000000,   // each route rises 1,000 km in its middle and lands on both cities
+  stroke: am5.color(0xff621f),
+  strokeWidth: 2
+});
+lineSeries.data.setAll([{ pointIds: ["london", "new-york"] }, { pointIds: ["london", "singapore"] }]);
+
+// Points raised by a data value — altitudeField has NO default, so declare it
+var satSeries = chart.series.push(am5map.MapPointSeries.new(root, { altitudeField: "altitude" }));
+satSeries.bullets.push(function (root, series, dataItem) {
+  return am5.Bullet.new(root, { sprite: am5.Circle.new(root, { radius: 4, fill: am5.color(0x0066cc) }) });
+});
+satSeries.data.setAll([{ latitude: 10, longitude: 0, altitude: 400000 }]);   // metres
+```
+
+A point on a line takes the line's altitude. `mapLine.positionToAltitude(position)` returns the altitude (m) at `0`–`1` along a line. Works best on a globe (`geoOrthographic`, see `map-altitude-arcs` in the npm package examples).
+
+### Bullets on the surface — `surfaceBullets` (5.21.0)
+
+`surfaceBullets: true` on a `MapPointSeries` lays its bullets onto the map: each turns, squashes and stretches with the projection, as if painted on — on a globe they flatten towards the edge, on Mercator they grow towards the poles. Default `false` (bullets stay upright and unscaled).
+
+```js
+var pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {
+  surfaceBullets: true
+}));
+pointSeries.bullets.push(function (root, series, dataItem) {
+  return am5.Bullet.new(root, {
+    sprite: am5.Graphics.new(root, {   // a pin with its tip at the point
+      svgPath: "M0,0 C-5,-7 -9,-11 -9,-17 A9,9 0 1 1 9,-17 C9,-11 5,-7 0,0 Z M0,-20.5 A3.5,3.5 0 1 0 0,-13.5 A3.5,3.5 0 1 0 0,-20.5 Z",
+      fill: am5.color(0xff621f),
+      tooltipText: "{title}"
+    })
+  });
+});
+pointSeries.data.setAll([
+  { title: "London", latitude: 51.5072, longitude: -0.1276 },
+  { title: "Tokyo", latitude: 35.6895, longitude: 139.6917 }
+]);
+```
+
+Heat-rule-sized circles work too (`polygonIdField` + a bullet `am5.Template` as the rule target) — circles that lie flat on a globe.
+
+### Pixel maps — `PixelMapSeries` (5.21.0)
+
+`am5map.PixelMapSeries` extends `MapPolygonSeries` and draws its polygons as a grid of pixels that rotate and zoom with the map. Each pixel takes the look of the polygon it falls in, so **style `mapPolygons.template`, not the pixels** — heat rules, `templateField`, states and tooltips work as on `MapPolygonSeries` (the polygons stay, invisible, to take hover and clicks).
+
+```js
+var pixelSeries = chart.series.push(am5map.PixelMapSeries.new(root, {
+  geoJSON: am5geodata_worldLow,
+  pixelType: "circle",       // "square" (default), "circle", "diamond", "hexagon"
+  step: 2,                   // degrees between pixel centers (default 2)
+  uniform: true,             // an even on-screen grid of same-size pixels, like a pixel image of the map
+  valueField: "value",
+  calculateAggregates: true  // the heat rule needs the value range
+}));
+pixelSeries.mapPolygons.template.setAll({
+  fill: root.interfaceColors.get("disabled"),   // countries without data
+  tooltipText: "{name}: {value}"
+});
+pixelSeries.set("heatRules", [{
+  target: pixelSeries.mapPolygons.template, dataField: "value",
+  min: am5.color(0xffd19a), max: am5.color(0xb3261e), key: "fill"
+}]);
+pixelSeries.data.setAll([{ id: "US", value: 38 }, { id: "IN", value: 28 }, { id: "NG", value: 18 }]);
+```
+
+3D columns — the height of each polygon's columns comes from `MapPolygon` `pixelHeight` (`0`–`1` of `columnHeight`; set it with a heat rule or `templateField`); without it, from the polygon's value between the series' low and high (needs `calculateAggregates`):
+
+```js
+var columns = chart.series.push(am5map.PixelMapSeries.new(root, {
+  geoJSON: am5geodata_worldLow,
+  valueField: "value",
+  calculateAggregates: true,
+  columnHeight: 0.15      // tallest column = 15% of the globe's radius (0 = flat, the default)
+}));
+columns.set("heatRules", [{
+  target: columns.mapPolygons.template, dataField: "value",
+  min: 0.1, max: 1, key: "pixelHeight"
+}]);
+columns.mapPolygons.template.setAll({ stroke: am5.color(0xffffff), strokeWidth: 0.5 }); // outline each pixel
+columns.data.setAll([{ id: "CN", value: 1410 }, { id: "IN", value: 1430 }, { id: "ID", value: 277 }]);
+```
+
+| Setting | Default | Notes |
+|---------|---------|-------|
+| `step` | `2` | Degrees between pixel centers (with `uniform`, measured at the map's center). Finest `0.001`; a step that would make more than **500,000 pixels** is coarsened, with a console warning — small maps can take a fine step (e.g. `0.01` for a small country) |
+| `pixelSize` | `0.8` | Pixel size relative to `step`; `1` = neighbors touch |
+| `pixelType` | `"square"` | `"circle"`, `"diamond"`, `"hexagon"` |
+| `stagger` | unset | Shift every other row by half a pixel; unset = squares in columns, circles staggered; hexagons/diamonds always staggered |
+| `equalArea` | `true` | Fewer pixels per row towards the poles; `false` = same count every row |
+| `equalWidth` | `false` | Every pixel as wide as on the equator (overlap towards the poles); not with `uniform` |
+| `uniform` | `false` | Even on-screen grid, upright same-size pixels; `equalArea` and `columnHeight` do not apply |
+| `columnHeight` | `0` | Raises pixels into columns; tallest = this share of the globe's radius |
+| `pixelHeightFunction` | — | `(dataItem, longitude, latitude) => 0..1` per pixel; overrides `pixelHeight`; **not saved** to JSON (heat-rule heights are) |
+
+Pixels have no outline by default (the theme keeps pixel polygons at `strokeWidth: 0`); set `strokeWidth` (and `stroke`) on `mapPolygons.template` to outline each pixel. `pixelSeries.pixels` is the `Graphics` that draws them all: `am5.renderToSVG(pixelSeries.pixels)` exports just the pixels, with each polygon's pixels in a `<g id="US" data-name="United States">`. `include`/`exclude` work as on `MapPolygonSeries`.
+
+### Satellite images — `MapRasterSeries` (5.21.0)
+
+`am5map.MapRasterSeries` shows one image of the whole world, reprojected as the map turns and zooms (on the GPU with WebGL2 for orthographic, equirectangular, Mercator, Equal Earth and Natural Earth; on the CPU otherwise). With `nightSrc` and a sun position it shows day where the sun is up and night where it is down, blended across twilight.
+
+```js
+var raster = chart.series.push(am5map.MapRasterSeries.new(root, {
+  src: "https://cdn.amcharts.com/lib/5/geodata/images/earthDay2048.jpg",       // the world by day
+  nightSrc: "https://cdn.amcharts.com/lib/5/geodata/images/earthNight2048.jpg", // optional: city lights at night
+  sunDate: "now"   // or sunPosition: { longitude, latitude } — needed only with nightSrc
+}));
+raster.events.on("loaded", function () { /* src (and nightSrc) are drawn */ });
+raster.events.on("loaderror", function () { /* failed, or cross-origin without CORS */ });
+```
+
+- The image must be **equirectangular** ("plate carrée": longitude −180…180 left to right, latitude 90…−90 top to bottom). The geodata package ships `geodata/images/earthDay2048.jpg` and `earthNight2048.jpg` (NASA Earth Observatory — credit it, e.g. a small `am5.Label`).
+- `cors` (default `"anonymous"`): a cross-origin image is drawn only if its server sends CORS headers. A page opened from disk (`file://`) cannot read an image file beside it — serve the page, or use the CDN copy.
+- The series counts as the whole world in the map's bounds; on a regional map set `affectsBounds: false`. The projection needs `invert`, so nothing is drawn while `animateProjection()` runs.
+- Draw country borders over it with a `MapPolygonSeries` pushed after it, `fillOpacity: 0` on `mapPolygons.template`. `twilight` (default `12` degrees of sun height) sets how wide the day/night blend is.
+
+### Night shading — `NightSeries` and `getSunPosition()` (5.21.0)
+
+`am5map.NightSeries` shades the part of the map where it is night, with the twilight in steps, and shows the sun. It never affects the map's bounds.
+
+```js
+chart.series.push(am5map.MapPolygonSeries.new(root, { geoJSON: am5geodata_worldLow }));
+
+var night = chart.series.push(am5map.NightSeries.new(root, {
+  sunDate: "now",        // "now" (moves on every minute), a timestamp, a date string or a Date
+  sunAltitude: 2000000   // metres: keeps the sun in view a little past a globe's edge (default 0)
+}));
+night.mapPolygons.template.setAll({ fill: am5.color(0x000033), fillOpacity: 0.6 }); // full night (default black, 0.5)
+night.get("sun").setAll({ radius: 12 });   // the sun is a Circle the series makes; or set any sprite as `sun`
+
+// …or a fixed moment instead of the clock — where the sun is overhead at a given time:
+// am5map.NightSeries.new(root, { sunPosition: am5map.getSunPosition(new Date("2026-06-21T12:00:00Z")) })
+```
+
+- `sunDate` overrides `sunPosition`. To change a `Date`, set a new object — mutating the same one goes unnoticed.
+- `twilight` (default `12`) and `twilightSteps` (default `4`, number of shades from day to full night).
+- `sunAltitude` is for looks: `1000000`–`5000000` suits a globe.
+- `am5map.getSunPosition(date?)` takes a `Date` (default now) and returns the `{ longitude, latitude }` where the sun is directly overhead — also for `MapRasterSeries` `sunPosition`, or to place a sun marker on a `MapPointSeries`.
+
 ## Zoom controls
 
 ```js
 chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
+// its home button is hidden by default: zoomControl.homeButton.set("visible", true)
 
 // Programmatic zoom
 chart.zoomToGeoPoint({ latitude: 48.86, longitude: 2.35 }, 5);  // zoom level 5
 
-// Zoom to a polygon
+// Zoom to a polygon (5.21.0: prefer clickZoom, below)
 polygonSeries.mapPolygons.template.events.on("click", function(ev) {
   polygonSeries.zoomToDataItem(ev.target.dataItem);
 });
@@ -560,6 +721,32 @@ am5map.MapChart.new(root, {
 });
 chart.boxZoomSelection.setAll({ fill: am5.color(0x1e88e5), fillOpacity: 0.15 });
 ```
+
+**Zoom to a clicked polygon — `clickZoom` (5.21.0).** One setting replaces the click-handler + `zoomToDataItem` + background-click recipe: a click zooms to the polygon (on a map panned by rotating — `panX: "rotateX"`/`panY: "rotateY"` — the globe also turns to it); clicking it again or the map background goes back home. The polygon zoomed to is `active`, so an `"active"` state marks it. Default `false`; works from JSON.
+
+```js
+var polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
+  geoJSON: am5geodata_worldLow,
+  clickZoom: true
+}));
+polygonSeries.mapPolygons.template.setAll({ tooltipText: "{name}", interactive: true });
+polygonSeries.mapPolygons.template.states.create("active", {
+  fill: root.interfaceColors.get("primaryButtonActive")
+});
+```
+
+**Start at the home position — `autoHome` (5.21.0).** Goes to the home position (`homeGeoPoint`, `homeZoomLevel`, `homeRotationX`/`homeRotationY`) once the map is loaded, as `goHome()` does — animated when `animationDuration` is set (the Animated theme sets it), at once otherwise. No `goHome()` call in a `datavalidated` handler needed, so a map loaded from JSON can start zoomed in. Default `false`.
+
+```js
+var chart = root.container.children.push(am5map.MapChart.new(root, {
+  projection: am5map.geoMercator(),
+  homeGeoPoint: { longitude: 14, latitude: 51 },   // central Europe…
+  homeZoomLevel: 3.5,                              // …zoomed in 3.5 times
+  autoHome: true
+}));
+```
+
+Fixed in 5.21.0: `goHome()` went to the wrong place before the map was ready or on a rotated map (globe); a zoomed-in map could not be dragged to its edges (with `maxPanOut: 0` not at all); `zoomToGeoBounds()` rotated with `animationDuration` instead of the given duration and changed the bounds object; `MapPointSeries.zoomToDataItems(items, true)` / `ClusteredPointSeries.zoomToCluster()` turned a globe to the wrong point; `chart.geoPoint()` and `getPolygonByGeoPoint()` were off on charts with padding.
 
 ## Globe (orthographic projection)
 
@@ -642,10 +829,13 @@ am5map.MapChart.new(root, {
   wheelSensitivity: 1,      // zoom speed multiplier
   doubleClickZoom: true,    // (5.20.2) double click zooms in, shift+double click out — default true
   boxZoom: "none",          // (5.20.2) "none" | "drag" | "shift" | "ctrl" | "alt" — key held to drag a zoom box
+  autoHome: false,          // (5.21.0) true = go to homeGeoPoint/homeZoomLevel once loaded
 })
 ```
 
 **Polygon IDs** use ISO 3166-1 alpha-2 codes (e.g., `"US"`, `"CN"`, `"DE"`, `"FR"`).
+
+**Accessibility (5.21.0):** focusable map polygons can be focused (they could not before), objects left out with `include`/`exclude` get no focus element, objects panned or zoomed out of view are not TAB stops until at least partly back in view, and the zoom level is announced to screen readers once zooming settles.
 
 ## Events on map elements
 

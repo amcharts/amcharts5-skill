@@ -263,6 +263,8 @@ Several indicators changed behavior. If you have hardcoded expectations or saved
 
 All indicators now enforce min/max limits on their numeric settings, so extreme values entered in the settings modal can no longer freeze the page (e.g. a Volume Profile row count of 24,000).
 
+**Fixed in 5.21.0:** changing column colors after creation now recolors the columns already drawn — `increasingColor`/`decreasingColor` on `Volume`, `MACD`, `AwesomeOscillator`, `MovingAverageDeviation` and `HeikinAshi`, `upColor`/`downColor` on `VolumeProfile` (e.g. `indicator.set("increasingColor", am5.color(0x00aa00))`). An indicator drawn in its own panel now has its `legend` and `cursor` properties set (they were always `undefined`). Erasing the first stock drawing reports its real `index` in `drawingremoved`.
+
 ### Custom indicator editable settings (5.20.0)
 
 `IIndicatorEditableSetting` gained three properties for the settings modal:
@@ -317,6 +319,10 @@ var data = [
 | Settings | `am5stock.SettingsControl` | Theme, fills, auto-save |
 | Reset | `am5stock.ResetControl` | Reset chart to defaults |
 | Interval | `am5stock.IntervalControl` | Switch time interval |
+
+**Keyboard (5.21.0):** `StockToolbar` `focusable` now defaults to `true` — toolbar buttons are TAB stops and lists work with arrow keys; set `focusable: false` on the `StockToolbar` to get the old behavior. The settings dialog (`am5.Modal`) traps focus while open and gives it back on close; panel and legend icon buttons and overbought/oversold grips have screen-reader names.
+
+**`PeriodSelector` labels (5.21.0):** a period without a `name` is labeled from its unit and count — `{ timeUnit: "month" }` shows `MONTH1`, `{ timeUnit: "ytd" }` shows `YTD` (before: `MONTHundefined`, `YTDundefined`). Give each period a `name` for nicer labels.
 
 ## Events
 

@@ -254,6 +254,8 @@ series.links.template.events.on("click", function(ev) {
 });
 ```
 
+**Keyboard (5.21.0):** in a `focusableGroup`, arrow keys move between nodes even though flow nodes are draggable, and SHIFT + arrow keys drag them. Also fixed: setting a `Chord`'s `sort` back to `"none"` restores the original order.
+
 `urlField` / `linkTarget` (5.20.7) do **not** link flow nodes or links — to open a URL from a node or link, keep a `click` handler like the ones above (e.g. `window.open(ev.target.dataItem.dataContext.url, "_blank", "noopener")`).
 
 ## Bullets on nodes (5.20.2)

@@ -55,7 +55,7 @@ chart.appear(1000, 100);
 | Setting | Type | Description |
 |---------|------|-------------|
 | `radius` | percent/number | Outer radius (default: `am5.percent(80)`) |
-| `innerRadius` | percent/number | Inner hole for donut (default: 0). Percent is relative to radius |
+| `innerRadius` | percent/number | Inner hole for donut (default: 0). Percent is relative to radius. `am5.percent(0)` broke the chart before 5.21.0 — use `0` (or omit it) for a plain pie |
 | `startAngle` | number | Start angle in degrees (default: -90) |
 | `endAngle` | number | End angle in degrees (default: 270) |
 
@@ -320,6 +320,10 @@ outerSeries.data.setAll(outerData);
 innerSeries.data.setAll(innerData);
 ```
 
+A negative `innerRadius` (pixels in from the outer edge, a fixed-width ring) with several series sizes the rings correctly since 5.21.0.
+
+**`calculateAggregates` on pie/funnel series (5.21.0):** with `calculateAggregates: true` the change fields — `{valueChange}`/`{valueChangePercent}` (vs. the first slice) and `{valueChangePrevious}`/`{valueChangePreviousPercent}` (vs. the previous one) — are real numbers; before 5.21.0 they were `NaN` on non-XY series (pie, map heat maps). `{valuePercentTotal}` and the totals were not affected.
+
 ## Data-driven slice colors (templateField)
 
 ```js
@@ -353,6 +357,8 @@ series.set("linkTarget", "_blank");     // default "_self"
 ```
 
 `urlField` has no default (links off until set); the pointer cursor is set automatically unless you set `cursorOverStyle`; `javascript:`/`data:`/`vbscript:` URLs are never opened; override `series.openUrl(dataItem)` to intercept.
+
+**Keyboard (5.21.0):** `series.slices.template.set("focusable", true)` makes slices TAB-reachable — before 5.21.0 focusable pie slices could not be focused. A focusable slice that toggles on click is exposed as a toggle button (`aria-pressed`).
 
 ## Disposal
 
