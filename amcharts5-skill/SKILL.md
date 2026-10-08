@@ -961,7 +961,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - `Gantt`: the category axis' `colorField` and `nameField` are honored (bar colors were always read from `color`).
 - `Sunburst` ignores `singleBranchOnly` (always `true`). `StockToolbar` `focusable` now defaults to `true`.
 - Responsive theme: minor axis labels are hidden only on charts 600 px or smaller (was 1000 px), so turned-on minor labels show on mid-size charts.
-- `PatternSet` starts over from its first pattern past the end of its list (the built-in list has 16, so the 17th element and later got no pattern).
+- `PatternSet` starts over from its first pattern past the end of its list (elements after the 17th got no pattern).
 - `DurationFormatter`: codes `H`, `D`, `Y`, `K`, `k`, `n` work (as `h`, `d`, `y`, `h`, `h`, `S` — e.g. `"HH:mm:ss"` gave `NaN`); durations between a month and a year use the month formats again (`1m 15d 00:00:00`, not `45d 00:00:00`), which `DurationAxis` labels show.
 - `am5.CSVParser` honors `skipEmpty: false` (empty lines were always skipped). `series.updateData([])` removes every data item (it kept the first).
 - A `fontSize` given as a number in a string (`"8"`) counts as pixels (was ignored). Filters (`brightness`, `saturate`, `blur`, …) combine instead of replacing each other, and one set back to neutral turns off.
