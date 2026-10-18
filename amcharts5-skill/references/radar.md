@@ -570,8 +570,7 @@ root.dispose();
       strokeOpacity: 0,
       fillOpacity: 0.8,
       width: am5.percent(80),
-      cornerRadiusTL: 3,
-      cornerRadiusTR: 3
+      cornerRadius: 3          // radar columns are Slices: one cornerRadius, no cornerRadiusTL/TR
     });
 
     // Color each column differently

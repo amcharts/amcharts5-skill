@@ -47,7 +47,7 @@ var chart = root.container.children.push(
 | `editable` | boolean | `true` | Allow user to add, edit, remove, drag tasks |
 | `durationUnit` | string | `"day"` | `"year"`, `"month"`, `"week"`, `"day"`, `"hour"`, `"minute"`, `"second"` |
 | `weekends` | number[] | `[0, 6]` | Non-working days (0=Sun, 1=Mon, ... 6=Sat) |
-| `excludeWeekends` | boolean | `false` | Whether to exclude weekends from task durations |
+| `excludeWeekends` | boolean | `true` | Skips `weekends` and `holidays`: task starts move to the next working day and durations count working days only. Set `false` to count every day |
 | `holidays` | Date[] | `[]` | Specific non-working dates |
 | `snapThreshold` | number | `0.5` | Drag snap position within a period (0–1) |
 | `sidebarWidth` | number \| Percent | `30%` | Sidebar width in pixels or Percent |

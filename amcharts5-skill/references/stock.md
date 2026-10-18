@@ -324,6 +324,8 @@ var data = [
 
 **`PeriodSelector` labels (5.21.0):** a period without a `name` is labeled from its unit and count — `{ timeUnit: "month" }` shows `MONTH1`, `{ timeUnit: "ytd" }` shows `YTD` (before: `MONTHundefined`, `YTDundefined`). Give each period a `name` for nicer labels.
 
+**Time zones (5.21.1):** `PeriodSelector` and `DateRangeSelector` count periods and dates in `root.timezone` (or UTC with `root.utc`), like the date axis; before 5.21.1 they used the viewer's time zone. Charts with `root.timezone` are also much faster (up to 16 times) and keep grid, labels and data groups on the hour across daylight saving changes.
+
 ## Events
 
 ```js

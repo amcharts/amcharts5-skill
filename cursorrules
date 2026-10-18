@@ -186,6 +186,8 @@ colors.reset();       // restart counter
 colors.set("colors", [am5.color(0x095256), am5.color(0x087f8c)]);
 ```
 
+A scale through several colors (5.21.2): `am5.Color.interpolateColors(position, [ic.get("negative"), ic.get("warning"), ic.get("positive")])` with `var ic = root.interfaceColors` (`warning` is a yellow between red `negative` and green `positive`; `Color.interpolate()` between the two has a brown middle). `Adaptive`/`Monochrome` theme settings (5.21.2, all off by default): `interleave` (neighbouring series differ more), `mapShade` (lighter map land), `keepContrast` (`true` = 3:1 against the background, or a ratio).
+
 ## Common chart recipes
 
 ### XY chart with category axis (bar/column)
@@ -307,7 +309,7 @@ const series = chart.series.push(am5percent.FunnelSeries.new(root, {
   valueField: "value",
   categoryField: "stage",
   orientation: "vertical",
-  bottomRatio: 0   // 0 = trapezoids (classic funnel), 1 = rectangles
+  bottomRatio: 0   // 0 = rectangles (default), 1 = each slice narrows to the next (trapezoids)
 }));
 
 series.data.setAll([
@@ -481,6 +483,8 @@ series.columns.template.states.create("hover", {
 // Built-in states: "hover", "active", "disabled", "hidden"
 ```
 
+Once a state has changed a setting, the `"default"` state keeps the value from before and restores it on every unhover. To change such a setting later, change it in both places: `sprite.set("fill", c); sprite.states.lookup("default")?.set("fill", c);`.
+
 ## Heat rules
 
 Color or size elements by data value. Requires `calculateAggregates: true` on the series (unless `minValue`/`maxValue` are set).
@@ -514,6 +518,7 @@ series.set("heatRules", [{
 
 **Heat rule keys:** `"fill"`, `"radius"`, `"opacity"`, `"strokeWidth"`, `"fontSize"`, etc.
 **customFunction:** `(sprite, min, max, value)` for full control.
+**stops (5.21.2):** `stops: [ic.get("negative"), ic.get("warning"), ic.get("positive")]` (with `var ic = root.interfaceColors`) in place of `min`/`max` for a scale through more than two values (numbers, percents or colors); `HeatLegend` takes the same list as `colors` in place of `startColor`/`endColor`.
 
 **HeatLegend:**
 ```js
@@ -621,6 +626,11 @@ series.data.insertIndex(1, newItem);      // insert at index
 // ❌ series.dataItems.each(fn)           — will throw
 // ✅ series.dataItems.forEach(fn)        — standard JS
 // ✅ am5.array.each(series.dataItems, function(dataItem) {})
+
+// Changing a data item's value directly: set the WORKING key too, or nothing moves
+xySeries.dataItems[0].setAll({ valueX: 4, valueY: 7, valueXWorking: 4, valueYWorking: 7 });
+pieSeries.dataItems[0].setAll({ value: 80, valueWorking: 80 });   // pie/funnel: valueWorking
+// A data item's bullets are a property: dataItem.bullets?.[0]?.get("sprite") (dataItem.get("bullets") is undefined)
 ```
 
 ## Data processor (for external/API data)
@@ -628,7 +638,7 @@ series.data.insertIndex(1, newItem);      // insert at index
 ```js
 series.data.processor = am5.DataProcessor.new(root, {
   dateFields: ["date"],
-  dateFormat: "yyyy-MM-dd",
+  dateFormat: "yyyy-MM-dd",   // optional since 5.21.1: without it Date parses the strings ("2024-03-15" = midnight UTC)
   numericFields: ["value"],
   emptyAs: 0   // replaces null, undefined and "" (5.21.0: no longer 0/false)
 });
@@ -815,29 +825,32 @@ chart.series.data.setAll([
 
 22. **Do not add chart titles as HTML** — HTML titles are outside the chart and won't appear in exports. Use `am5.Label` pushed into the container BEFORE the chart, with `verticalLayout` on the container. See "Chart title" in Common components above.
 
-23. **`XYChartScrollbar` axes — never use `scrollbar.get("xAxis")`** — Axes passed to the scrollbar constructor are NOT stored as gettable settings. Create axes as separate variables, pass them to the scrollbar, and reuse those same variables for the scrollbar's inner series:
+23. **`XYChartScrollbar` has no `xAxis`/`yAxis` settings; its axes live in `scrollbar.chart`** — the preview is a chart of its own. Push its axes into `scrollbar.chart.xAxes`/`yAxes` and its series into `scrollbar.chart.series`, and give that series the data. Axes passed to `XYChartScrollbar.new()` are never added to the preview (its series then throws), and `get("xAxis")` only hands back whatever you passed:
 ```js
-// WRONG — scrollbar.get("xAxis") returns undefined
-var sbSeries = scrollbar.chart.series.push(am5xy.LineSeries.new(root, {
-  xAxis: scrollbar.get("xAxis"),   // undefined!
-  yAxis: scrollbar.get("yAxis")    // undefined!
+// CORRECT — the scrollbar's preview chart gets its own axes and series
+var scrollbar = chart.set("scrollbarX", am5xy.XYChartScrollbar.new(root, {
+  orientation: "horizontal",
+  height: 50
 }));
-
-// CORRECT — reuse the axis variables
-var sbxAxis = am5xy.DateAxis.new(root, { renderer: am5xy.AxisRendererX.new(root, {}) });
-var sbyAxis = am5xy.ValueAxis.new(root, { renderer: am5xy.AxisRendererY.new(root, {}) });
-var scrollbar = am5xy.XYChartScrollbar.new(root, { xAxis: sbxAxis, yAxis: sbyAxis });
+var sbxAxis = scrollbar.chart.xAxes.push(am5xy.DateAxis.new(root, {
+  baseInterval: { timeUnit: "day", count: 1 },
+  renderer: am5xy.AxisRendererX.new(root, {})
+}));
+var sbyAxis = scrollbar.chart.yAxes.push(am5xy.ValueAxis.new(root, {
+  renderer: am5xy.AxisRendererY.new(root, {})
+}));
 var sbSeries = scrollbar.chart.series.push(am5xy.LineSeries.new(root, {
   xAxis: sbxAxis, yAxis: sbyAxis, valueYField: "value", valueXField: "date"
 }));
+sbSeries.data.setAll(data);   // the preview series needs the data too
 ```
 
 24. **`am5.color()` only accepts hex integers or CSS strings** — `am5.color(0xff0000)`, `am5.color("#ff0000")`, `am5.color("rgb(255,0,0)")` are valid. `am5.color({ r: 255, g: 0, b: 0 })` is NOT — it throws.
 
-25. **`MapChart` has NO `"colors"` setting** — `chart.get("colors")` returns `undefined` on `MapChart`. Only XY, Radar, and Percent charts auto-create a ColorSet. For maps, create your own: `am5.ColorSet.new(root, {})`.
+25. **`MapChart` has no default `colors`** — the setting exists (inherited from `SerialChart`), but nothing sets it on a map, so `chart.get("colors")` returns `undefined`, and map series don't use it anyway. XY and Radar charts (and percent series, via `series.get("colors")`) get a ColorSet from the theme. For maps, make your own: `am5.ColorSet.new(root, {})`.
 
 26. **`VoronoiTreemap` has NO `.rectangles` property** — Unlike `Treemap` (which has `series.rectangles.template`), `VoronoiTreemap` renders organic polygon cells. Style via `series.nodes.template` and its children, not `.rectangles`.
-27. **Labels with data placeholders need `populateText: true`** — When a Label uses data field placeholders like `text: "{name}"`, you MUST also set `populateText: true`. Without it, the placeholder is not resolved and the label appears blank. This applies everywhere Labels display dynamic data — bullet labels, map point labels, etc. Example: `am5.Label.new(root, { text: "{name}", populateText: true, ... })`.
+27. **Labels with data placeholders need `populateText: true`** — `Label` defaults to `populateText: false`; labels the library makes for you (axis, legend, tooltip, pie/funnel slice labels, hierarchy and flow node labels…) get `true` from their own theme rules, but a `Label` you create does not. Any Label you create whose `text` has `{placeholders}` (a bullet sprite, a child of a bullet's container, a map point label) needs `populateText: true`, or it shows the braces literally. Example: `am5.Label.new(root, { text: "{name}", populateText: true, ... })`. A `tooltipText` is filled in regardless.
 28. **Globe rotation uses negative coordinates** — To center the globe (`geoOrthographic`) on a geographic point, set `rotationX` to **-longitude** and `rotationY` to **-latitude**. E.g., to center on Paris (48.86°N, 2.35°E): `chart.animate({ key: "rotationX", to: -2.35 }); chart.animate({ key: "rotationY", to: -48.86 });`. Using positive values rotates the globe the wrong way.
 29. **`positionOnLine` with multi-segment lines limits per-segment control** — `MapPointSeries` data items can animate along a line via `positionOnLine` (0>1). If the line has 3+ points (multi-segment), position 0.5 is the midpoint of the *entire* path, making per-segment effects (scaling at each segment midpoint, pausing between segments, etc.) difficult. For advanced per-segment animations, use **single-segment lines** (2 points each) and animate the bullet across them sequentially. Since 5.20.6 a point on a line can be a plain data row — `{ lineId: "jfk-lhr", positionOnLine: 0, autoRotate: true }` (the line's data `id`) — instead of `pushDataItem({ lineDataItem })`; data rows are serialized, pushed data items are not. A looping flight can be declared on the bullet sprite: `animations: [{ target: "dataItem", key: "positionOnLine", from: 0, to: 1, duration: 6000, loops: 0, yoyo: true }]` (5.20.8) — with `autoRotate` the point then turns round on the way back (a point moved by `dataItem.animate()` in code is not flipped).
 30. **`MapSankeySeries` is in the map package, NOT the flow package** — Geographic Sankey bands on a map use `am5map.MapSankeySeries` from `@amcharts/amcharts5/map`. Do NOT import `@amcharts/amcharts5/flow` for this. It requires a `polygonSeries` setting pointing to a `MapPolygonSeries` to resolve country IDs to centroids. Data uses `{ sourceId, targetId, value }` with ISO alpha-2 country codes. Bands are styled via `sankeySeries.mapPolygons.template`, nodes via `sankeySeries.nodes.mapPolygons.template`. Supports waypoints, explicit lat/long coordinates, multi-level flows, and animated bullets via `locationX`. Data can be set directly (e.g. `sankeySeries.data.setAll([...])`) at any time — `MapSankeySeries` auto-resolves `sourceId`/`targetId` once the referenced `polygonSeries` finishes loading, so no `datavalidated` wrapper is needed. **Never** call `polygonSeries.data.setAll()` with custom objects — this replaces geoJSON-derived data items and breaks centroid resolution.
@@ -853,6 +866,14 @@ var sbSeries = scrollbar.chart.series.push(am5xy.LineSeries.new(root, {
 35. **Tooltips on non-XY charts need no `am5.Tooltip` instance** — just `tooltipText` on the right template (`slices.template`, `nodes.template`, flow `nodes.nodes.template` / `links.template`, wordcloud `labels.template`, `mapPolygons.template`); the root's shared tooltip (`root.container.get("tooltip")`) is used. Create a `Tooltip` only when it must look different, or on XY charts where series/axis tooltips are cursor-driven. Heat rules on bullets: `target` must be the `am5.Template` the sprite is built from, `dataField` is the property key (`"valueY"`, not the column name), and `calculateAggregates: true` is required — otherwise every bullet silently gets the same size.
 
 36. **Serialize the chart's top container child** (`serializer.serializeAll(root.container.children.getIndex(0))` — the chart, or the series on chart-less types). Before 5.21.0 a series straight in `root.container` or one with `selectedDataItem` set overflowed the stack; 5.21.0 handles both (a drilled-down hierarchy selection is still not restored). `ChartSerializer` does not capture adapters, Venn `hoverGraphics`, a `ZoomTools` you added to a hand-made `ZoomableContainer` (use `am5.SerialChartContainer`), or data items added with `pushDataItem()` — re-apply those after `JsonParser.parse()`. It does save user `themeTags` (5.20.6), declared `animations`, endless code-started loops (`loops: Infinity`, named easing) as `animations` entries (5.20.8, `runningAnimations`, default `true`), and since 5.21.0 a data-item loop started in code (the first one found, onto the bullet sprite), hidden series, elements added to plot/axis containers, a `ZoomableContainer`'s `contents`, `Date` values, and `root.interfaceColors` colors as `"@root.interfaceColors.get('…')"` references. Prefer a declared `animations` entry over `animate()` for effects that must survive JSON; for the opening animation use `autoAppear: true` (5.21.0).
+
+37. **`LinearGradient` `rotation` only works from 0 to 90** (bug in 5.20.8–5.21.2): other angles give a flat or wrong fill. For the opposite direction reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops.
+
+38. **Several colors in one `am5.Graphics` `draw`:** call `display.beginPath()` before each color (`endFill()` fills everything since the last `beginPath()`), and give the Graphics no `fill` of its own (after `draw` it fills the current path again, so the last shape takes that `fill`).
+
+39. **XY live updates and zooming:** `zoomToValues()` right after `axis.setAll({ min, max })` uses the old range; call `axis.zoom((v0 - min) / (max - min), (v1 - min) / (max - min))` instead, or wait a frame. `maxZoomFactor` is an axis setting, not an `XYChart` one. On a `ValueAxis` X, a `CandlestickSeries` draws the wick at the `valueXField` edge: shift the `Candlestick` columns' `lowX0`/`lowX1`/`highX0`/`highX1` by `-target.width() / 2` with adapters on `series.columns.template`, or use a `DateAxis`.
+
+40. **Map zoom and home:** `zoomStep` (default `2`) multiplies/divides `zoomLevel` for the buttons, `zoomIn()`/`zoomOut()`, the wheel (one step per wheel event) and double clicks, so use `1.1`–`1.2` for fine control; `wheelSensitivity` affects only wheel rotation. On a globe (`panX: "rotateX"`), `goHome()` restores rotation only from `homeRotationX`/`homeRotationY` (−longitude/−latitude), not from `homeGeoPoint`. With `autoHome: true` and no `homeZoomLevel`, home zoom is 1, so set `homeZoomLevel` to the starting `zoomLevel`. US congressional districts are packs under `geodata/region/usa/<pack>/` (`congressional`, `congressional2022`, `congressional2025`, `congressional120`), e.g. global `am5geodata_region_usa_congressional120_usaCongressionalLow`; there is no top-level `geodata/usaCongressionalLow.js`.
 
 ## Disposal (SPA / React / Angular / Vue)
 
@@ -873,7 +894,7 @@ ngOnDestroy() { this.root?.dispose(); }
 onUnmounted(() => { root.dispose(); });
 ```
 
-## Recent API changes (5.16 → 5.21.0)
+## Recent API changes (5.16 → 5.21.2)
 
 **Renamed settings** (old name still works but is deprecated):
 
@@ -883,6 +904,15 @@ onUnmounted(() => { root.dispose(); });
 | `VoronoiTreemap` | `type` | `shapeType` | 5.18.0 |
 
 **Breaking — WordCloud (5.20.1):** layout is now computed synchronously in one pass. The per-data-item `ghostLabel` is gone and labels live in an internal container — use `series.labels` / `dataItem.get("label")` instead of walking `series.children`.
+
+**New in 5.21.2 (2026-10-14):**
+
+- Interface color `warning` (yellow, between `negative` and `positive`): `root.interfaceColors.get("warning")`. `am5.Color.interpolateColors(position, colors, mode?)` blends through any number of colors (`position` 0–1, clamped); `[negative, warning, positive]` avoids the brown middle of `Color.interpolate(t, negative, positive)`.
+- Heat rules: `stops: [...]` (numbers, percents or colors) in place of `min`/`max` for a scale through more than two values. `HeatLegend` `colors: [...]` in place of `startColor`/`endColor`: a gradient with `stepCount: 1`, else one step per color (`stepCount` ignored).
+- `am5themes_Adaptive` / `am5themes_Monochrome`: `interleave`, `mapShade`, `keepContrast` (all off by default).
+- Fixed: a ColorSet `step` with a theme that reuses its colors (Nord, Pastel, Adaptive, …) used only 2–3 of them; now every color is used before repeats. `RadialGradient` with pixel `x`/`y` centered again on radar fills.
+
+**Fixes (5.21.1, 2026-10-13):** `root.timezone` up to 16× faster and right around daylight saving changes (grid, labels, data groups, date math; multi-hour `DateAxis` grid stays on the clock); `PeriodSelector`/`DateRangeSelector` follow `root.timezone`/`root.utc`; date formats `Z`/`ZZ`/`x`/`i`/`I` right with `root.timezone`, `YYYY`/`ww`/`W`/`DDD` honor `root.utc`; `DataProcessor` string dates without `dateFormat` are parsed by `Date` (were all 1 January 1970; a date-only string is midnight UTC); charts in a CSS-scaled container (`transform`/`zoom`) are no longer scaled twice and clicks hit the right element; `MapChart` `zoomLevel` set before load is honored; `MapSankeySeries` bands follow `linkColorMode` and node fill changes; raised map lines 3–4× faster; `RadialGradient` centered on map polygons, line/area fills and bullets; `Picture` keeps its image when a shadow setting changes; `CurveChart` scaled-down paths no longer get too many labels/grid lines.
 
 **New in 5.21.0 (2026-10-08):**
 
@@ -901,7 +931,7 @@ onUnmounted(() => { root.dispose(); });
 - New fill patterns `am5.StarPattern` and `am5.TrianglePattern` (5.20.0). `rotateShapes: true` on `RectanglePattern`/`StarPattern`/`TrianglePattern` rotates each shape around its own center instead of the whole grid — tiles seamlessly and is much faster.
 - `XYChart`: `strokeWidths` and `strokeDasharrays` — arrays cycled across line series as they are added, like `colors`. Distinguish series without relying on color.
 - `XYCursor`: `clickTolerance` (default `0`) — pixels outside the plot area where a zoom/select drag may start.
-- `Series`: `fillGradient` / `strokeGradient`. Bullets with no paint of their own inherit fill/stroke/gradient/pattern from the series — or from their own slice/node on pie, funnel, flow and hierarchy charts.
+- `Series`: `fillGradient` / `strokeGradient`, handed to bullets only (for an area or column gradient use `series.fills.template` / `columns.template`). Bullets with no paint of their own inherit fill/stroke/gradient/pattern from the series — or from their own slice/node on pie, funnel, flow and hierarchy charts.
 - `XYSeries`: value fields (`valueYField`, …) can be changed after creation (re-set the data afterwards), and a series can be moved to a different `xAxis`/`yAxis`.
 - `WordCloud` (5.20.1): `svgPath` arranges words into a shape, with `maskByShape` and `shapeTolerance`; `randomizeAngles: false` and `randomness: 0` give a reproducible layout; `allowNesting: false` packs non-overlapping bounding boxes (use with opaque label backgrounds). `angles` now accepts **any** angle (e.g. `[0, -30, -45]`) — the old `0`/`±90`-only restriction is gone.
 - New `globalpointerdown` event on all elements (mirrors `globalpointermove`/`globalpointerup`).

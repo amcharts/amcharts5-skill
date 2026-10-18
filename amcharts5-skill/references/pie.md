@@ -70,8 +70,8 @@ chart.appear(1000, 100);
 | `alignLabels` | boolean | Align labels in column (default: true). Set false for radial/inside labels |
 | `legendLabelText` | string | Legend label format, e.g. `"{category}"` |
 | `legendValueText` | string | Legend value format, e.g. `"{value}"` |
-| `startAngle` | number | Start angle in degrees (default: inherits from chart). Must match PieChart's startAngle for semi-circle |
-| `endAngle` | number | End angle in degrees (default: inherits from chart). Must match PieChart's endAngle for semi-circle |
+| `startAngle` | number | Start angle in degrees (default: `-90`). Must match PieChart's startAngle for semi-circle |
+| `endAngle` | number | End angle in degrees (default: `270`). Must match PieChart's endAngle for semi-circle |
 
 ### Labels
 
@@ -132,6 +132,15 @@ series.slices.template.adapters.add("fill", function(fill, target) {
 // series.slices.template.set("templateField", "sliceSettings");
 ```
 
+### Changing slice values live
+
+Percent series (pie, funnel, pyramid, pictorial) size slices from each data item's `valueWorking`, not `value`, so `dataItem.set("value", v)` moves nothing, and `series.markDirtyValues()` doesn't help. Change the data row, or set both keys:
+
+```js
+series.data.setIndex(0, { category: "A", value: 80 });        // animates (Animated theme)
+series.dataItems[1].setAll({ value: 5, valueWorking: 5 });    // jumps: for per-frame updates, e.g. a countdown donut
+```
+
 ## Funnel chart setup
 
 ```js
@@ -147,7 +156,7 @@ const series = chart.series.push(
     valueField: "value",
     categoryField: "stage",
     orientation: "vertical",   // "vertical" or "horizontal"
-    bottomRatio: 0,            // 0 = trapezoids (classic funnel), 1 = rectangles
+    bottomRatio: 0,            // 0 = rectangles (default), 1 = each slice narrows to the next (trapezoids)
     alignLabels: true
   })
 );
@@ -164,8 +173,8 @@ series.data.setAll([
 
 | Setting | Type | Description |
 |---------|------|-------------|
-| `orientation` | `"vertical" \| "horizontal"` | Direction of the funnel (required) |
-| `bottomRatio` | number (0–1) | 0 = trapezoids (classic funnel), 1 = rectangles (default) |
+| `orientation` | `"vertical" \| "horizontal"` | Direction of the funnel (default: `"vertical"`) |
+| `bottomRatio` | number (0–1) | 0 = rectangular slices (default); 1 = each slice narrows to the next (trapezoids) |
 | `alignLabels` | boolean | Align labels in a column (default: true) |
 
 ### Slice links (connectors between funnel slices)
@@ -245,7 +254,7 @@ series.data.setAll([
 | `orientation` | `"vertical"` \| `"horizontal"` | Fill direction |
 | `startLocation` | number (0–1) | Where the fill starts within the shape |
 | `endLocation` | number (0–1) | Where the fill ends within the shape |
-| `alignLabels` | boolean | Align labels outside the shape |
+| `alignLabels` | boolean | Align labels in a column outside the shape (default: true), as on funnel and pyramid |
 
 **Getting SVG paths:** Use any vector editor (Adobe Illustrator, Inkscape, Figma) to draw a shape and export as SVG, then extract the `d` attribute from the `<path>` element.
 

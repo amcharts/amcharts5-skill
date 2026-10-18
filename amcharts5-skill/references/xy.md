@@ -209,6 +209,8 @@ series.data.setAll([
 ]);
 ```
 
+String dates need a `DataProcessor` with `dateFields: ["date"]` (see SKILL.md "Data processor"). With a `dateFormat` (e.g. `"yyyy-MM-dd"`) they are read as local time (UTC with `root.utc: true`). Without one, since 5.21.1 the browser's `Date` parses them, and a date-only string such as `"2024-01-01"` is midnight **UTC**. Before 5.21.1 every such string became 1 January 1970.
+
 ## ValueAxis
 
 Used for numeric values. Auto-calculates min/max from data.
@@ -231,6 +233,15 @@ const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
 ```
 
 A `logarithmic` axis cannot show values ≤ 0. Since 5.21.0 such data logs a console warning ("…Set `treatZeroAs` to show them.") instead of silently drawing nothing — set `treatZeroAs` (e.g. `0.1`) when the data has zeros.
+
+**Zooming to values right after changing `min`/`max`:** `zoomToValues()` converts with the axis's current range, which updates a frame after `setAll({ min, max })`. In the same tick, compute the positions yourself, or call `zoomToValues()` on the next frame:
+
+```js
+yAxis.setAll({ min: 0, max: 200 });
+yAxis.zoom((50 - 0) / (200 - 0), (100 - 0) / (200 - 0));   // = zoomToValues(50, 100) on the new range
+```
+
+`maxZoomFactor` (how far an axis can zoom in) is an **axis** setting, not an `XYChart` one.
 
 ## AxisRendererX / AxisRendererY
 
@@ -310,6 +321,14 @@ series.strokes.template.setAll({
 - `connect: true` — connect lines over missing data (default: true). Set `false` for line breaks at gaps
 - `minDistance: 10` — min pixel distance between points before simplifying
 
+**Per-segment colors from data:** a data item that carries `strokeSettings` (or `fillSettings`) starts a new segment drawn with those settings, through `templateField`:
+```js
+series.strokes.template.setAll({ templateField: "strokeSettings", strokeWidth: 2 });
+series.fills.template.setAll({ visible: true, fillOpacity: 0.5, templateField: "fillSettings" });
+// data: { year: "2015", value: 23.5, strokeSettings: { stroke: am5.color(0xff0000) }, fillSettings: { fill: am5.color(0xff0000) } }
+```
+Full demo: `examples/line-area/line-with-changing-color`. To color by value ranges instead (e.g. below zero), use an axis range (see "Axis ranges").
+
 ## ColumnSeries
 
 For vertical columns or horizontal bars.
@@ -372,6 +391,14 @@ const series = chart.series.push(am5xy.CandlestickSeries.new(root, {
   valueYField: "close",
   valueXField: "date"
 }));
+```
+
+**Candlesticks on a `ValueAxis` X** (e.g. candle index; the `CandlestickSeries` takes the body width from `openValueXField` + `valueXField`): the wick is drawn at the `valueXField` edge, not the middle, because a `ValueAxis` ignores the cell location (still in 5.21.2). Shift the wick by half the body, or use a `DateAxis`:
+
+```js
+["lowX0", "lowX1", "highX0", "highX1"].forEach(function (k) {
+  series.columns.template.adapters.add(k, function (v, target) { return v - target.width() / 2; });
+});
 ```
 
 ## XYCursor
@@ -446,7 +473,10 @@ const sbSeries = scrollbar.chart.series.push(am5xy.LineSeries.new(root, {
   valueYField: "value",
   valueXField: "date"
 }));
+sbSeries.data.setAll(data);   // the preview series needs the data too
 ```
+
+`XYChartScrollbar` has no `xAxis`/`yAxis` settings: its preview is a chart of its own, `scrollbar.chart`, so its axes go into `scrollbar.chart.xAxes`/`yAxes` as above. Axes passed to `XYChartScrollbar.new()` are never added to it, and the preview series then throws.
 
 ## Legend
 
@@ -566,6 +596,22 @@ series.data.setAll([
   { x: 30, y: 45, size: 120, name: "B" },
   { x: 55, y: 15, size: 80, name: "C" }
 ]);
+```
+
+**Equal scale on both axes** (orbits, floor plans: 1 unit = the same pixels on X and Y). There is no setting for it; fix both ranges and widen the longer side whenever the plot is resized:
+
+```js
+var R = 10;   // half the range shown on the shorter side
+var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, { strictMinMax: true, min: -R, max: R, renderer: am5xy.AxisRendererX.new(root, {}) }));
+var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, { strictMinMax: true, min: -R, max: R, renderer: am5xy.AxisRendererY.new(root, {}) }));
+chart.plotContainer.events.on("boundschanged", function () {
+  var w = chart.plotContainer.width(), h = chart.plotContainer.height();
+  if (!w || !h) return;
+  var rx = w > h ? R * w / h : R, ry = w > h ? R : R * h / w;
+  xAxis.setAll({ min: -rx, max: rx });
+  yAxis.setAll({ min: -ry, max: ry });
+});
+// wheelY: "zoomXY" on the XYChart keeps the aspect while zooming
 ```
 
 ## Bullets (data point markers)
@@ -741,16 +787,29 @@ Each added line series takes the next entry by position, wrapping around when th
 
 ## Series gradients (5.20.0)
 
-`Series` accepts `fillGradient` and `strokeGradient`:
+Put a gradient on the element that draws it: `series.fills.template` (area), `series.columns.template` (columns), `series.strokes.template` (`strokeGradient`, the line):
 
 ```js
-series.set("fillGradient", am5.LinearGradient.new(root, {
-  stops: [{ opacity: 0.6 }, { opacity: 0 }],
-  rotation: 90
+series.fills.template.setAll({ visible: true, fillOpacity: 1 });
+series.fills.template.set("fillGradient", am5.LinearGradient.new(root, {
+  stops: [{ opacity: 0.6 }, { opacity: 0 }],   // stops without a color take the element's fill
+  rotation: 90                                  // top to bottom
 }));
 ```
 
-A bullet `Graphics` that sets none of `fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient` now inherits all of them from its series, so bullets pick up series gradients and patterns automatically.
+`Series` also has `fillGradient` and `strokeGradient` settings (5.20.0), but the series' own fills, lines and columns don't use them: they are handed to bullets. A bullet `Graphics` that sets none of `fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient` inherits all of them from its series, so bullets pick up series gradients and patterns automatically.
+
+**`LinearGradient` `rotation` only works from 0 to 90** (a bug in 5.20.8–5.21.2, any element). Other angles give a flat or wrong fill, and with a transparent end stop the shape can vanish. For the opposite direction keep the angle in that range and reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops:
+
+```js
+// what rotation: 180 with stops [{ opacity: 0.6 }, { opacity: 0 }] should draw (it doesn't):
+series.fills.template.set("fillGradient", am5.LinearGradient.new(root, {
+  rotation: 0,
+  stops: [{ opacity: 0 }, { opacity: 0.6 }]    // the same stops, reversed: clear on the left, 0.6 on the right
+}));
+```
+
+`RadialGradient` is centered on map polygons, line and area fills and bullets since 5.21.1 (with `target` set, on the target). 5.21.1 put one with pixel `x`/`y` off-center on radar fills and similar shapes; 5.21.2 fixes that.
 
 ## Changing fields and axes after creation (5.20.0)
 
@@ -764,6 +823,18 @@ series.set("yAxis", secondaryYAxis);
 ```
 
 Both were previously fixed at creation time. Re-setting the series data is required for a value-field change to take effect.
+
+## Moving a point without touching the data list
+
+XY series draw from the **working** values (`valueXWorking`, `valueYWorking`), so `dataItem.set("valueY", v)` changes nothing on screen. Set the working keys too, or change the data row:
+
+```js
+var dataItem = series.dataItems[0];
+dataItem.setAll({ valueX: 4, valueY: 7, valueXWorking: 4, valueYWorking: 7 });   // jumps
+
+series.data.setIndex(0, { x: 4, y: 7 });   // animates over interpolationDuration
+// per-frame updates through setIndex: set interpolationDuration: 0 on the series, or the points lag behind
+```
 
 ---
 

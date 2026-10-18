@@ -90,8 +90,8 @@ const chart = root.container.children.push(
 | `levelCount` | number | `3` | Number of spiral rings |
 | `startAngle` | number | `-90` | Where the spiral starts (degrees) |
 | `endAngle` | number | `0` | Where the spiral ends (degrees) |
-| `innerRadius` | `Percent` | `60%` | Size of the center hole |
-| `yAxisRadius` | `Percent` | `50%` | Band thickness — applied to every Y axis renderer's radius |
+| `innerRadius` | `Percent` | `20%` | Size of the center hole |
+| `yAxisRadius` | `Percent` | `60%` | Band thickness — applied to every Y axis renderer's radius |
 
 > There is no `inversed` or `yAxisInnerRadius` setting on `SpiralChart`. To reverse direction use the `startAngle`/`endAngle` pair. (`inversed` is a valid axis-renderer setting, but not a chart setting.)
 
@@ -118,6 +118,8 @@ const xRenderer = am5timeline.AxisRendererCurveX.new(root, {
   ]
 });
 ```
+
+On a `CurveChart` the `AxisRendererCurveX` `points` are scaled and centered to fit the plot area. Before 5.21.1 a path scaled down this way got far too many labels and grid lines.
 
 ## Axes
 
@@ -230,28 +232,25 @@ Use bullets with labels to show discrete events (milestones, releases) along the
 
 ```js
 series.bullets.push(function(root, series, dataItem) {
-  var dc = dataItem.dataContext;
-  if (dc.milestone) {
-    return am5.Bullet.new(root, {
-      sprite: am5.Container.new(root, {
-        children: [
-          am5.Circle.new(root, { radius: 8, fill: am5.color(0xff5733) }),
-          am5.Label.new(root, {
-            text: dc.label || "",
-            centerX: am5.percent(50),
-            centerY: am5.percent(100),
-            dy: -15,
-            fontSize: 11,
-            populateText: true
-          })
-        ]
-      })
-    });
+  if (dataItem.dataContext.milestone) {
+    // Container has no `children` setting: create it, then push the children
+    var marker = am5.Container.new(root, {});
+    marker.children.push(am5.Circle.new(root, { radius: 8, fill: am5.color(0xff5733) }));
+    marker.children.push(am5.Label.new(root, {
+      text: "{label}",
+      populateText: true,     // a Label you create fills {placeholders} only with this
+      centerX: am5.percent(50),
+      centerY: am5.percent(100),
+      dy: -10,
+      fontSize: 11
+    }));
+    return am5.Bullet.new(root, { sprite: marker });
   }
   return am5.Bullet.new(root, {
     sprite: am5.Circle.new(root, { radius: 3, fill: series.get("fill") })
   });
 });
+// data rows: { date: …, value: 1, milestone: true, label: "Release" }
 ```
 
 ## Events on timeline elements
@@ -437,8 +436,6 @@ chart.get("cursor").events.on("cursormoved", function(ev) {
     }));
 
     series.columns.template.setAll({
-      cornerRadiusTL: 5,
-      cornerRadiusTR: 5,
       strokeOpacity: 0
     });
 

@@ -42,7 +42,16 @@ Pattern: camelCase country name + detail level. E.g. `germanyLow`, `canadaHigh`,
   - CDN: `https://cdn.amcharts.com/lib/5/geodata/region/world/europeLow.js`
   - Global: `am5geodata_region_world_europeLow`
 - For a map of European countries, use `worldLow.js` and filter with `include: ["DE", "FR", "IT", ...]`
-- US congressional districts: `geodata/usaCongressionalLow.js` (may not be available on all CDN versions)
+- **US congressional districts** come in versioned packs under `geodata/region/usa/<pack>/`, each with `usaCongressionalLow.js` / `usaCongressionalHigh.js` (all states) and per-state `<st>Low.js` / `<st>High.js` (e.g. `txLow.js`). There is no top-level `geodata/usaCongressionalLow.js`.
+
+| Pack | Districts |
+|------|-----------|
+| `congressional` | 117th Congress (the original set; the 116th used the same districts) |
+| `congressional2022` | 118th |
+| `congressional2025` | 119th |
+| `congressional120` | 120th, the newest (geodata 5.1.6; includes proposed changes) |
+
+**Global names** are `am5geodata_` + the path below `geodata/`, with `/` → `_` and case kept: `geodata/region/usa/congressional120/usaCongressionalLow.js` → `am5geodata_region_usa_congressional120_usaCongressionalLow`; ES import `@amcharts/amcharts5-geodata/region/usa/congressional120/usaCongressionalLow`. The npm package has the same maps (default exports, raw GeoJSON under `json/`, also on the CDN as `geodata/json/<path>.json`), and its `loadMap("region/usa/congressional120/txLow")` loads any map by path. Where the amCharts MCP server is connected, its `list_geodata(filter)` tool lists every map with its CDN path, global name and ES import.
 
 ## Core setup
 
@@ -168,6 +177,8 @@ const heatLegend = chart.children.push(am5.HeatLegend.new(root, {
 }));
 ```
 
+For a scale through more than two colors (5.21.2), give the heat rule `stops` instead of `min`/`max` and the legend `colors` instead of `startColor`/`endColor`: see SKILL.md "Heat rules". `Adaptive` and `Monochrome` themes take `mapShade: true` (5.21.2) for map land in a lighter shade of their base color.
+
 **Styling heat-legend segments.** With `stepCount: N` the legend draws N discrete `RoundedRectangle` markers inside `heatLegend.markerContainer`, all styled through `heatLegend.markers.template` (it accepts the usual Graphics settings — `stroke`, `strokeWidth`, `strokeOpacity`, `fillOpacity`, `cornerRadius*`, `tooltipText` for a per-block hover tooltip). Segment **thickness** is the marker's cross-axis size: a **vertical** legend uses the marker `width` (default `15`) with `height: 100%`; a **horizontal** legend uses `height` (default `15`) with `width: 100%`. Style via the template — `heatLegend.markers.values` can read empty even while `markerContainer.children` holds the rectangles.
 
 ```js
@@ -220,6 +231,12 @@ pointSeries2.data.setAll([
 ```
 
 `surfaceBullets: true` (5.21.0) lays the bullets onto the map surface, and `altitudeField` (5.21.0) raises points — see "Bullets on the surface" and "Raised lines and points" below.
+
+**A point's bullet sprite:** `dataItem.bullets` is a plain array property, not a setting (`dataItem.get("bullets")` is `undefined`), on every series type:
+
+```js
+var sprite = pointSeries.dataItems[0].bullets?.[0]?.get("sprite");   // the Circle made by the bullet function
+```
 
 **Points on lines as data rows (5.20.6):** `MapPointSeries` has `lineIdField` (default `"lineId"`), `positionOnLineField` (default `"positionOnLine"`), `autoRotateField` (default `"autoRotate"`) and `autoRotateAngleField` (default `"autoRotateAngle"`), so a point on a `MapLine` can be a plain row — `{ lineId: "jfk-lhr", positionOnLine: 0.5, autoRotate: true }`, where `lineId` is the line's data `id` in a `MapLineSeries` of the same chart — instead of `pushDataItem({ lineDataItem, positionOnLine })`. Data values of `autoRotate`/`autoRotateAngle` win over the bullet's own setting. `polygonIdField` still has **no** default — declare it as above. See "Animating bullets along lines".
 
@@ -363,6 +380,7 @@ polygonSeries.events.on("datavalidated", function() {
 | `nodeWidth` | number | `1` | Bar width in degrees (bar nodeType only) |
 | `nodePadding` | number | `0.3` | Extra padding on node shapes in degrees |
 | `antimeridian` | string | `"short"` | `"short"` for shortest path, `"long"` to avoid ±180° crossing |
+| `linkColorMode` | string | `"solid"` | `"solid"`: every band takes `mapPolygons.template`'s fill; `"source"` / `"target"`: each band takes that node's fill, so the nodes need colors (see "Band appearance"). Followed since 5.21.1, also when node fills change |
 | `sourceIdField` | string | `"sourceId"` | Data field for source polygon ID |
 | `targetIdField` | string | `"targetId"` | Data field for target polygon ID |
 | `sourceLongitudeField` | string | `"sourceLongitude"` | Data field for source longitude |
@@ -382,6 +400,16 @@ sankeySeries.mapPolygons.template.setAll({
   strokeOpacity: 0,
   tooltipText: "{sourceId} > {targetId}: {value}"
 });
+```
+
+Bands colored like their nodes — map nodes get no colors of their own, so give them a `ColorSet` (before the data):
+
+```js
+var sankeySeries = chart.series.push(am5map.MapSankeySeries.new(root, {
+  polygonSeries: polygonSeries,
+  linkColorMode: "source"     // each band takes its source node's fill ("target": its target's)
+}));
+sankeySeries.nodes.set("colors", am5.ColorSet.new(root, {}));   // map nodes have no colors by default
 ```
 
 Per-link control point overrides in data:
@@ -563,7 +591,22 @@ satSeries.bullets.push(function (root, series, dataItem) {
 satSeries.data.setAll([{ latitude: 10, longitude: 0, altitude: 400000 }]);   // metres
 ```
 
-A point on a line takes the line's altitude. `mapLine.positionToAltitude(position)` returns the altitude (m) at `0`–`1` along a line. Works best on a globe (`geoOrthographic`, see `map-altitude-arcs` in the npm package examples).
+A point on a line takes the line's altitude. `mapLine.positionToAltitude(position)` returns the altitude (m) at `0`–`1` along a line. Works best on a globe (`geoOrthographic`, see `map-altitude-arcs` in the npm package examples). Raised lines draw 3–4 times faster since 5.21.1.
+
+**Heights per coordinate:** once a line's `altitude` is set (`0` for none), the third value of each coordinate is that point's height in metres, and a non-zero `altitude` adds its arc to each leg on top. One line can then change height along its length (a descent from orbit, relief along a parallel); without `altitude` the third values are ignored. The demo "Globe with raised parallels" (`maps/globe-with-raised-parallels`) does this.
+
+```js
+var pathSeries = chart.series.push(am5map.MapLineSeries.new(root, {}));
+pathSeries.mapLines.template.setAll({ altitude: 0, stroke: am5.color(0xff621f), strokeWidth: 2 });
+pathSeries.data.setAll([{ geometry: { type: "LineString",
+  coordinates: [[0, 0, 800000], [20, 10, 400000], [40, 15, 0]] } }]);   // [longitude, latitude, metres]
+```
+
+**Where a raised point is on screen:** for a `MapPointSeries` point, `dataItem.get("point")` is its raised position (`{ x, y }`) and `dataItem.get("clipped")` says whether it is hidden. For any other longitude, latitude and height `h` (MapUtils' `projectAltitude` is not exported): on a globe, `screen = T + (P − T) × (1 + h / R)`, with `P = chart.convert({ longitude, latitude })` the surface point, `T = chart.get("projection").translate()` the globe's center and `R = 6371008.8` m; on a flat map, `P` moved up by `h / R × projection.scale()`.
+
+**`clipFront: true`** on a point series hides the points on the near side. With points raised high (`altitudeField`), what is left are the ones behind the globe that rise past its edge: a starfield behind the globe (`clipBack`, default `true`, still hides those the globe covers).
+
+**`ClusteredPointSeries` with `altitudeField`:** a cluster's bullet floats at the average altitude of its points (the cluster data item gets `altitude`); points still cluster by their distance on screen.
 
 ### Bullets on the surface — `surfaceBullets` (5.21.0)
 
@@ -645,6 +688,35 @@ columns.data.setAll([{ id: "CN", value: 1410 }, { id: "IN", value: 1430 }, { id:
 
 Pixels have no outline by default (the theme keeps pixel polygons at `strokeWidth: 0`); set `strokeWidth` (and `stroke`) on `mapPolygons.template` to outline each pixel. `pixelSeries.pixels` is the `Graphics` that draws them all: `am5.renderToSVG(pixelSeries.pixels)` exports just the pixels, with each polygon's pixels in a `<g id="US" data-name="United States">`. `include`/`exclude` work as on `MapPolygonSeries`.
 
+**The classic dotted map** is `pixelType: "circle"` with `uniform: true`. Without `uniform` the pixels lie on the surface, so on projections such as `geoEqualEarth` the circles near the poles widen into ovals.
+
+**`step` for one country:** `step` is in degrees, so the default `2` suits the world but leaves a country only a few pixels. Derive it from the area shown, its longer side divided by the pixels wanted across it:
+
+```js
+var geodata = am5geodata_germanyLow;
+var b = am5map.getGeoBounds({ type: "GeometryCollection",
+  geometries: geodata.features.map(function (f) { return f.geometry; }) });   // { left, right, top, bottom } in degrees
+var countrySeries = chart.series.push(am5map.PixelMapSeries.new(root, {
+  geoJSON: geodata,
+  step: Math.max(b.right - b.left, b.top - b.bottom) / 60   // about 60 pixels across
+}));
+```
+
+(`getGeoBounds` spans `-180`…`180` for a shape that crosses the 180th meridian.)
+
+**Random column heights:** `pixelHeightFunction` runs again for every pixel whenever heights are recomputed (data changes, a hover state that sets `MapPolygon` `pixelHeight`, …), so `Math.random()` makes the columns jump. Use a deterministic hash of longitude and latitude, times the polygon's own height so per-polygon heights still apply:
+
+```js
+var hashed = chart.series.push(am5map.PixelMapSeries.new(root, {
+  geoJSON: am5geodata_worldLow,
+  columnHeight: 0.1,
+  pixelHeightFunction: function (dataItem, longitude, latitude) {
+    var h = Math.sin(longitude * 12.9898 + latitude * 78.233) * 43758.5453;
+    return (h - Math.floor(h)) * dataItem.get("mapPolygon").get("pixelHeight", 1);
+  }
+}));
+```
+
 ### Satellite images — `MapRasterSeries` (5.21.0)
 
 `am5map.MapRasterSeries` shows one image of the whole world, reprojected as the map turns and zooms (on the GPU with WebGL2 for orthographic, equirectangular, Mercator, Equal Earth and Natural Earth; on the CPU otherwise). With `nightSrc` and a sun position it shows day where the sun is up and night where it is down, blended across twilight.
@@ -659,7 +731,7 @@ raster.events.on("loaded", function () { /* src (and nightSrc) are drawn */ });
 raster.events.on("loaderror", function () { /* failed, or cross-origin without CORS */ });
 ```
 
-- The image must be **equirectangular** ("plate carrée": longitude −180…180 left to right, latitude 90…−90 top to bottom). The geodata package ships `geodata/images/earthDay2048.jpg` and `earthNight2048.jpg` (NASA Earth Observatory — credit it, e.g. a small `am5.Label`).
+- The image must be **equirectangular** ("plate carrée": longitude −180…180 left to right, latitude 90…−90 top to bottom). The CDN has `geodata/images/{earthDay,earthNight,moon,mars}{2048,4096}.jpg`, e.g. `https://cdn.amcharts.com/lib/5/geodata/images/moon4096.jpg` (the npm geodata package has no images). The Earth images are from NASA Earth Observatory: credit the source, e.g. with a small `am5.Label`.
 - `cors` (default `"anonymous"`): a cross-origin image is drawn only if its server sends CORS headers. A page opened from disk (`file://`) cannot read an image file beside it — serve the page, or use the CDN copy.
 - The series counts as the whole world in the map's bounds; on a regional map set `affectsBounds: false`. The projection needs `invert`, so nothing is drawn while `animateProjection()` runs.
 - Draw country borders over it with a `MapPolygonSeries` pushed after it, `fillOpacity: 0` on `mapPolygons.template`. `twilight` (default `12` degrees of sun height) sets how wide the day/night blend is.
@@ -686,6 +758,20 @@ night.get("sun").setAll({ radius: 12 });   // the sun is a Circle the series mak
 - `twilight` (default `12`) and `twilightSteps` (default `4`, number of shades from day to full night).
 - `sunAltitude` is for looks: `1000000`–`5000000` suits a globe.
 - `am5map.getSunPosition(date?)` takes a `Date` (default now) and returns the `{ longitude, latitude }` where the sun is directly overhead — also for `MapRasterSeries` `sunPosition`, or to place a sun marker on a `MapPointSeries`.
+- **JSON:** a saved chart keeps `sunDate`, never the `sunPosition` worked out from it, so a `"now"` map still follows the clock after parsing.
+
+**Day and night on another body.** `sunDate` is the Earth's sun only, so for the Moon or Mars set `sunPosition` to that body's sub-solar point (from your own ephemeris), and leave `sunDate` unset (it wins). A small `twilight` gives an airless body's sharp edge:
+
+```js
+chart.series.push(am5map.MapRasterSeries.new(root, {
+  src: "https://cdn.amcharts.com/lib/5/geodata/images/moon2048.jpg"
+}));
+var lunarNight = chart.series.push(am5map.NightSeries.new(root, {
+  sunPosition: { longitude: 30, latitude: 1.5 },   // the Moon's sub-solar point
+  twilight: 1.5                                    // default 12 (degrees)
+}));
+lunarNight.get("sun").set("forceHidden", true);    // hide the sun marker
+```
 
 ## Zoom controls
 
@@ -735,6 +821,8 @@ polygonSeries.mapPolygons.template.states.create("active", {
 });
 ```
 
+`clickZoom` sets `active` itself, so `toggleKey: "active"` is not needed (with it, the two still agree).
+
 **Start at the home position — `autoHome` (5.21.0).** Goes to the home position (`homeGeoPoint`, `homeZoomLevel`, `homeRotationX`/`homeRotationY`) once the map is loaded, as `goHome()` does — animated when `animationDuration` is set (the Animated theme sets it), at once otherwise. No `goHome()` call in a `datavalidated` handler needed, so a map loaded from JSON can start zoomed in. Default `false`.
 
 ```js
@@ -745,6 +833,22 @@ var chart = root.container.children.push(am5map.MapChart.new(root, {
   autoHome: true
 }));
 ```
+
+With `autoHome` and no `homeZoomLevel`, home zoom is `1`, so a starting `zoomLevel` is overridden: set `homeZoomLevel` to the same value. Without `autoHome`, a `zoomLevel` given to `MapChart.new()` is the starting zoom (since 5.21.1; before, one set before the map loaded was ignored or left the map blank).
+
+**Home on a globe.** On a map that pans by rotating (`panX: "rotateX"`, `panY: "rotateY"`), `goHome()` and the home button restore the rotation only from `homeRotationX` / `homeRotationY` (−longitude / −latitude). `homeGeoPoint` alone leaves the rotation as it is and shifts the globe sideways.
+
+```js
+var globe = root.container.children.push(am5map.MapChart.new(root, {
+  projection: am5map.geoOrthographic(),
+  panX: "rotateX",
+  panY: "rotateY",
+  homeRotationX: -10,   // home = centered on 10°E…
+  homeRotationY: -50    // …50°N
+}));
+```
+
+**`zoomStep`** (default `2`) is a multiplier, not an increment: `zoomIn()` and the + button multiply `zoomLevel` by it, `zoomOut()` divides, and the mouse wheel and double clicks use it too, one step per wheel event whatever its size. So keep it above `1` (`1` does nothing, below `1` reverses); `zoomStep: 1.1`–`1.2` gives fine control, e.g. on trackpads, which fire many small wheel events. `wheelSensitivity` does not affect wheel zoom, only wheel rotation.
 
 Fixed in 5.21.0: `goHome()` went to the wrong place before the map was ready or on a rotated map (globe); a zoomed-in map could not be dragged to its edges (with `maxPanOut: 0` not at all); `zoomToGeoBounds()` rotated with `animationDuration` instead of the given duration and changed the bounds object; `MapPointSeries.zoomToDataItems(items, true)` / `ClusteredPointSeries.zoomToCluster()` turned a globe to the wrong point; `chart.geoPoint()` and `getPolygonByGeoPoint()` were off on charts with padding.
 
@@ -767,6 +871,8 @@ chart.animate({ key: "rotationY", to: -paris.latitude, duration: 1500, easing: a
 ```
 
 **IMPORTANT — Globe rotation direction:** To center the globe on a geographic point, set `rotationX` to **negative longitude** and `rotationY` to **negative latitude**. This is because rotation moves the globe under the camera: rotating X by -2.35 brings longitude 2.35 to the center. A common mistake is using positive coordinates, which rotates the globe in the wrong direction.
+
+Setting `rotationX`/`rotationY`/`rotationZ` on every frame (e.g. a camera that follows a moving point) performs fine.
 
 ## GraticuleSeries (grid lines / ocean background)
 
@@ -825,8 +931,9 @@ am5map.MapChart.new(root, {
   rotationX: 0,             // center longitude
   rotationY: 0,             // center latitude
   rotationZ: 0,             // tilt
-  wheelY: "zoom",           // "zoom", "none"
-  wheelSensitivity: 1,      // zoom speed multiplier
+  wheelY: "zoom",           // "zoom", "rotateX", "rotateY", "none"
+  zoomStep: 2,              // zoom multiplier per step: buttons, wheel, double click (see "Zoom controls")
+  wheelSensitivity: 1,      // how far the wheel rotates the map ("rotateX"/"rotateY" only), not zoom speed
   doubleClickZoom: true,    // (5.20.2) double click zooms in, shift+double click out — default true
   boxZoom: "none",          // (5.20.2) "none" | "drag" | "shift" | "ctrl" | "alt" — key held to drag a zoom box
   autoHome: false,          // (5.21.0) true = go to homeGeoPoint/homeZoomLevel once loaded

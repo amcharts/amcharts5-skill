@@ -145,6 +145,8 @@ series.outerCircles.template.setAll({
 series.data.setAll(data);
 ```
 
+On `ForceDirected`, `nodePadding` (default `0`) is room in pixels kept free around each node (its collision radius is its radius + `nodePadding`), so neighbours stay at least twice that apart. It is not the `Sankey` `nodePadding`, which is a real gap between nodes.
+
 Since 5.21.0 changing `manyBodyStrength`, `centerStrength`, or a link's `distance`/`strength` takes effect after the layout has settled (it used to do nothing) — no need to re-set the data to apply new forces.
 
 ## Sunburst

@@ -127,7 +127,7 @@ const series = root.container.children.push(
     padAngle: 2,              // gap between nodes in degrees
     radius: am5.percent(90),
     startAngle: 80,
-    sort: "ascending"         // "ascending" | "descending" | "none"
+    sort: "ascending"         // "ascending" | "descending" | "none" (default: data order)
   })
 );
 

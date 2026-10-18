@@ -157,7 +157,13 @@ chart.get("colors").set("colors", [
   am5.color(0x86a873),
   am5.color(0xbb9f06)
 ]);
+
+// A color on a scale through several colors (5.21.2): position 0–1, clamped, colors evenly spaced
+var ic = root.interfaceColors;
+var mid = am5.Color.interpolateColors(0.5, [ic.get("negative"), ic.get("warning"), ic.get("positive")]);   // = warning
 ```
+
+The interface color `warning` (5.21.2) is a yellow between `negative` (red) and `positive` (green), for the middle of a bad-to-good scale. Prefer `interpolateColors()` through it over `am5.Color.interpolate(t, negative, positive)`, whose middle is brown.
 
 ## Legend
 
@@ -330,6 +336,15 @@ series.set("heatRules", [{
   max: 30,
   key: "radius"
 }]);
+
+// Through more than two values (5.21.2): `stops` in place of min/max, e.g. red–yellow–green
+var ic = root.interfaceColors;
+series.set("heatRules", [{
+  target: series.columns.template,
+  dataField: "valueY",
+  stops: [ic.get("negative"), ic.get("warning"), ic.get("positive")],
+  key: "fill"
+}]);
 ```
 
 **Heat rule settings:**
@@ -341,6 +356,7 @@ series.set("heatRules", [{
 | `dataField` | string | Data field for the value: `"valueY"`, `"value"`, `"valueX"`, etc. |
 | `min` | color/number | Value applied at the lowest data value |
 | `max` | color/number | Value applied at the highest data value |
+| `stops` | array | Values for a scale through more than two (5.21.2), in place of `min`/`max`: the lowest data value gets the first, the highest the last, blended between. Numbers, percents or colors, all of one kind |
 | `minValue` | number | Override auto-calculated min (skips `calculateAggregates`; `0` is honored since 5.21.0) |
 | `maxValue` | number | Override auto-calculated max (skips `calculateAggregates`; `0` is honored since 5.21.0) |
 | `customFunction` | function | `(sprite, min, max, value)` — full control over the rule |
@@ -392,6 +408,14 @@ series.events.on("datavalidated", function() {
   heatLegend.set("startValue", series.getPrivate("valueLow"));
   heatLegend.set("endValue", series.getPrivate("valueHigh"));
 });
+
+// Through several colors (5.21.2): `colors` in place of startColor/endColor, matching a heat rule's `stops`
+var ic = root.interfaceColors;
+var scaleLegend = chart.children.push(am5.HeatLegend.new(root, {
+  orientation: "horizontal",
+  colors: [ic.get("negative"), ic.get("warning"), ic.get("positive")]
+  // stepCount: 1 (default) = a gradient through them; with stepCount > 1, one step per color
+}));
 ```
 
 ## Animations
@@ -488,14 +512,16 @@ const cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
 
 ## Settings that already equal the default — omit them
 
-Generated code routinely spells out settings that equal the amCharts default (verified against the default themes of 5.21.0). They add noise and mislead readers into thinking they matter. Do not emit these unless changing them:
+Generated code routinely spells out settings that equal the amCharts default (verified against the default themes, and for `Gantt` the code, of 5.21.2). They add noise and mislead readers into thinking they matter. Do not emit these unless changing them:
 
 | Class | Setting(s) that are already the default |
 |-------|------------------------------------------|
 | All hierarchy series | `childDataField: "children"`, `downDepth: 1`, `initialDepth: 5` |
 | `Sunburst`, `Partition`, `Treemap`, `VoronoiTreemap` | `singleBranchOnly: true` (`Partition`/`Treemap` also `upDepth: 0`; `VoronoiTreemap` also `shapeType: "polygon"`; `Sunburst` ignores the setting since 5.21.0 — always single-branch) |
 | `Tree`, `ForceDirected` | `singleBranchOnly: false`, `upDepth: Infinity`, `topDepth: 0` (`Tree` also `orientation: "vertical"`) |
-| `PieSeries`, `FunnelSeries` | `alignLabels: true` (`FunnelSeries` also `orientation: "vertical"`, `startLocation: 0`, `endLocation: 1`, `bottomRatio: 0`) |
+| `PieSeries`, `FunnelSeries`, `PyramidSeries`, `PictorialStackedSeries` | `alignLabels: true` (`PieSeries` also `startAngle: -90`, `endAngle: 270`; `FunnelSeries` also `orientation: "vertical"`, `startLocation: 0`, `endLocation: 1`, `bottomRatio: 0`) |
+| `Chord` | `sort: "none"` (data order) |
+| `Gantt` | `excludeWeekends: true` |
 | `XYSeries` (all XY series) | `maskBullets: true` — note the default is **true**, so `maskBullets: false` is a real change |
 | `LineSeries` (incl. smoothed/step) | `connect: true`; `StepLineSeries` `noRisers: false` |
 | `XYChart` | `maxTooltipDistance` — leave **unset** (unset shows tooltips for all items in the category; `0` is *not* the same) |
@@ -532,6 +558,16 @@ series.data.insertIndex(1, { category: "Inserted", value: 50 });
 // ✅ series.dataItems.forEach(function(dataItem) {})         — standard JS
 ```
 
+**Changing values on existing data items.** Series draw from the **working** values, so `dataItem.set("valueY", v)` (or `"value"` on a pie) changes nothing on screen, and `markDirtyValues()` doesn't help. Change the data row with `series.data.setIndex(i, row)` (animates), or set the working key too (jumps; use it for per-frame updates):
+
+```js
+xySeries.dataItems[0].setAll({ valueX: 4, valueY: 7, valueXWorking: 4, valueYWorking: 7 });   // XY series
+pieSeries.dataItems[0].setAll({ value: 80, valueWorking: 80 });                                // pie, funnel, pyramid
+// per-frame updates through setIndex on XY: set interpolationDuration: 0 on the series, or the points lag behind
+```
+
+A data item's bullets are a plain array **property**: `dataItem.bullets?.[0]?.get("sprite")` is the sprite the bullet function made (`dataItem.get("bullets")` is `undefined`).
+
 ## Adapters
 
 ```js
@@ -566,6 +602,13 @@ series.columns.template.states.create("active", {
 // State animation: stateAnimationDuration, stateAnimationEasing
 ```
 
+**A state keeps the value it first replaced.** Once a state (e.g. `hover`) has changed a setting, the sprite's `"default"` state holds the value from that moment and restores it on every unhover. So a setting changed later (painting a polygon on click, a new base color) snaps back on the next unhover unless you change it in both places:
+
+```js
+polygon.set("fill", color);
+polygon.states.lookup("default")?.set("fill", color);
+```
+
 ## Parameterized themes — Monochrome & Adaptive (5.20.0)
 
 Two themes generate their palette from colors you pass in (OKLCH-based, so the result stays perceptually balanced). Because a theme cannot take constructor parameters, these ship as **factory functions** — call them with `(root, settings)`; `.new(root, settings)` also works.
@@ -598,6 +641,12 @@ root.setThemes([
 ```
 
 Both are additive (they do not modify built-in themes) and both handle dark mode themselves via `dark: true` — do not also add the `Dark` theme.
+
+**More settings (5.21.2, both themes, all off by default):** `interleave: true` takes the colors in the order 1, 4, 2, 5, 3, 6, so series next to each other differ more (Monochrome keeps `accent` first); `mapShade: true` fills map land with a mid shade of the base color, as light as default map land, instead of the color itself; `keepContrast: true` keeps the series colors and primary buttons at least 3:1 against the background (or give a ratio, e.g. `4.5`). A branded palette:
+
+```js
+am5themes_Adaptive(root, { baseColor: 0x2c6e91, baseColor2: 0xffdd00, count: 10, interleave: true, mapShade: true, keepContrast: true })
+```
 
 ## Custom themes
 
@@ -656,19 +705,23 @@ colors.set("colors", [
 
 **A `ColorSet` must always hold at least one color.** `colorSet.set("colors", [])` crashes the next `next()`/`getIndex()` call (`Maximum call stack size exceeded`, or `Cannot read properties of undefined (reading 'toHSL')` inside `generateColors`) as soon as a series iterates the palette — as of 5.21.0 the empty list is not guarded. To "reset" a palette, swap in a fresh `am5.ColorSet.new(root, {})` instead of emptying the list. The theme's `baseColor` also resolves lazily, so a **synchronous** re-color right after swapping a `ColorSet` can read a transient value (sprites momentarily black); re-set the series data and let amCharts' own data pass recolor the sprites.
 
+**`step` with a theme that reuses its colors** (`reuse: true`: Adaptive, Monochrome, Nord, Pastel, Kelly, …): before 5.21.2 a `step` sharing a factor with the list length used only a few of the colors (a word cloud or treemap with Nord got two or three). Now every color is used before any repeats, so `step: count / 2` interleaves the palette.
+
 ## Data processor
 
 ```js
 // Auto-convert fields when loading external / API data
 series.data.processor = am5.DataProcessor.new(root, {
   dateFields: ["date"],
-  dateFormat: "yyyy-MM-dd",
+  dateFormat: "yyyy-MM-dd",  // read as local time (UTC with root.utc); see below for leaving it out
   numericFields: ["value", "count"],
   colorFields: ["color"],
   emptyAs: 0  // replace null, undefined and "" with 0 (before 5.21.0 it also replaced 0 and false)
 });
 // Configure processor BEFORE setting data
 ```
+
+Without `dateFormat`, since 5.21.1 the browser's `Date` parses the strings, so ISO strings work and a date-only `"2024-03-15"` is midnight **UTC**. Before 5.21.1 every such string became 1 January 1970.
 
 ## Serializing to JSON (ChartSerializer / JsonParser)
 
@@ -853,11 +906,11 @@ onUnmounted(() => { root.dispose(); });
 20. **Gantt data uses TWO separate calls** — Do NOT use `chart.data.setAll()`. Set categories on `chart.yAxis.data.setAll([{id, name, parentId, color}])` and tasks on `chart.series.data.setAll([{id, start, duration, progress, linkTo}])`. Use flat `parentId` for hierarchy, NOT nested `children` arrays. CDN order: `index.js` → `xy.js` → `plugins/colorPicker.js` → `gantt.js` → `themes/Animated.js` (gantt.js webpack-depends on colorPicker chunk). See `references/gantt.md`.
 21. **No continent-level geodata at top-level CDN** — `geodata/europeLow.js` does NOT exist. Use `geodata/region/world/europeLow.js` (global: `am5geodata_region_world_europeLow`) or filter `worldLow` with `include: [...]`.
 22. **Do not add chart titles as HTML** — HTML titles are outside the chart and won't appear in exports. Use `am5.Label` pushed into the container BEFORE the chart, with `verticalLayout` on the container. See "Chart title" section above.
-23. **`XYChartScrollbar` axes — never use `scrollbar.get("xAxis")`** — The axes passed to the scrollbar constructor are NOT stored as gettable settings. Create axes as separate variables, pass them to the scrollbar, and reuse those same variables for the scrollbar's inner series. `scrollbar.get("xAxis")` returns `undefined`.
+23. **`XYChartScrollbar` has no `xAxis`/`yAxis` settings** — its preview is a chart of its own, `scrollbar.chart`: push the preview's axes into `scrollbar.chart.xAxes`/`yAxes`, its series into `scrollbar.chart.series`, and give that series the data. Axes passed to `XYChartScrollbar.new()` are never added to the preview (its series then throws), and `get("xAxis")` only hands back whatever you passed. See `references/xy.md` → Scrollbar.
 24. **`am5.color()` only accepts hex integers or CSS strings** — `am5.color(0xff0000)`, `am5.color("#ff0000")`, `am5.color("rgb(255,0,0)")` are valid. `am5.color({ r: 255, g: 0, b: 0 })` is NOT — it throws.
-25. **`MapChart` has NO `"colors"` setting** — `chart.get("colors")` returns `undefined` on `MapChart`. Only XY, Radar, and Percent charts auto-create a ColorSet. For maps, create your own: `am5.ColorSet.new(root, {})`.
+25. **`MapChart` has no default `colors`** — it inherits the `colors` setting from `SerialChart`, but no theme sets it on a map, so `chart.get("colors")` returns `undefined`, and map series don't use it anyway. XY and Radar charts (and percent series, via `series.get("colors")`) get a ColorSet from the theme. For maps, make your own: `am5.ColorSet.new(root, {})`.
 26. **`VoronoiTreemap` has NO `.rectangles` property** — Unlike `Treemap` (which has `series.rectangles.template`), `VoronoiTreemap` renders organic polygon cells. Style via `series.nodes.template` and its children, not `.rectangles`.
-27. **Labels with data placeholders need `populateText: true`** — When a Label uses data field placeholders like `text: "{name}"`, you MUST also set `populateText: true`. Without it, the placeholder is not resolved and the label appears blank. This applies everywhere Labels display dynamic data — bullet labels, map point labels, etc. Example: `am5.Label.new(root, { text: "{name}", populateText: true, ... })`.
+27. **Labels with data placeholders need `populateText: true`** — `Label` defaults to `populateText: false`; labels the library makes for you (axis, legend, tooltip, pie/funnel slice labels, hierarchy and flow node labels…) get `true` from their own theme rules, but a `Label` you create does not. Any Label you create whose `text` has `{placeholders}` (a bullet sprite, a child of a bullet's container, a map point label) needs `populateText: true`, or it shows the braces literally. Example: `am5.Label.new(root, { text: "{name}", populateText: true, ... })`. A `tooltipText` is filled in regardless.
 28. **Easing: `am5.ease.in()` does NOT exist** — amCharts 5 provides base easing functions (`am5.ease.cubic`, `am5.ease.bounce`, `am5.ease.elastic`, `am5.ease.linear`, `am5.ease.quad`, `am5.ease.sine`, `am5.ease.circle`, `am5.ease.exp`; `am5.ease.pow(t, e)` takes an exponent, so it is only usable wrapped: `(t) => am5.ease.pow(t, 3)`) and three modifiers: `am5.ease.out()`, `am5.ease.inOut()`, `am5.ease.yoyo()`. Usage: `am5.ease.cubic` (ease-in by default), `am5.ease.out(am5.ease.cubic)` (ease-out), `am5.ease.inOut(am5.ease.cubic)` (ease in+out). There is NO `am5.ease.in()` — using it throws a runtime error. The base functions already ease-in by default.
 29. **`forceHidden` vs `visible`** — `forceHidden: true` ALWAYS hides an element, immune to states, themes/library and even `show()`. `visible` is weaker: amCharts re-manages it on many elements (notably cursor lines, but also labels, ticks, tooltips, grid) in response to interaction or data changes, so a `visible: false` you set may be flipped back to `true`. Rules of thumb: for a **persistent hide**, use `forceHidden: true` (`cursor.lineX.set("forceHidden", true)`, `yRenderer.labels.template.set("forceHidden", true)`, `xRenderer.grid.template.set("forceHidden", true)`). To **reveal** an element that defaults hidden — notably **axis ticks** (`ticks.template` defaults to `visible:false`) — you must raise `visible: true`; flipping `forceHidden` alone won't show it. For cursor lines specifically, always access `cursor.lineX`/`cursor.lineY` after creation — do NOT pass them as constructor options.
 30. **`snapTooltip: true` on series for cursor tooltip snapping** — When using a cursor and you want tooltips to snap to data points, set `snapTooltip: true` on the series in addition to (or instead of) `snapToSeries` on the cursor. This is especially useful for timeline/curve charts.
@@ -868,6 +921,10 @@ onUnmounted(() => { root.dispose(); });
 35. **`axis.dispose()` does NOT remove the axis from `chart.xAxes`/`chart.yAxes`** — unlike `series.dispose()`, which self-removes from `chart.series`. A disposed axis stays in the list, keeps showing up in anything built from `chart.yAxes`, and makes `ChartSerializer` throw `Template is disposed`. Remove axes with `chart.yAxes.removeValue(axis)` (or `removeIndex(i)`) — the list auto-disposes the removed axis, no separate `dispose()` needed.
 36. **Declare bullet callbacks as `function(root, series, dataItem)`** — amCharts passes all three; closing over an outer `root` works at runtime but breaks JSON round-trips (`ChartSerializer` captures the function source, and the outer `root` dangles on re-bind). Every `series.bullets.push(...)` in these references uses the parameter form — copy it.
 37. **A `ColorSet` must contain at least one color** — `colors.set("colors", [])` crashes the next `next()`/`getIndex()`. Swap in a fresh `am5.ColorSet.new(root, {})` instead. See "ColorSet" above.
+38. **`LinearGradient` `rotation` only works from 0 to 90** (bug in 5.20.8–5.21.2) — other angles give a flat or wrong fill, and with a transparent end stop the shape can vanish. For the opposite direction keep the angle in range and reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops. See `references/xy.md` → Series gradients.
+39. **Several colors in one `am5.Graphics` `draw`** — `endFill()` fills everything since the last `beginPath()`, so start each color with `display.beginPath()`, or the last color paints over all shapes. Don't give such a Graphics its own `fill` either: after `draw` runs it fills the current path once more, so the last shape takes the Graphics' own `fill` (the default theme sets none). E.g. `draw: function (display) { display.beginPath(); display.beginFill(am5.color(0xff0000)); display.drawRect(0, 0, 10, 10); display.endFill(); display.beginPath(); display.beginFill(am5.color(0x0000ff)); display.drawRect(10, 0, 10, 10); display.endFill(); }`.
+40. **Changing a value on a data item moves nothing** — series draw from the working values: set `valueYWorking` (XY) or `valueWorking` (pie) along with the value, or use `series.data.setIndex()`. See "Dynamic data".
+41. **A setting changed after a hover snaps back on unhover** — the `"default"` state keeps the value from before the first hover. Change it there too: `sprite.states.lookup("default")?.set("fill", c)`. See "States".
 
 ## Easing functions
 
@@ -912,7 +969,7 @@ Skip this step entirely if you cannot execute code (e.g., chat-only context with
 
 ## Recent API changes
 
-Latest release covered here: **5.21.0** (2026-10-08). These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
+Latest release covered here: **5.21.2** (2026-10-14). These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
 
 **Renamed settings (old name still works but is deprecated — use the new one):**
 
@@ -928,6 +985,20 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 ```
 
 **Breaking change — WordCloud internals (5.20.1):** the layout is now computed synchronously in one pass (much faster). The per-data-item `ghostLabel` is gone and labels live in an internal container, so `dataItem.get("ghostLabel")` and any code walking `series.children` to find labels must be updated — use `series.labels` / `dataItem.get("label")` instead.
+
+**New in 5.21.2 (2026-10-14):**
+- Interface color `warning`: a yellow between `negative` and `positive` (default `#f2c230`; themes with their own `positive`/`negative` have a matching one), for the middle of a bad-to-good scale: `root.interfaceColors.get("warning")`.
+- `am5.Color.interpolateColors(position, colors, mode?)`: a color on a scale through any number of colors, evenly spaced (`position` 0–1, clamped; `mode` `"rgb"` (default) or `"hsl"`). Through `[negative, warning, positive]` it avoids the brown middle of `Color.interpolate(t, negative, positive)`. See "Colors".
+- Heat rules: `stops` (numbers, percents or colors, all of one kind) in place of `min`/`max`, for a scale through more than two values. `HeatLegend`: `colors` in place of `startColor`/`endColor`, a gradient through them with `stepCount: 1` or one step per color otherwise (`stepCount` is then ignored). See "Heat rules".
+- `am5themes_Adaptive` and `am5themes_Monochrome`: `interleave`, `mapShade` and `keepContrast` (all off by default). See "Parameterized themes".
+- Fixed: a ColorSet `step` with a theme that reuses its colors used only two or three of them (word clouds and treemaps with Nord, Pastel or Adaptive), see "ColorSet"; `RadialGradient` with pixel `x`/`y` was off-center on radar fills and similar shapes in 5.21.1.
+
+**Behavior changes / fixes (5.21.1, 2026-10-13)** — no workaround needed any more:
+- `root.timezone`: charts were up to 16 times slower with it, and grid, labels, data groups and date math could be an hour off around a daylight saving change. A `DateAxis` grid of several hours now stays on the clock after a DST change (where the clocks skip a grid time, the line goes at the jump). `PeriodSelector` and `DateRangeSelector` follow `root.timezone`/`root.utc` (they used the viewer's time zone). Date formats `Z`, `ZZ`, `x`, `i`, `I` are right with `root.timezone`, and `YYYY`, `ww`, `W`, `DDD` honor `root.utc`.
+- `DataProcessor`: string dates in `dateFields` without a `dateFormat` were all read as 1 January 1970. Now the browser's `Date` parses them, and a date-only `"2024-03-15"` is midnight UTC. See "Data processor".
+- A chart in a container scaled with CSS (`transform` or `zoom`) was scaled twice, and clicks hit the wrong elements.
+- Maps: a `zoomLevel` set before the map loaded was ignored or left the map blank; `MapSankeySeries` bands follow `linkColorMode` and node fill changes, and nodes without coordinates are drawn; raised map lines (`MapLine` `altitude`) draw 3–4 times faster.
+- `RadialGradient` is centered on map polygons, line and area fills and bullets (with `target` set, on the target). `Picture`: changing a shadow setting after the image loaded no longer removes the image. `CurveChart`: a path scaled down to fit no longer gets far too many labels and grid lines. Responsive theme: XY axis ticks on small charts are no longer moved inside the plot.
 
 **New in 5.21.0 (2026-10-08):**
 
@@ -992,7 +1063,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - 20+ new themes (5.20.0): `Midnight`, `Ember`, `Nord`, `Pastel`, `Colorblind`, `Patterns`, `Petroleum`, `Savanna`, plus `*Dark` variants of most palettes. Two parameterized factory themes, `Monochrome` and `Adaptive` — see "Parameterized themes" above.
 - New fill patterns (5.20.0): `am5.StarPattern` (`radius`, `innerRadius`, `spikes`, `gap`, `checkered`) and `am5.TrianglePattern` (`maxWidth`, `maxHeight`, `gap`, `checkered`).
 - `rotateShapes` (5.20.0) on `RectanglePattern`/`StarPattern`/`TrianglePattern`: `rotation` then spins each shape around its own center instead of the whole grid — tiles seamlessly and is much faster. Prefer it over a whole-pattern `rotation` on large tiles.
-- `Series`: `fillGradient` / `strokeGradient` settings. A bullet `Graphics` with no paint of its own (`fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient`) now inherits all of them from its series — and on pie, funnel, flow and hierarchy charts, from its own slice/node (5.20.0–5.20.1).
+- `Series`: `fillGradient` / `strokeGradient` settings, handed to bullets (the series' own fills, lines and columns don't use them: set gradients on `fills.template` / `columns.template` / `strokes.template`). A bullet `Graphics` with no paint of its own (`fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient`) now inherits all of them from its series — and on pie, funnel, flow and hierarchy charts, from its own slice/node (5.20.0–5.20.1).
 
 *XY charts*
 - `XYChart`: `strokeWidths` (array of pixel widths) and `strokeDasharrays` (array of dash arrays) — cycled across line series as they are added, exactly like `colors`. Lets series be told apart without relying on color, e.g. with the `Patterns` theme.
@@ -1012,7 +1083,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - `Root`: `ariaLabel` is now applied to the `<div>` holding the chart's focusable elements (5.20.0).
 - `Label`: `oversizedBehavior: "truncate"` now ignores `maxHeight` (there is no way to truncate text vertically).
 - A `Container`'s `Rectangle`/`RoundedRectangle` background now defaults `crisp` to `true` unless set explicitly (5.20.0).
-- `Root` (5.20.2): `fontFamily`, `fontSize` (number or string) and `fontWeight` (`"normal" | "bold" | "bolder" | "lighter" | "100"…`"900"`) settings — defaults for **all** text elements unless overridden on an element. Set them in `am5.Root.new("chartdiv", { fontFamily: "Inter" })` or `root.setAll({...})` instead of a custom theme rule on `Label`.
+- `Root` (5.20.2): `fontFamily`, `fontSize` (number or string) and `fontWeight` (`"normal" | "bold" | "bolder" | "lighter"`, or `"100"` … `"900"`) settings — defaults for **all** text elements unless overridden on an element. Set them in `am5.Root.new("chartdiv", { fontFamily: "Inter" })` or `root.setAll({...})` instead of a custom theme rule on `Label`.
 - `am5.SerialChartContainer` (5.20.2) — a directly usable `SerialChart` whose `seriesContainer` sits inside a `ZoomableContainer` (exposed as `chart.zoomableContainer`), so series such as `ForceDirected` can be zoomed and panned. Exported from the **`am5` root module**, not a chart package. Optional `zoomTools` setting takes a `ZoomTools` instance whose `target` is pointed at the series container automatically. Bullets added to its series are drawn (5.20.4) and flow-chart bullets are placed correctly inside it (5.20.5). See `references/hierarchy.md`.
 
 *JSON config / serialization (5.20.2 – 5.20.8)*

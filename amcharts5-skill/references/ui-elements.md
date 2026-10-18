@@ -101,6 +101,8 @@ button.events.on("click", function(ev) {
 
 A single-value slider control. Values range from 0 to 1 (relative positions).
 
+Need the handle on a chart axis instead (a draggable playhead on a date axis)? Use an axis range whose `AxisBullet` holds a `Button` with `themeTags: ["resize", "horizontal"]`, and move the range in the button's `dragged` event — see `examples/line-area/line-chart-with-range-slider`.
+
 ```js
 var slider = container.children.push(am5.Slider.new(root, {
   orientation: "horizontal",  // or "vertical"
@@ -181,6 +183,7 @@ chart.set("scrollbarX", am5xy.XYChartScrollbar.new(root, {
   orientation: "horizontal",
   height: 50
 }));
+// the preview draws nothing until scrollbar.chart gets axes and a series with data: see references/xy.md → Scrollbar
 ```
 
 ### Position
