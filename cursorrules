@@ -188,6 +188,8 @@ colors.set("colors", [am5.color(0x095256), am5.color(0x087f8c)]);
 
 A scale through several colors (5.21.2): `am5.Color.interpolateColors(position, [ic.get("negative"), ic.get("warning"), ic.get("positive")])` with `var ic = root.interfaceColors` (`warning` is a yellow between red `negative` and green `positive`; `Color.interpolate()` between the two has a brown middle). `Adaptive`/`Monochrome` theme settings (5.21.2, all off by default): `interleave` (neighbouring series differ more), `mapShade` (lighter map land), `keepContrast` (`true` = 3:1 against the background, or a ratio).
 
+Since 5.21.3, themes that reuse their list (Adaptive, Monochrome, Kelly, Material, Nord, Pastel, …, not Colorblind/Patterns/Dataviz) make each repeat round 10% lighter: `ColorSet` `repeatLightness` (HSL lightness per round, negative = darker, only with `reuse: true`). The color sets of one root share the theme's list, so whichever needs a new round first decides that round for every chart on the root. Same colors again, root-wide: `var t = am5.Theme.new(root); t.rule("ColorSet").set("repeatLightness", 0);` added last in `root.setThemes([...])`, or `repeatLightness: false` in the Adaptive/Monochrome theme settings.
+
 ## Common chart recipes
 
 ### XY chart with category axis (bar/column)
@@ -865,9 +867,9 @@ sbSeries.data.setAll(data);   // the preview series needs the data too
 
 35. **Tooltips on non-XY charts need no `am5.Tooltip` instance** — just `tooltipText` on the right template (`slices.template`, `nodes.template`, flow `nodes.nodes.template` / `links.template`, wordcloud `labels.template`, `mapPolygons.template`); the root's shared tooltip (`root.container.get("tooltip")`) is used. Create a `Tooltip` only when it must look different, or on XY charts where series/axis tooltips are cursor-driven. Heat rules on bullets: `target` must be the `am5.Template` the sprite is built from, `dataField` is the property key (`"valueY"`, not the column name), and `calculateAggregates: true` is required — otherwise every bullet silently gets the same size.
 
-36. **Serialize the chart's top container child** (`serializer.serializeAll(root.container.children.getIndex(0))` — the chart, or the series on chart-less types). Before 5.21.0 a series straight in `root.container` or one with `selectedDataItem` set overflowed the stack; 5.21.0 handles both (a drilled-down hierarchy selection is still not restored). `ChartSerializer` does not capture adapters, Venn `hoverGraphics`, a `ZoomTools` you added to a hand-made `ZoomableContainer` (use `am5.SerialChartContainer`), or data items added with `pushDataItem()` — re-apply those after `JsonParser.parse()`. It does save user `themeTags` (5.20.6), declared `animations`, endless code-started loops (`loops: Infinity`, named easing) as `animations` entries (5.20.8, `runningAnimations`, default `true`), and since 5.21.0 a data-item loop started in code (the first one found, onto the bullet sprite), hidden series, elements added to plot/axis containers, a `ZoomableContainer`'s `contents`, `Date` values, and `root.interfaceColors` colors as `"@root.interfaceColors.get('…')"` references. Prefer a declared `animations` entry over `animate()` for effects that must survive JSON; for the opening animation use `autoAppear: true` (5.21.0).
+36. **Serialize the chart's top container child** (`serializer.serializeAll(root.container.children.getIndex(0))` — the chart, or the series on chart-less types). Before 5.21.0 a series straight in `root.container` or one with `selectedDataItem` set overflowed the stack; 5.21.0 handles both (a drilled-down hierarchy selection is still not restored). `ChartSerializer` does not capture adapters, Venn `hoverGraphics`, a `ZoomTools` you added to a hand-made `ZoomableContainer` (use `am5.SerialChartContainer`), or data items added with `pushDataItem()` — re-apply those after `JsonParser.parse()`. It does save user `themeTags` (5.20.6), declared `animations`, endless code-started loops (`loops: Infinity`, named easing) as `animations` entries (5.20.8, `runningAnimations`, default `true`), and since 5.21.0 a data-item loop started in code (on the bullet sprite; since 5.21.3 loops that differ per item go in each data row), hidden series, elements added to plot/axis containers, a `ZoomableContainer`'s `contents`, `Date` values, and `root.interfaceColors` colors as `"@root.interfaceColors.get('…')"` references (palette colors as `"@colors.getIndex(n)"` since 5.21.3). Prefer a declared `animations` entry over `animate()` for effects that must survive JSON; for the opening animation use `autoAppear: true` (5.21.0).
 
-37. **`LinearGradient` `rotation` only works from 0 to 90** (bug in 5.20.8–5.21.2): other angles give a flat or wrong fill. For the opposite direction reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops.
+37. **`LinearGradient` `rotation` only works from 0 to 90** (bug since 5.20.8, still in 5.21.3): other angles give a flat or wrong fill. For the opposite direction reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops.
 
 38. **Several colors in one `am5.Graphics` `draw`:** call `display.beginPath()` before each color (`endFill()` fills everything since the last `beginPath()`), and give the Graphics no `fill` of its own (after `draw` it fills the current path again, so the last shape takes that `fill`).
 
@@ -875,26 +877,61 @@ sbSeries.data.setAll(data);   // the preview series needs the data too
 
 40. **Map zoom and home:** `zoomStep` (default `2`) multiplies/divides `zoomLevel` for the buttons, `zoomIn()`/`zoomOut()`, the wheel (one step per wheel event) and double clicks, so use `1.1`–`1.2` for fine control; `wheelSensitivity` affects only wheel rotation. On a globe (`panX: "rotateX"`), `goHome()` restores rotation only from `homeRotationX`/`homeRotationY` (−longitude/−latitude), not from `homeGeoPoint`. With `autoHome: true` and no `homeZoomLevel`, home zoom is 1, so set `homeZoomLevel` to the starting `zoomLevel`. US congressional districts are packs under `geodata/region/usa/<pack>/` (`congressional`, `congressional2022`, `congressional2025`, `congressional120`), e.g. global `am5geodata_region_usa_congressional120_usaCongressionalLow`; there is no top-level `geodata/usaCongressionalLow.js`.
 
-## Disposal (SPA / React / Angular / Vue)
+## Frameworks (React, Vue, Angular, Svelte, React Native)
 
-**Always call `root.dispose()`** — this cleans up all children, series, and event listeners.
+In a framework app, use amCharts' package for it (5.0.0, 2026-10-22) instead of hand-written mount/dispose code. It makes the chart when its element is there, disposes it with the component, and loads the library in the browser only, so server rendering works (Next.js, Nuxt, SvelteKit, Angular SSR). Install it with the library: `npm install @amcharts/amcharts5 @amcharts/amcharts5-react` (the web packages need amCharts 5.21.0+).
+
+| Framework | Package | A chart in code | A chart from a JSON config |
+|---|---|---|---|
+| React 18+ | `@amcharts/amcharts5-react` | `const { ref, root, result } = useAmChart((root) => { … }, [data])` + `<div ref={ref} style={{ height: "500px" }} />` | `<AmChart config={config} themes={[am5themes_Animated]} />` |
+| Vue 3.5.2+ | `@amcharts/amcharts5-vue` | `const { root, result } = useAmChart(useTemplateRef("chart"), (root) => { … }, { watch: () => props.data })` (shallow refs) | `<AmChart :config="config" :themes="themes" @ready="…" />` |
+| Angular 19+ | `@amcharts/amcharts5-angular` | `AmChartDirective`: `<div [amChart]="buildChart" [amChartDeps]="[data()]" (amChartReady)="…">`, `buildChart = (root: Root) => { … }` (arrow-function property) | `AmChartComponent`: `<am5-chart [config]="config" [themes]="themes" (amChartReady)="…">` |
+| Svelte 4+ | `@amcharts/amcharts5-svelte` | Svelte 5.29+: `<div {@attach attachAmChart(buildChart)}>`; older: `<div use:amChart={{ setup: buildChart, deps: [data] }}>` | `{@attach attachAmChartConfig({ config, themes })}` or `use:amChartConfig={{ config }}` on `<am5-chart>` |
+| React Native 0.72+ | `@amcharts/amcharts5-react-native` + `react-native-webview` 13+ | `<AmChart code={codeString} data={data} />` | `<AmChart config={config} themes={["Animated"]} />` |
+
+```jsx
+// React (Vue, Angular and Svelte work the same way: the function gets the root)
+const { ref, result } = useAmChart((root) => {
+  const chart = root.container.children.push(am5xy.XYChart.new(root, {}));
+  // ... axes and series, as in any example, after its Root.new() line
+  return { xAxis, series };
+}, []); // [data] would make the chart again on every change
+
+useEffect(() => {
+  if (result) { result.xAxis.data.setAll(data); result.series.data.setAll(data); }
+}, [result, data]);
+
+return <div ref={ref} style={{ width: "100%", height: "500px" }}></div>;
+```
+
+- The function **gets** the root: never call `am5.Root.new()` or `root.dispose()` in it. The element needs a height; the JSON-config components are 400 px high without one.
+- Deps (`[data]`, Vue `watch`, `[amChartDeps]`, Svelte `deps`) rebuild the chart from scratch. To update data in place, return what you need and use `result` (Angular: `(amChartReady)` gives `{ root, result }`; Svelte: a `$state.raw` variable set in the function).
+- SVG: `{ renderer: "svg" }` as the last argument/option (`[amChartRenderer]="'svg'"` in Angular); the JSON-config components take `renderer`.
+- JSON-config `themes` are theme **classes** (`[am5themes_Animated]`); React Native takes **names** (`["Animated"]`).
+- Plain data only: Vue: keep amCharts objects out of reactive state (`shallowRef()`, `toRaw(data)`); Svelte 5: `$state.snapshot(data)`.
+- License: `am5.addLicense("…")` once when the app starts (`main.ts` before `createApp()`/`bootstrapApplication()`; Next.js: top of a client component's file; Nuxt: `plugins/amcharts.client.ts`; SvelteKit: `src/hooks.client.ts`), never in the setup function. React Native: `licenses` prop.
+- Next.js app router: `useAmChart` and theme classes need `"use client"`; a server component can render `<AmChart config={config}>`. React Router (Remix 2) and Astro: `ssr: { noExternal: ["@amcharts/amcharts5"] }` in the Vite config. Nuxt needs no `<ClientOnly>`. Remix 3 has no package: `<am5-chart>` with script tags, or a `clientEntry()` that imports amCharts in its `ref` mixin.
+- jsdom tests (no canvas): mock the package, e.g. `vi.mock("@amcharts/amcharts5-react", () => ({ useAmChart: () => ({ ref: () => {}, root: undefined, result: undefined }), AmChart: () => null }))`.
+- React Native: the chart runs in a WebView that loads the library from the CDN (no `@amcharts/amcharts5` install). `code` is a **string** written like a script-tag example (globals `am5xy` etc., not imports) with `root`, `data`, `post(name, value)` in scope (`post` calls `onMessage`); returning a function makes new `data` go to it instead of rebuilding. Everything crossing the bridge is JSON (dates as timestamps). Never build `code` from user or server text — pass values in `data`.
+
+**Without a package** (older framework versions, or on request), create the root once the element exists and dispose it on teardown. **Always call `root.dispose()`** — this cleans up all children, series, and event listeners.
 
 ```js
 // React
 useLayoutEffect(() => {
-  const root = am5.Root.new("chartdiv");
+  const root = am5.Root.new(chartdiv.current); // const chartdiv = useRef(null)
   // ... build chart
   return () => { root.dispose(); };
 }, []);
 
-// Angular
+// Angular: create in ngAfterViewInit (browser only, inside zone.runOutsideAngular())
 ngOnDestroy() { this.root?.dispose(); }
 
-// Vue
-onUnmounted(() => { root.dispose(); });
+// Vue: create in onMounted, keep root in a plain variable (not reactive state)
+onBeforeUnmount(() => { root?.dispose(); });
 ```
 
-## Recent API changes (5.16 → 5.21.2)
+## Recent API changes (5.16 → 5.21.3)
 
 **Renamed settings** (old name still works but is deprecated):
 
@@ -904,6 +941,14 @@ onUnmounted(() => { root.dispose(); });
 | `VoronoiTreemap` | `type` | `shapeType` | 5.18.0 |
 
 **Breaking — WordCloud (5.20.1):** layout is now computed synchronously in one pass. The per-data-item `ghostLabel` is gone and labels live in an internal container — use `series.labels` / `dataItem.get("label")` instead of walking `series.children`.
+
+**Framework packages (5.0.0, 2026-10-22):** `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte`, `-react-native`. See "Frameworks".
+
+**New in 5.21.3 (2026-10-21):**
+
+- `ColorSet` `repeatLightness`: themes that reuse their colors (Adaptive, Monochrome, Kelly, Material, Nord, Pastel and others, not Colorblind or Patterns) make each repeat 10% lighter. Old behavior: a theme rule `rule("ColorSet").set("repeatLightness", 0)` (the color sets of a root share one list), or `repeatLightness: false` in the Adaptive/Monochrome theme settings.
+- JSON: palette colors are written as `"@colors.getIndex(n)"` (follows the theme on parse; usable in hand-made configs' settings, not in data rows; generated repeats stay hex). `step`/`passOptions` on a chart's colors round-trip without the theme's palette. Data-item loops that differ per item are saved per data row (under the bullet sprite's `templateField`, `"bulletSettings"` by default).
+- Maps: d3 projections with their own shape (HEALPix, Armadillo, Berghaus, interrupted, polyhedral) display properly; switching projections at zoom level 1 shows the whole map.
 
 **New in 5.21.2 (2026-10-14):**
 

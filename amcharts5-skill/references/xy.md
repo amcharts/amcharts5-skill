@@ -132,7 +132,7 @@ am5xy.ColumnSeries.new(root, {
 
 ## Disposal (SPA frameworks)
 
-Always dispose on component unmount:
+In a React, Vue, Angular, Svelte or React Native app, use amCharts' framework package, which disposes the root with the component (SKILL.md, "Frameworks"). Otherwise dispose the root on component unmount:
 ```js
 root.dispose();
 ```
@@ -799,7 +799,7 @@ series.fills.template.set("fillGradient", am5.LinearGradient.new(root, {
 
 `Series` also has `fillGradient` and `strokeGradient` settings (5.20.0), but the series' own fills, lines and columns don't use them: they are handed to bullets. A bullet `Graphics` that sets none of `fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient` inherits all of them from its series, so bullets pick up series gradients and patterns automatically.
 
-**`LinearGradient` `rotation` only works from 0 to 90** (a bug in 5.20.8–5.21.2, any element). Other angles give a flat or wrong fill, and with a transparent end stop the shape can vanish. For the opposite direction keep the angle in that range and reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops:
+**`LinearGradient` `rotation` only works from 0 to 90** (a bug since 5.20.8, still in 5.21.3, any element). Other angles give a flat or wrong fill, and with a transparent end stop the shape can vanish. For the opposite direction keep the angle in that range and reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops:
 
 ```js
 // what rotation: 180 with stops [{ opacity: 0.6 }, { opacity: 0 }] should draw (it doesn't):

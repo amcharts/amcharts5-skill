@@ -551,7 +551,7 @@ planeSeries.bullets.push(function (root, series, dataItem) {
 planeSeries.data.setAll([{ lineId: "jfk-lhr", positionOnLine: 0, autoRotate: true }]);
 ```
 
-**Direction on the way back (5.20.8):** an `autoRotate` point turns round to face its travel direction **only** while an `animations` entry on its bullet sprite (`target: "dataItem"`, `key: "positionOnLine"`) moves it back toward the line start. A point moved by `dataItem.animate()` from code keeps facing the line's direction — that code has to turn it (Example 4 rotates its plane between segments itself). An endless loop started on a data item in code is saved by `ChartSerializer` since 5.21.0 (not in 5.20.8), but only the first one found, written onto the bullet sprite — after parsing every point of the series plays it; a declared entry per bullet is the predictable form. Since 5.21.0 every point placed on a line follows the line when it changes (e.g. gets an `altitude`), not just one of them.
+**Direction on the way back (5.20.8):** an `autoRotate` point turns round to face its travel direction **only** while an `animations` entry on its bullet sprite (`target: "dataItem"`, `key: "positionOnLine"`) moves it back toward the line start. A point moved by `dataItem.animate()` from code keeps facing the line's direction — that code has to turn it (Example 4 rotates its plane between segments itself). An endless loop started on a data item in code is saved by `ChartSerializer` since 5.21.0 (not in 5.20.8). In 5.21.0–5.21.2 only the first one found was saved, on the bullet sprite, so after parsing every point played it. Since 5.21.3 loops that differ per point are saved in each point's data row, under the bullet sprite's `templateField` (`"bulletSettings"` if none is set); one loop shared by all points still goes on the sprite. Where the rows can't hold them, the first one still goes on the sprite for all: points made from geodata, a sprite with its own `animations`, or a loop animating object values. Since 5.21.0 every point placed on a line follows the line when it changes (e.g. gets an `altitude`), not just one of them.
 
 **IMPORTANT — Multi-segment lines and `positionOnLine`:**
 - `positionOnLine` treats the entire line as one unit (0 = start, 1 = end). If a line has multiple segments (i.e. `pointsToConnect` has 3+ points), position 0.5 is the midpoint of the *entire* path.
@@ -978,6 +978,8 @@ linkedSeries.data.setAll([{ id: "US", url: "https://en.wikipedia.org/wiki/United
 `urlField` has no default (links are off until set); the pointer cursor is set automatically unless you set `cursorOverStyle`; `javascript:`/`data:`/`vbscript:` URLs are never opened; override `series.openUrl(dataItem)` to intercept. `MapSankeySeries` nodes are not linked — keep a `click` handler there.
 
 ## Disposal
+
+In a React, Vue, Angular, Svelte or React Native app, use amCharts' framework package, which disposes the root with the component (SKILL.md, "Frameworks"). Otherwise dispose the root when the component goes away:
 
 ```js
 root.dispose();

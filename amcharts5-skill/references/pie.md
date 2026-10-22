@@ -371,6 +371,8 @@ series.set("linkTarget", "_blank");     // default "_self"
 
 ## Disposal
 
+In a React, Vue, Angular, Svelte or React Native app, use amCharts' framework package, which disposes the root with the component (SKILL.md, "Frameworks"). Otherwise dispose the root when the component goes away:
+
 ```js
 root.dispose();
 ```

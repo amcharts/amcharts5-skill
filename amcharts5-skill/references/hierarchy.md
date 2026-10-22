@@ -350,6 +350,8 @@ Bullets on series inside a `SerialChartContainer` are drawn as of 5.20.4, and fl
 
 ## Disposal
 
+In a React, Vue, Angular, Svelte or React Native app, use amCharts' framework package, which disposes the root with the component (SKILL.md, "Frameworks"). Otherwise dispose the root when the component goes away:
+
 ```js
 root.dispose();
 ```
