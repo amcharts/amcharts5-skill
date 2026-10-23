@@ -1,5 +1,7 @@
 # Timeline Charts — Curve, Serpentine, Spiral
 
+> **As a JSON config:** see `references/json.md`. The settings below go into each object's `"settings"` there.
+
 Docs: https://www.amcharts.com/docs/v5/charts/timeline/
 
 Timeline charts are "curved XY charts" — they use XY-style axes and series but bend the chart into serpentine, spiral, or custom shapes. Added in amCharts 5.12.0.

@@ -1,5 +1,7 @@
 # Hierarchy Charts — Treemap, Sunburst, Force-Directed
 
+> **As a JSON config:** see `references/json.md`. The settings below go into each object's `"settings"` there.
+
 
 ## Required imports
 

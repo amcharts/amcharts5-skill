@@ -87,6 +87,7 @@ Based on the chart type the user is building, read the relevant reference file f
 | Word cloud, tag cloud, sentence cloud | `references/wordcloud.md` |
 | Venn diagram, set overlap visualization | `references/venn.md` |
 | Interactive controls: buttons, sliders, steppers, color pickers | `references/ui-elements.md` |
+| A chart as a JSON config: "JSON config", "amCharts JSON", a `<am5-chart>` element, a framework package's `config` prop, a Chart Maker link | `references/json.md` (with the chart type's reference for its settings) |
 
 If the chart type is unclear, start with `references/xy.md` — XY charts are by far the most common.
 
@@ -741,6 +742,8 @@ Without `dateFormat`, since 5.21.1 the browser's `Date` parses the strings, so I
 
 ## Serializing to JSON (ChartSerializer / JsonParser)
 
+**To write a config by hand** (a "JSON config", `<am5-chart>`, a framework package's `config` prop, a Chart Maker link), read `references/json.md`. It covers the exact format, with a complete config per chart family. A config is not `{ "chart": …, "series": … }`; every object has `"type"`, its options go in `"settings"`, and its parts and data go in `"properties"`.
+
 `am5plugins_json.ChartSerializer` turns a live chart into a JSON config and `am5plugins_json.JsonParser` rebuilds it (`await parser.parse(config, { parent: root.container })`). Rules that keep round-trips working:
 
 - **Serialize the chart's top-level container child:** `serializer.serializeAll(root.container.children.getIndex(0))` — the chart, or on chart-less types (hierarchy, flow, word cloud, Venn) the series itself. Before 5.21.0 a series placed straight in `root.container`, or one whose `selectedDataItem` points back at itself, overflowed the stack (`Maximum call stack size exceeded`) or broke `JSON.stringify`; 5.21.0 serializes them. A drilled-down hierarchy's `selectedDataItem` is still not restored (it is written as `"@self.dataItems.-1"`).
@@ -1034,6 +1037,7 @@ onMount(() => { const root = am5.Root.new(chartdiv); /* ... */ return () => root
 39. **Several colors in one `am5.Graphics` `draw`** — `endFill()` fills everything since the last `beginPath()`, so start each color with `display.beginPath()`, or the last color paints over all shapes. Don't give such a Graphics its own `fill` either: after `draw` runs it fills the current path once more, so the last shape takes the Graphics' own `fill` (the default theme sets none). E.g. `draw: function (display) { display.beginPath(); display.beginFill(am5.color(0xff0000)); display.drawRect(0, 0, 10, 10); display.endFill(); display.beginPath(); display.beginFill(am5.color(0x0000ff)); display.drawRect(10, 0, 10, 10); display.endFill(); }`.
 40. **Changing a value on a data item moves nothing** — series draw from the working values: set `valueYWorking` (XY) or `valueWorking` (pie) along with the value, or use `series.data.setIndex()`. See "Dynamic data".
 41. **A setting changed after a hover snaps back on unhover** — the `"default"` state keeps the value from before the first hover. Change it there too: `sprite.states.lookup("default")?.set("fill", c)`. See "States".
+42. **`templateField` goes on the template, not on the series** — per-item settings from data rows are read by the elements a template makes: `series.columns.template.set("templateField", "columnSettings")`, likewise `slices.template`, `mapPolygons.template` or a bullet sprite. Set on the series, `templateField` does nothing and every column stays the same. For a pattern per column, see `references/xy.md` → "Different pattern per column".
 
 ## Easing functions
 

@@ -1,4 +1,7 @@
 # Stock & Financial Charts
+
+> **As a JSON config:** see `references/json.md`. The settings below go into each object's `"settings"` there.
+
 Build financial stock charts with panels, indicators, and toolbar.
 
 

@@ -1,5 +1,7 @@
 # Gantt Chart
 
+> **As a JSON config:** see `references/json.md`. The settings below go into each object's `"settings"` there.
+
 Docs: https://www.amcharts.com/docs/v5/charts/gantt/
 
 Gantt is a standalone chart class (not just a simulated XY chart). It auto-creates axes, series, and toolbar — you only provide data. It supports editable tasks, task linking, progress tracking, collapsible groups, weekends/holidays, and a color picker.

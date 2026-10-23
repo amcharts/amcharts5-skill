@@ -931,6 +931,34 @@ ngOnDestroy() { this.root?.dispose(); }
 onBeforeUnmount(() => { root?.dispose(); });
 ```
 
+## JSON configs (JsonParser, `<am5-chart>`, framework `config` props, Chart Maker links)
+
+A config is the chart as data, in an exact format the parser does not guess at. It is never `{ "chart": {…}, "series": […] }`.
+- Every amCharts object has `"type"`, the class name without a namespace (`"PieChart"`, not `"am5percent.PieChart"`). The top level is the chart, or the series for chart-less families (`Sankey`, `Treemap`, `ForceDirected`, `WordCloud`, `Venn`).
+- What `.new(root, {…})` takes goes in `"settings"`; settings next to `type` are silently ignored. Parts and lists go in `"properties"` (`series`, `xAxes`, `yAxes`, `data`, `bullets`, templates as `"columns": { "properties": { "template": { "settings": {…} } } }`). Child elements such as a `Legend` go in `"children"`.
+- Data goes in `properties.data`, inline or as a `"#name"` ref; dates as timestamps. XY axes and series go in `refs`, one ref per group in dependency order (data, then axes, then series). Series point at `"#axis-0"`; the chart lists `"xAxes": ["#axis-0"]`.
+- Colors and percents: `{ "type": "Color", "value": "#e05a47" }` and `{ "type": "Percent", "value": 50 }`. A bare `"#e05a47"` is read as a ref and fails. A string starting with `#` or `@` is a ref; write `"##1"` for a literal `#1`.
+- Layout: `"vertical"`, `"horizontal"` or `"grid"`. Animation: `"autoAppear": true` in settings. Theme colors: `"@colors.getIndex(n)"`, `"@root.interfaceColors.get('background')"`.
+- Maps: `"geoJSON": "am5geodata_worldLow"` (the global must be loaded) and `"projectionName": "geoNaturalEarth1"` in `settings`. Each heat rule needs `"__parse": true`, and the series needs `"calculateAggregates": true`.
+- A config can't hold themes (pass them beside it), functions, adapters, events or method calls.
+- Scripts: `index.js`, then `plugins/json.js`, then every chart package the config uses (the parser does not load them), plus geodata.
+- Chart Maker link: `https://live.amcharts.com/open#config=` + `encodeURIComponent(JSON.stringify(config))`.
+
+```json
+{
+  "type": "PieChart",
+  "properties": { "series": ["#series-0"] },
+  "refs": [
+    { "data-0": [{ "category": "Search", "value": 4200 }, { "category": "Social", "value": 2600 }] },
+    { "series-0": {
+      "type": "PieSeries",
+      "settings": { "valueField": "value", "categoryField": "category", "autoAppear": true },
+      "properties": { "data": "#data-0" }
+    } }
+  ]
+}
+```
+
 ## Recent API changes (5.16 → 5.21.3)
 
 **Renamed settings** (old name still works but is deprecated):

@@ -1,5 +1,7 @@
 # XY Charts — Line, Area, Bar, Column, Candlestick, Scatter
 
+> **As a JSON config:** see `references/json.md`. The settings below go into each object's `"settings"` there.
+
 
 ## Required imports
 
@@ -810,6 +812,34 @@ series.fills.template.set("fillGradient", am5.LinearGradient.new(root, {
 ```
 
 `RadialGradient` is centered on map polygons, line and area fills and bullets since 5.21.1 (with `target` set, on the target). 5.21.1 put one with pixel `x`/`y` off-center on radar fills and similar shapes; 5.21.2 fixes that.
+
+## Different pattern per column
+
+To tell columns apart without color (print, grayscale, color-blind readers), give each one a fill pattern through its data row. The full example is `column-bar/column-chart-with-patterns`.
+
+```js
+series.columns.template.setAll({
+  fill: am5.color(0xffffff),       // shows in the gaps between the pattern's shapes
+  stroke: am5.color(0x000000),
+  templateField: "columnSettings"  // on the columns' template, not on the series
+});
+
+const black = am5.color(0x000000);
+const data = [
+  { source: "Search", visits: 4200, columnSettings: { fillPattern: am5.LinePattern.new(root, { color: black, angle: 45, strokeWidth: 2, gap: 6 }) } },
+  { source: "Social", visits: 2600, columnSettings: { fillPattern: am5.CirclePattern.new(root, { color: black, radius: 2, gap: 5 }) } },
+  { source: "Email",  visits: 1500, columnSettings: { fillPattern: am5.RectanglePattern.new(root, { color: black, maxWidth: 5, maxHeight: 5, gap: 5, checkered: true }) } },
+  { source: "Direct", visits: 3100, columnSettings: { fillPattern: am5.LinePattern.new(root, { color: black, angle: 90, strokeWidth: 2, gap: 6 }) } }
+];
+xAxis.data.setAll(data);
+series.data.setAll(data);
+```
+
+- `templateField` is a setting of `series.columns.template`. Set on the series, it does nothing and the columns stay plain.
+- A pattern's `color` is the color of its lines, dots or squares. The gaps show the column's `fill`, or the pattern's own `fill` (with `fillOpacity`) when it has one. A `color` equal to what shows in the gaps makes the column look solid. Always set `color`: without one, the shapes are black whatever the column's colors (5.21.3).
+- `LinePattern`: set the line direction with `angle` (5.14+; 0 is horizontal, 90 upright). `rotation` turns the whole tile instead, and at 45° the tile edges show as broken lines.
+- Make each pattern once, as above. An adapter that returns `am5.LinePattern.new(…)` makes a new pattern every time the setting is read.
+- In a JSON config, a row that holds a pattern needs `"__parse": true`, and so does its settings object (`references/json.md`, rule 3): `{ "source": "Search", "visits": 4200, "columnSettings": { "fillPattern": { "type": "LinePattern", "settings": { "color": { "type": "Color", "value": "#000000" }, "angle": 45 } }, "__parse": true }, "__parse": true }`.
 
 ## Changing fields and axes after creation (5.20.0)
 
