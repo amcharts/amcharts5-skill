@@ -143,7 +143,11 @@ Built-in `@` refs: `@root` (the Root), `@colors` (the theme's palette), `@series
 
 ### 9. Root settings and locales
 
-An optional top-level `"root": { "settings": { … }, "properties": { … } }` applies to the Root before the chart is built. `"properties": { "locale": "am5locales_de_DE" }` names a locale global, so load `locales/de_DE.js` first.
+An optional top-level `"root": { "settings": { … }, "properties": { … } }` applies to the Root before the chart is built. `"properties": { "locale": "am5locales_de_DE" }` names the locale, found the same way as geodata (rule 8):
+- with script tags, load `locales/de_DE.js` first; it defines a global of that name;
+- with npm, import it and pass it in `resources` (5.21.4+), e.g. `resources: { am5locales_de_DE }`. Before 5.21.4, set `window.am5locales_de_DE = am5locales_de_DE` after importing it.
+
+Since 5.21.4 a locale that isn't found logs a warning.
 
 ### 10. What a config cannot hold
 
