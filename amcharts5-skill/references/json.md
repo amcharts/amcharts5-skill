@@ -500,4 +500,4 @@ const url = "https://live.amcharts.com/open#config=" + encodeURIComponent(JSON.s
 `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte` and `-react-native` each take a config as a prop or input, plus themes beside it. See SKILL.md "Frameworks".
 
 - For a map in React, Vue, Angular or Svelte, give the chart its geodata as in rule 8: the `resources` prop (5.21.4+), or a global set before the chart is built.
-- React Native loads the geodata a config names by itself.
+- React Native loads the geodata a config names by itself, but not a locale: give it `modules={["locales/de_DE"]}`.

@@ -879,7 +879,7 @@ sbSeries.data.setAll(data);   // the preview series needs the data too
 
 ## Frameworks (React, Vue, Angular, Svelte, React Native)
 
-In a framework app, use amCharts' package for it (react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3, react-native 5.0.1; the web ones need amCharts 5.21.4+) instead of hand-written mount/dispose code. It makes the chart when its element is there, disposes it with the component, and loads the library in the browser only, so server rendering works (Next.js, Nuxt, SvelteKit, Angular SSR). Install it with the library: `npm install @amcharts/amcharts5 @amcharts/amcharts5-react` (the web packages need amCharts 5.21.0+).
+In a framework app, use amCharts' package for it (react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3, react-native 5.0.1; the web ones need amCharts 5.21.4+) instead of hand-written mount/dispose code. It makes the chart when its element is there, disposes it with the component, and loads the library in the browser only, so server rendering works (Next.js, Nuxt, SvelteKit, Angular SSR). Install it with the library: `npm install @amcharts/amcharts5 @amcharts/amcharts5-react`.
 
 | Framework | Package | A chart in code | A chart from a JSON config |
 |---|---|---|---|
