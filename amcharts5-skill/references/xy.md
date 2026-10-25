@@ -145,7 +145,7 @@ root.dispose();
 # amCharts 5 XY Charts — API Reference
 
 Detailed reference for axes, series, and configuration options.
-Full docs: https://www.amcharts.com/docs/v5/charts/xy-chart/
+Full docs: https://docs.amcharts.com/v5/charts/xy-chart/
 
 ## CategoryAxis
 

@@ -18,7 +18,7 @@ metadata:
   version: 1.0.0
   category: code
   tags: [charts, maps]
-  documentation: https://amcharts.com/docs/v5
+  documentation: https://docs.amcharts.com/v5/
   support: contact@amcharts.com
 ---
 
@@ -26,12 +26,12 @@ metadata:
 
 Build any chart with the amCharts 5 JavaScript charting library.
 
-Docs: https://www.amcharts.com/docs/v5/
+Docs: https://docs.amcharts.com/v5/
 
 ## Critical rules — apply to ALL chart types
 
 1. **Check demos first (if you can browse the web)** — Before building a chart, search or browse https://www.amcharts.com/demos/ for a demo that matches the user's request. Demo source code is the most reliable starting point — adapt it rather than writing from scratch. Skip this step if you have no web access.
-2. **Read the docs (if you can browse the web)** — For unfamiliar features or configuration, check https://www.amcharts.com/docs/v5/ for guides and tutorials. The docs explain concepts, patterns, and options that the class reference alone does not. Skip if you have no web access.
+2. **Read the docs (if you can browse the web)** — For unfamiliar features or configuration, check https://docs.amcharts.com/v5/ for guides and tutorials. The docs explain concepts, patterns, and options that the class reference alone does not. Skip if you have no web access.
 3. **Always use amCharts 5** — never v3 or v4. The APIs are completely different.
 4. **Use `.new()` factory** — never `new ClassName()`. Every object is created via `ClassName.new(root, { settings })`.
 5. **Root is always the first argument** to `.new()` (except Root itself, which takes a div ID).
@@ -1260,7 +1260,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 
 If you are unsure whether a method, property, or setting exists on an amCharts 5 class, **verify it before using it**. Check the class reference (class name in lowercase, e.g. `LineSeries` → `lineseries`):
 
-1. **Primary:** `https://www.amcharts.com/docs/v5/reference/{classname}/` — e.g. `https://www.amcharts.com/docs/v5/reference/lineseries/`
+1. **Primary:** `https://docs.amcharts.com/v5/reference/{classname}/` — e.g. `https://docs.amcharts.com/v5/reference/lineseries/`
 2. **Fallback (if primary is unavailable):** Check the TypeScript source on GitHub — `https://raw.githubusercontent.com/amcharts/amcharts5/master/src/.internal/charts/` and navigate to the relevant file. Settings interfaces are named `I{ClassName}Settings`.
 
 Common source file paths:
