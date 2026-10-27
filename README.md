@@ -29,7 +29,11 @@ Or add the [amCharts MCP server](https://github.com/amcharts/amcharts5-mcp), whi
 
 ### Cursor
 
-Add the hosted [amCharts MCP server](https://github.com/amcharts/amcharts5-mcp) in Cursor's MCP settings (`.cursor/mcp.json`). It has 12 read-only tools for the amCharts 5 docs, 350+ code examples, the API reference and the map files, and needs no sign-in:
+Add the hosted [amCharts MCP server](https://github.com/amcharts/amcharts5-mcp). It has 12 read-only tools for the amCharts 5 docs, 350+ code examples, the API reference and the map files, and needs no sign-in. One click:
+
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=amcharts5&config=eyJ1cmwiOiJodHRwczovL21jcC5hbWNoYXJ0cy5jb20vbWNwIn0%3D)
+
+Or add it to Cursor's MCP settings (`.cursor/mcp.json`) yourself:
 
 ```json
 {
