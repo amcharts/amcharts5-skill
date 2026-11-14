@@ -1,5 +1,7 @@
 # amcharts5-skill
 
+> **Using Claude?** Install the [amCharts 5 plugin](https://claude.ai/customize/plugins/id/88417dfb-479c-409d-8571-796c3a299aac%40anthropic-plugin-directory): it bundles this skill and the amCharts MCP server. In Claude Code: `/plugin install amcharts5@anthropic-plugin-directory`.
+
 An AI skill for building [amCharts 5](https://docs.amcharts.com/v5/) charts and data visualizations. Works with Claude, Cursor, GitHub Copilot, and any AI assistant that supports custom context or skill files.
 
 Supports XY (line, bar, area, scatter), pie/donut, maps, hierarchy (treemap, sunburst), flow (Sankey, chord), radar, stock/financial, Gantt, word cloud, Venn, and timeline charts.
