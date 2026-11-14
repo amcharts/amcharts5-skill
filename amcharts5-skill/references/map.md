@@ -21,10 +21,13 @@ import am5geodata_worldLow from "@amcharts/amcharts5-geodata/worldLow";
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 ```
 
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+
 ## Geodata (map files)
 
 NPM: `@amcharts/amcharts5-geodata`
 CDN: `https://cdn.amcharts.com/lib/5/geodata/{mapName}.js`
+npm CDN (AI sandboxes, strict CSPs): unpkg serves the geodata package's `dist/`, `https://unpkg.com/@amcharts/amcharts5-geodata@5.1.x/dist/{mapName}.js`, with regions at `dist/region/{country}/{mapName}.js` and the same globals. jsDelivr refuses the package (too large); there, only `worldLow.js` and `usaLow.js` are available, in the library's own `…/@amcharts/amcharts5@5.x.x/dist/geodata/`.
 
 | Map | ES import | CDN global |
 |-----|----------|-----------|

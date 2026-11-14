@@ -87,7 +87,9 @@ CDN script objects use `am5` (core), `am5xy`, `am5percent`, `am5map`, `am5hierar
 Themes: `am5themes_Animated`, `am5themes_Dark`, etc.
 Geodata: `am5geodata_worldLow`, `am5geodata_usaLow`, etc.
 
-The npm package has no script-tag build: plain pages use the CDN. When bundling, keep code splitting on. A single-file bundle with `stock` is 1.4 MB gzipped instead of about 265 KB.
+Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), the same files are in the npm package's `dist/` since 5.x.x: `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/index.js` (or unpkg, or `node_modules/@amcharts/amcharts5/dist/`). Pin one version for every file; classic `<script>` tags, not `type="module"`. Maps beyond `dist/geodata/worldLow.js`/`usaLow.js`: `https://unpkg.com/@amcharts/amcharts5-geodata@5.1.x/dist/<name>.js` (unpkg only, not jsDelivr). PDF fonts only on cdn.amcharts.com.
+
+When bundling, keep code splitting on: with stock charts, `<am5-chart>`, the JSON plugin or exporting, a single-file bundle inlines PDF/Excel/annotation code, about 1 MB gzipped more.
 
 ### Package > chart type mapping
 
@@ -744,7 +746,7 @@ var chart = root.container.children.push(am5xy.XYChart.new(root, { ... }));
 
 11. **`dataItems` is a plain array** — `series.dataItems` does NOT have `.each()`. Use `series.dataItems.forEach(fn)` or `am5.array.each(series.dataItems, fn)`. Only `series.data` (the ListData object) has `.each()`.
 
-12. **CDN script load order matters** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` > `xy.js` > `radar.js` / `timeline.js` / `gantt.js` > `themes/*.js`.
+12. **CDN script load order matters** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` > `xy.js` > `radar.js` / `timeline.js` / `gantt.js` > `themes/*.js`. From an npm CDN, the same order under `…/@amcharts/amcharts5@<version>/dist/`, every file from one pinned version.
 
 13. **No `minorGrid` / `minorTicks` / `minorLabels` objects** — These properties don't exist. Enable minor grid via renderer flags:
 ```js
@@ -836,7 +838,7 @@ chart.series.data.setAll([
 ]);
 ```
 
-21. **No continent-level geodata at top-level CDN** — `geodata/europeLow.js` does NOT exist. Use `geodata/region/world/europeLow.js` (global: `am5geodata_region_world_europeLow`) or filter `worldLow` with `include: ["FR", "DE", "ES", ...]`.
+21. **No continent-level geodata at top-level CDN** — `geodata/europeLow.js` does NOT exist. Use `geodata/region/world/europeLow.js` (global: `am5geodata_region_world_europeLow`) or filter `worldLow` with `include: ["FR", "DE", "ES", ...]`. On unpkg: `https://unpkg.com/@amcharts/amcharts5-geodata@<version>/dist/region/world/europeLow.js`.
 
 22. **Do not add chart titles as HTML** — HTML titles are outside the chart and won't appear in exports. Use `am5.Label` pushed into the container BEFORE the chart, with `verticalLayout` on the container. See "Chart title" in Common components above.
 

@@ -22,6 +22,8 @@ import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 ```
 
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+
 ## Setup
 
 ```js

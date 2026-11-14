@@ -26,7 +26,7 @@ What code passes to `.new(root, { … })` goes into `settings` here, unchanged. 
 | Treemap, sunburst, force-directed, pack | `hierarchy.js` |
 | Radar, gauge | `xy.js`, `radar.js` |
 
-All files are at `https://cdn.amcharts.com/lib/5/`. Theme files, e.g. `themes/Animated.js`, go after the chart packages.
+All files are at `https://cdn.amcharts.com/lib/5/`, and since 5.x.x under the npm package's `dist/` on jsDelivr and unpkg (`https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/`, one pinned version for all; SKILL.md "Plain HTML, no bundler"). Theme files, e.g. `themes/Animated.js`, go after the chart packages.
 
 ## The rules
 
