@@ -225,7 +225,7 @@ var heatLegend = chart.children.push(am5.HeatLegend.new(root, {
 
 The HeatLegend blocks above leave the end labels empty: set `startValue`/`endValue` from the series on `datavalidated` (SKILL.md "Heat rules") to show the numbers, or give `startText`/`endText` (e.g. "Low", "High"), which replace them.
 
-**Countries without data** keep the template's fill, or the heat rule's `neutral` value, and `{value}` in their tooltip is empty ("Canada: "). Give them their own text with an adapter:
+**Countries without data** keep the template's fill, or the heat rule's `neutral` value, and `{value}` in their tooltip is empty ("Canada: "). Give them their own text with an adapter (docs: https://docs.amcharts.com/v5/charts/map-chart/map-polygon-series/#tooltips-for-polygons-without-data):
 
 ```js
 polygonSeries.set("heatRules", [{
@@ -1084,7 +1084,7 @@ linkedSeries.data.setAll([{ id: "US", url: "https://en.wikipedia.org/wiki/United
 
 `urlField` has no default (links are off until set); the pointer cursor is set automatically unless you set `cursorOverStyle`; `javascript:`/`data:`/`vbscript:` URLs are never opened; override `series.openUrl(dataItem)` to intercept. `MapSankeySeries` nodes are not linked — keep a `click` handler there.
 
-**Which pixels:** `chart.convert(geoPoint)` and `chart.invert(point)` work in the map's area, inside the chart's padding (`chart.seriesContainer`'s space). A pointer event's `ev.point` is relative to the root. So the place clicked is `chart.invert(chart.seriesContainer.toLocal(ev.point))`, and a geo point's page position is `chart.seriesContainer.toGlobal(chart.convert(geoPoint))` plus the chart div's `getBoundingClientRect()`. `chart.invert(ev.point)` on its own is right only for a chart at the root's top-left with no padding.
+**Which pixels:** `chart.convert(geoPoint)` and `chart.invert(point)` work in the map's area, inside the chart's padding (`chart.seriesContainer`'s space). A pointer event's `ev.point` is relative to the root. So the place clicked is `chart.invert(chart.seriesContainer.toLocal(ev.point))`, and a geo point's page position is `chart.seriesContainer.toGlobal(chart.convert(geoPoint))` plus the chart div's `getBoundingClientRect()`. `chart.invert(ev.point)` on its own is right only for a chart at the root's top-left with no padding. Docs: https://docs.amcharts.com/v5/charts/map-chart/map-api/#converting-between-screen-and-geographical-coordinates.
 
 ## Disposal
 

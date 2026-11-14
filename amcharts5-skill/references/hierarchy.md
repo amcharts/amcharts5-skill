@@ -119,7 +119,7 @@ series.labels.template.adapters.add("y", function (y, label) { return isOpen(lab
 series.labels.template.adapters.add("centerY", function (cy, label) { return isOpen(label) ? 0 : cy; });
 ```
 
-Drilled views scale the band with the zoom. With `topDepth: 1`, the hidden root's own band stays as an empty strip above the top level. `nodePaddingOuter` overrides `nodePaddingTop`.
+Drilled views scale the band with the zoom. With `topDepth: 1`, the hidden root's own band stays as an empty strip above the top level. `nodePaddingOuter` overrides `nodePaddingTop`. Docs: https://docs.amcharts.com/v5/charts/hierarchy/treemap/#parent-node-headers.
 
 ## Force-Directed Tree
 
@@ -322,7 +322,7 @@ series.set("initialDepth", 2);   // levels opened below topDepth on load
 series.set("downDepth", 1);      // how many levels to reveal on drill-down
 ```
 
-`initialDepth` counts the levels opened below `topDepth`: with `topDepth: 1`, `initialDepth: 1` draws depths 1 and 2, and `initialDepth: 2` draws depths 1–3. On a Treemap the deepest drawn level covers its parents, so only its tiles show. `initialDepth` works without `selectedDataItem`, but still call `series.set("selectedDataItem", series.dataItems[0])` after `data.setAll()`. Without it a `BreadcrumbBar` stays empty, and `topDepth` doesn't hide the root node.
+`initialDepth` counts the levels opened below `topDepth`: with `topDepth: 1`, `initialDepth: 1` draws depths 1 and 2, and `initialDepth: 2` draws depths 1–3. On a Treemap the deepest drawn level covers its parents, so only its tiles show. `initialDepth` works without `selectedDataItem`, but still call `series.set("selectedDataItem", series.dataItems[0])` after `data.setAll()`. Without it a `BreadcrumbBar` stays empty, and `topDepth` doesn't hide the root node. Docs: https://docs.amcharts.com/v5/charts/hierarchy/#tree-depth.
 
 A click selects the clicked node itself. On a Treemap that shows nested levels, a click on an inner tile drills straight to that tile, two levels from the top view. `downDepth` and `upDepth` don't change which node is selected (5.21.5). For one level per click, replace the built-in click:
 
@@ -340,7 +340,7 @@ series.nodes.template.events.on("click", function (ev) {
 });
 ```
 
-Add it before `series.data.setAll()` (template events reach only the nodes made after them), and set `selectedDataItem` after the data (see above). The way back up is a click on the open tile's header band, so give it one (`nodePaddingTop`, "Group headers").
+Add it before `series.data.setAll()` (template events reach only the nodes made after them), and set `selectedDataItem` after the data (see above). The way back up is a click on the open tile's header band, so give it one (`nodePaddingTop`, "Group headers"). Docs: https://docs.amcharts.com/v5/charts/hierarchy/hierarchy-drill-down/#drilling-one-level-per-click.
 
 ### Breadcrumbs (for navigation)
 

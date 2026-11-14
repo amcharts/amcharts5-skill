@@ -82,7 +82,7 @@ Docs: https://docs.amcharts.com/v5/
 - **Maps:** the package's `dist/geodata/` has only `worldLow.js` and `usaLow.js`. Other maps are in the `@amcharts/amcharts5-geodata` package's `dist/`, at the same path as below `geodata/` on the amCharts CDN (`dist/worldLow.js`, `dist/region/world/europeLow.js`), on unpkg (`https://unpkg.com/@amcharts/amcharts5-geodata@5.1.x/dist/worldLow.js`) but not jsDelivr, which refuses a package that large.
 - **PDF fonts** (`am5fonts_*`) are only on cdn.amcharts.com.
 
-**Bundling.** Keep code splitting on (esbuild: `splitting: true`, `format: "esm"`). With stock charts, `<am5-chart>`, the JSON plugin or the exporting plugin, a single-file bundle inlines the exporting plugin's lazy parts (PDF, Excel, annotations), about 1 MB gzipped more: a split stock chart loads about 265 KB gzipped, a single-file one 1.4 MB. Core + `xy` bundles to about 160 KB. The script files gzipped (5.21.5): `index.js` + `xy.js` 190 KB, + `stock.js` 268 KB.
+**Bundling.** Keep code splitting on (esbuild: `splitting: true`, `format: "esm"`). With stock charts, `<am5-chart>`, the JSON plugin or the exporting plugin, a single-file bundle inlines the exporting plugin's lazy parts (PDF, Excel, annotations), about 1 MB gzipped more: a split stock chart loads about 265 KB gzipped, a single-file one 1.4 MB. Core + `xy` bundles to about 160 KB. The script files gzipped (5.21.5): `index.js` + `xy.js` 190 KB, + `stock.js` 268 KB. Docs: https://docs.amcharts.com/v5/getting-started/#bundling.
 
 ## Which reference to read
 
@@ -279,7 +279,7 @@ pointSeries.bullets.push(function (root, series, dataItem) {
 
 ## Number formats
 
-Numbers in `{placeholders}` use `root.numberFormatter`'s `numberFormat` (default `"#,###.#####"`: separators, at most 5 decimals). Format one placeholder with `{valueY.formatNumber('#,###.00')}`; a `ValueAxis` has its own `numberFormat` and `tooltipNumberFormat`. A `numberFormatter` on a tooltip or a template doesn't change placeholders.
+Numbers in `{placeholders}` use `root.numberFormatter`'s `numberFormat` (default `"#,###.#####"`: separators, at most 5 decimals). Format one placeholder with `{valueY.formatNumber('#,###.00')}`; a `ValueAxis` has its own `numberFormat` and `tooltipNumberFormat`. A `numberFormatter` on a tooltip or a template doesn't change placeholders. Docs: https://docs.amcharts.com/v5/concepts/formatters/formatting-numbers/#rounding-to-whole-numbers, https://docs.amcharts.com/v5/concepts/formatters/formatting-numbers/#years-without-thousands-separators.
 
 | Format | 6708.044000000005 | 1.125 | 2024 |
 |---|---|---|---|
@@ -473,7 +473,7 @@ var scaleLegend = chart.children.push(am5.HeatLegend.new(root, {
 }));
 ```
 
-`startText`/`endText` replace the numbers at the ends: with `startText: "Low"` the label says only "Low", whatever `startValue` is, and `""` leaves it blank. `{startValue}` in them is not filled in. Leave them out to show `startValue`/`endValue` as formatted numbers. On a map, give the legend a `background` so a zoomed map doesn't show through it (`references/map.md` → Choropleth).
+`startText`/`endText` replace the numbers at the ends: with `startText: "Low"` the label says only "Low", whatever `startValue` is, and `""` leaves it blank. `{startValue}` in them is not filled in. Leave them out to show `startValue`/`endValue` as formatted numbers. On a map, give the legend a `background` so a zoomed map doesn't show through it (`references/map.md` → Choropleth). Docs: https://docs.amcharts.com/v5/concepts/legend/heat-legend/#startend-labels.
 
 ## Animations
 
@@ -652,8 +652,8 @@ A data item's bullets are a plain array **property**: `dataItem.bullets?.[0]?.ge
 
 ## Performance: big data, fast updates, no animation
 
-- **Animations off:** leave out the Animated theme. To keep it but stop one element animating, set `interpolationDuration: 0` (value changes, axis zoom and rescale) or `stateAnimationDuration: 0` (hover and show/hide states) on it.
-- **Zoom without animation:** an axis zooms over its own `interpolationDuration` (600 ms with the Animated theme). There is no `zoomAnimation` setting. Set it to 0 on the X axis and on value axes, which also animate their rescale after a zoom. `zoom()`, `zoomToDates()`, `zoomToValues()` and `zoomToCategories()` take a duration as their third argument; `0` jumps.
+- **Animations off:** leave out the Animated theme. To keep it but stop one element animating, set `interpolationDuration: 0` (value changes, axis zoom and rescale) or `stateAnimationDuration: 0` (hover and show/hide states) on it. Docs: https://docs.amcharts.com/v5/concepts/animations/#turning-off-animations.
+- **Zoom without animation:** an axis zooms over its own `interpolationDuration` (600 ms with the Animated theme). There is no `zoomAnimation` setting. Set it to 0 on the X axis and on value axes, which also animate their rescale after a zoom. `zoom()`, `zoomToDates()`, `zoomToValues()` and `zoomToCategories()` take a duration as their third argument; `0` jumps. Docs: https://docs.amcharts.com/v5/charts/xy-chart/zoom-and-pan/#zoom-animation.
 - **Frame rate:** `root.fps = 30` redraws about 20 times a second instead of 60, which frees the main thread for incoming data.
 - **High-rate streams** (a point every 10 ms, 3 series):
   - The Live Data pattern (`push` + `removeIndex(0)` per point, Animated theme) kept up with 30–60% of the points.

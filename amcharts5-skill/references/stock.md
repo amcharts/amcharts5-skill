@@ -203,7 +203,7 @@ stockChart.toolsContainer.set("paddingTop", 10);
 dateAxis.get("renderer").labels.template.setAll({ minPosition: 0.01, maxPosition: 0.99 });
 ```
 
-The colors are an example: any pair works.
+The colors are an example: any pair works. Panel buttons on hover: https://docs.amcharts.com/v5/charts/stock/panels/#showing-controls-on-hover.
 
 ## Adding indicators programmatically
 

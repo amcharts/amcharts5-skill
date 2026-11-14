@@ -520,7 +520,7 @@ const series = chart.series.push(am5xy.LineSeries.new(root, {
 }));
 ```
 
-`legendValueText` is used only while a cursor points at a data item. Without a cursor, and after it leaves, the value label shows `legendRangeValueText` (empty if unset). That text has no data item, so `{valueY}` is empty there; it reads the series' range values, which exist only with `calculateAggregates: true`: `{valueYClose}` (the last value; follows `data.push()`), `{valueYOpen}`, `{valueYLow}`, `{valueYHigh}`, `{valueYSum}`, `{valueYAverage}`, `{valueYCount}`, and the same with `Selection` for the zoomed range (`{valueYCloseSelection}` is the last visible value). Without `calculateAggregates` they are empty, with no warning (5.21.5).
+`legendValueText` is used only while a cursor points at a data item. Without a cursor, and after it leaves, the value label shows `legendRangeValueText` (empty if unset). That text has no data item, so `{valueY}` is empty there; it reads the series' range values, which exist only with `calculateAggregates: true`: `{valueYClose}` (the last value; follows `data.push()`), `{valueYOpen}`, `{valueYLow}`, `{valueYHigh}`, `{valueYSum}`, `{valueYAverage}`, `{valueYCount}`, and the same with `Selection` for the zoomed range (`{valueYCloseSelection}` is the last visible value). Without `calculateAggregates` they are empty, with no warning (5.21.5). Docs: https://docs.amcharts.com/v5/charts/xy-chart/legend-xy-series/#values-without-a-cursor.
 
 ## Stacking
 
