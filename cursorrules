@@ -649,7 +649,7 @@ pieSeries.dataItems[0].setAll({ value: 80, valueWorking: 80 });   // pie/funnel:
 
 ## Performance
 
-No zoom animation: `interpolationDuration: 0` on the X axis and the value axis (there is no `zoomAnimation`); `zoom…(a, b, 0)` jumps. Fast streams: `interpolationDuration: 0` on series and axes, plus `root.fps = 30`. Scatter: bullets up to about 5,000 points, one `am5.Graphics` up to about 50,000 (references/xy.md "Scatter / Bubble chart"). No "rendered" event: `datavalidated` + one `frameended` fires before drawing ends; done = two animation frames in a row with no `root` `frameended` (helper in SKILL.md "Events"). Bar chart race: no sort setting; re-sort `series.dataItems` and `yAxis.dataItems` every 100 ms with `deltaPosition` (references/xy.md, "Bar chart race").
+No zoom animation: `interpolationDuration: 0` on the X axis and the value axis (there is no `zoomAnimation`); `zoom…(a, b, 0)` jumps. Fast streams: `interpolationDuration: 0` on series and axes, plus `root.fps = 30`. Large scatter: draw all dots in one `am5.Graphics` instead of bullets, up to about 50,000 points (references/xy.md "Scatter / Bubble chart"). No "rendered" event: `datavalidated` + one `frameended` fires before drawing ends; done = two animation frames in a row with no `root` `frameended` (helper in SKILL.md "Events"). Bar chart race: no sort setting; re-sort `series.dataItems` and `yAxis.dataItems` every 100 ms with `deltaPosition` (references/xy.md, "Bar chart race").
 
 ## Data processor (for external/API data)
 

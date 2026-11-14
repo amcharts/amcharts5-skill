@@ -223,7 +223,7 @@ var heatLegend = chart.children.push(am5.HeatLegend.new(root, {
 }));
 ```
 
-The two blocks above leave the end labels empty: set `startValue`/`endValue` from the series on `datavalidated` (SKILL.md "Heat rules") to show the numbers, or give `startText`/`endText` (e.g. "Low", "High"), which replace them.
+The HeatLegend blocks above leave the end labels empty: set `startValue`/`endValue` from the series on `datavalidated` (SKILL.md "Heat rules") to show the numbers, or give `startText`/`endText` (e.g. "Low", "High"), which replace them.
 
 **Countries without data** keep the template's fill, or the heat rule's `neutral` value, and `{value}` in their tooltip is empty ("Canada: "). Give them their own text with an adapter:
 
