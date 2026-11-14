@@ -478,7 +478,7 @@ Load the scripts, then put the config in the `config` attribute:
 - The attribute is single-quoted, so write a `'` inside the config as `&#39;`, e.g. `get(&#39;background&#39;)`.
 - For a long config, use `src="chart.json"` or set the element's `config` property from a script: `document.querySelector("am5-chart").config = { … }`.
 - A theme with its settings (5.21.4) goes in the attribute as JSON: `themes='["Animated", ["Adaptive", { "baseColor": "#4150a0" }]]'`.
-- With npm, import `defineChartElement` from `@amcharts/amcharts5/element` and call it (esbuild drops a bare `import "@amcharts/amcharts5/element"`). Then set the properties: `element.themes = [am5themes_Animated]`, `element.resources = { am5geodata_worldLow }` for a map (5.21.4, rule 8), and `element.config = config`.
+- With npm, import `defineChartElement` from `@amcharts/amcharts5/element` and call it. A bare `import "@amcharts/amcharts5/element"` works too from 5.21.5; before that, esbuild dropped it. Then set the properties: `element.themes = [am5themes_Animated]`, `element.resources = { am5geodata_worldLow }` for a map (5.21.4, rule 8), and `element.config = config`.
 - See SKILL.md "Serializing to JSON" for `renderer="svg"`, `whenReady()` and the `ready`/`error` events.
 
 ### Chart Maker link

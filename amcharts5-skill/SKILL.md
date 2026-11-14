@@ -297,7 +297,7 @@ root.events.once("frameended", function () {
 });
 ```
 
-Options: `width`, `height`, `precision` (default `3`), `idPrefix` (`"am5-"`; vary it when several SVGs share a page), `title` (screen-reader name; default the Root `ariaLabel`), `background` (CSS color; default transparent). Left out: elements with `exportable: false`, cross-origin images without CORS, and fully transparent elements.
+Options: `width`, `height`, `precision` (default `3`), `idPrefix` (`"am5-"`; vary it when several SVGs share a page), `title` (screen-reader name; default the Root `ariaLabel`), `background` (CSS color; default transparent), `includeNonExportable` (5.21.5, default `false`: also write elements marked `exportable: false`, such as scrollbar grips). Left out: elements with `exportable: false` (unless `includeNonExportable`), cross-origin images without CORS, and fully transparent elements. Since 5.21.5 the SVG suits design tools such as Figma: fonts are attributes with sizes in pixels, text is placed without `dominant-baseline`, patterns are drawn as shapes, and layers are named after series, data items, axes and the legend.
 
 ## Responsive rules
 
@@ -706,7 +706,7 @@ colors.set("colors", [
 ]);
 ```
 
-**A `ColorSet` must always hold at least one color.** `colorSet.set("colors", [])` crashes the next `next()`/`getIndex()` call (`Maximum call stack size exceeded`, or `Cannot read properties of undefined (reading 'toHSL')` inside `generateColors`) as soon as a series iterates the palette — as of 5.21.4 the empty list is not guarded. To "reset" a palette, swap in a fresh `am5.ColorSet.new(root, {})` instead of emptying the list. The theme's `baseColor` also resolves lazily, so a **synchronous** re-color right after swapping a `ColorSet` can read a transient value (sprites momentarily black); re-set the series data and let amCharts' own data pass recolor the sprites.
+**A `ColorSet` must always hold at least one color.** `colorSet.set("colors", [])` crashes the next `next()`/`getIndex()` call (`Maximum call stack size exceeded`, or `Cannot read properties of undefined (reading 'toHSL')` inside `generateColors`) as soon as a series iterates the palette — still in 5.21.5, the empty list is not guarded. To "reset" a palette, swap in a fresh `am5.ColorSet.new(root, {})` instead of emptying the list. The theme's `baseColor` also resolves lazily, so a **synchronous** re-color right after swapping a `ColorSet` can read a transient value (sprites momentarily black); re-set the series data and let amCharts' own data pass recolor the sprites.
 
 **`step` with a theme that reuses its colors** (`reuse: true`: Adaptive, Monochrome, Nord, Pastel, Kelly, …): before 5.21.2 a `step` sharing a factor with the list length used only a few of the colors (a word cloud or treemap with Nord got two or three). Now every color is used before any repeats, so `step: count / 2` interleaves the palette.
 
@@ -757,7 +757,7 @@ Without `dateFormat`, since 5.21.1 the browser's `Date` parses the strings, so I
 - **Not captured by `ChartSerializer` (as of 5.21.0)** — re-apply these in code after `parse()`: a `ZoomTools` you added to a hand-made `ZoomableContainer` (its `target` is written as a copy, so the parsed buttons drive a different container — re-point `target`, or use `am5.SerialChartContainer`, which wires its own `zoomTools`); Venn `hoverGraphics` (Venn slice-template `states` do round-trip); data items added with `pushDataItem()` (only `series.data` rows are written — map points on lines can be data rows since 5.20.6, see `references/map.md`).
 - **Bullets** are captured by calling the factory with a sample data item — write factories as `function(root, series, dataItem)` (pitfall #36).
 
-**`<am5-chart>` — a chart as an HTML element (5.21.0).** Builds a chart from a JSON config with no root or chart code. With script tags, load `index.js`, `plugins/json.js`, `element.js`, then every chart package the config uses; with npm, `import { defineChartElement } from "@amcharts/amcharts5/element"` and call `defineChartElement()`. A bare `import "@amcharts/amcharts5/element"` is dropped by esbuild, so the element is never defined; the call keeps it, and does nothing if the element already exists. Chart packages are loaded on demand. Then set `element.themes = [am5themes_Animated]`, for a map `element.resources = { am5geodata_worldLow }` (5.21.4), and `element.config = {…}`, as properties:
+**`<am5-chart>` — a chart as an HTML element (5.21.0).** Builds a chart from a JSON config with no root or chart code. With script tags, load `index.js`, `plugins/json.js`, `element.js`, then every chart package the config uses; with npm, `import { defineChartElement } from "@amcharts/amcharts5/element"` and call `defineChartElement()`, which does nothing if the element already exists. A bare `import "@amcharts/amcharts5/element"` also works from 5.21.5; before that, esbuild dropped it and the element was never defined. Chart packages are loaded on demand. Then set `element.themes = [am5themes_Animated]`, for a map `element.resources = { am5geodata_worldLow }` (5.21.4), and `element.config = {…}`, as properties:
 
 ```html
 <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
@@ -1035,7 +1035,7 @@ onMount(() => { const root = am5.Root.new(chartdiv); /* ... */ return () => root
 35. **`axis.dispose()` does NOT remove the axis from `chart.xAxes`/`chart.yAxes`** — unlike `series.dispose()`, which self-removes from `chart.series`. A disposed axis stays in the list, keeps showing up in anything built from `chart.yAxes`, and makes `ChartSerializer` throw `Template is disposed`. Remove axes with `chart.yAxes.removeValue(axis)` (or `removeIndex(i)`) — the list auto-disposes the removed axis, no separate `dispose()` needed.
 36. **Declare bullet callbacks as `function(root, series, dataItem)`** — amCharts passes all three; closing over an outer `root` works at runtime but breaks JSON round-trips (`ChartSerializer` captures the function source, and the outer `root` dangles on re-bind). Every `series.bullets.push(...)` in these references uses the parameter form — copy it.
 37. **A `ColorSet` must contain at least one color** — `colors.set("colors", [])` crashes the next `next()`/`getIndex()`. Swap in a fresh `am5.ColorSet.new(root, {})` instead. See "ColorSet" above.
-38. **`LinearGradient` `rotation` only works from 0 to 90** (bug since 5.20.8, still in 5.21.4) — other angles give a flat or wrong fill, and with a transparent end stop the shape can vanish. For the opposite direction keep the angle in range and reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops. See `references/xy.md` → Series gradients.
+38. **`LinearGradient` `rotation` only works from 0 to 90** (bug since 5.20.8, still in 5.21.5) — other angles give a flat or wrong fill, and with a transparent end stop the shape can vanish. For the opposite direction keep the angle in range and reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops. See `references/xy.md` → Series gradients.
 39. **Several colors in one `am5.Graphics` `draw`** — `endFill()` fills everything since the last `beginPath()`, so start each color with `display.beginPath()`, or the last color paints over all shapes. Don't give such a Graphics its own `fill` either: after `draw` runs it fills the current path once more, so the last shape takes the Graphics' own `fill` (the default theme sets none). E.g. `draw: function (display) { display.beginPath(); display.beginFill(am5.color(0xff0000)); display.drawRect(0, 0, 10, 10); display.endFill(); display.beginPath(); display.beginFill(am5.color(0x0000ff)); display.drawRect(10, 0, 10, 10); display.endFill(); }`.
 40. **Changing a value on a data item moves nothing** — series draw from the working values: set `valueYWorking` (XY) or `valueWorking` (pie) along with the value, or use `series.data.setIndex()`. See "Dynamic data".
 41. **A setting changed after a hover snaps back on unhover** — the `"default"` state keeps the value from before the first hover. Change it there too: `sprite.states.lookup("default")?.set("fill", c)`. See "States".
@@ -1085,7 +1085,7 @@ Skip this step entirely if you cannot execute code (e.g., chat-only context with
 
 ## Recent API changes
 
-Latest release covered here: **5.21.4** (2026-10-23), and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 and react-native 5.0.1 (2026-10-23). These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
+Latest release covered here: **5.21.5** (2026-10-26), and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 (2026-10-23) and react-native 5.0.2 (2026-10-26). These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
 
 **Renamed settings (old name still works but is deprecated — use the new one):**
 
@@ -1103,6 +1103,13 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 **Breaking change — WordCloud internals (5.20.1):** the layout is now computed synchronously in one pass (much faster). The per-data-item `ghostLabel` is gone and labels live in an internal container, so `dataItem.get("ghostLabel")` and any code walking `series.children` to find labels must be updated — use `series.labels` / `dataItem.get("label")` instead.
 
 **Framework packages (5.0.0, 2026-10-22):** `@amcharts/amcharts5-react`, `@amcharts/amcharts5-vue`, `@amcharts/amcharts5-angular`, `@amcharts/amcharts5-svelte` and `@amcharts/amcharts5-react-native`. They make and dispose the chart with the component and work with server rendering. Prefer them over hand-written `Root.new()`/`dispose()` code in those frameworks. See "Frameworks".
+
+**New in 5.21.5 (2026-10-26):**
+- `am5.renderToSVG()` writes SVG that design tools such as Figma read correctly, and its new option `includeNonExportable` also writes elements marked `exportable: false`. See "SVG export".
+- JSON: theme colors in data (e.g. a column's `fill` from a `templateField`), and colors a color set makes after its theme's list runs out, are saved as references (`"@colors.getIndex(n)"`, `"@root.interfaceColors.get(...)"`), so they follow the theme the config is parsed with.
+- Fixed: color sets of one chart that made more colors than their theme's list could repeat colors another set had already made. With `am5themes_Adaptive`, JSON saved the palette's first color as the primary button color.
+- npm: a bare `import "@amcharts/amcharts5/element"` defines `<am5-chart>` with esbuild too. `defineChartElement()` still works.
+- react-native 5.0.2 loads 5.21.5.
 
 **New in 5.21.4 (2026-10-23):**
 - `resources` gives a JSON config the geodata and locales it names (`"geoJSON": "am5geodata_worldLow"`, `"locale": "am5locales_de_DE"`) when they aren't globals, as with npm imports. It's taken by:
