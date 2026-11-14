@@ -223,7 +223,7 @@ var heatLegend = chart.children.push(am5.HeatLegend.new(root, {
 }));
 ```
 
-`startText: "Low"` and `endText: "High"` replace the end numbers; leave them out to show `startValue`/`endValue` (SKILL.md "Heat rules").
+The two blocks above leave the end labels empty: set `startValue`/`endValue` from the series on `datavalidated` (SKILL.md "Heat rules") to show the numbers, or give `startText`/`endText` (e.g. "Low", "High"), which replace them.
 
 **Countries without data** keep the template's fill, or the heat rule's `neutral` value, and `{value}` in their tooltip is empty ("Canada: "). Give them their own text with an adapter:
 
@@ -342,7 +342,7 @@ lineSeries2.data.setAll([
 
 `pointsToConnect` wins if a data item has both. Fixed points (`fixed: true`) cannot be used with either. `altitude` on `mapLines.template` (5.21.0) arcs lines above the surface — see "Raised lines and points". `lineType` (`"curved"` default, or `"straight"`) is set on the series or as a data field (`{ geometry, lineType: "straight" }`), not on `MapLine`: on `mapLines.template` it is ignored (and a TypeScript error). Changing it redraws lines already drawn since 5.21.0.
 
-Each leg follows the great circle (`lineType: "curved"`, the default), so a long east–west leg bows toward the pole: a 924 km leg along 41°N passes 15 km north of the parallel at its middle. `lineType: "straight"` (on the series or a data item) draws legs straight on screen. For a line that must follow a path drawn in lon/lat, such as a sea route kept off land, add a point every ~0.15°.
+Each leg follows the great circle (`lineType: "curved"`, the default), so a long east–west leg bows toward the pole: a 924 km leg along 41°N passes 15 km north of the parallel at its middle. `lineType: "straight"` (on the series or a data item) draws legs straight on screen. For a line that must follow a path drawn in lon/lat, such as a sea route kept off land, add intermediate points: shorter legs bow less.
 
 ### MapSankeySeries (geographic flow bands)
 

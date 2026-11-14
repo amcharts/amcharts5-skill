@@ -82,6 +82,7 @@ stockChart.set("stockSeries", valueSeries);
 const legend = mainPanel.plotContainer.children.push(
   am5stock.StockLegend.new(root, { stockChart: stockChart })
 );
+legend.data.setAll([valueSeries]);
 
 // 7. Cursor
 mainPanel.set("cursor", am5xy.XYCursor.new(root, {

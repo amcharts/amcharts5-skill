@@ -149,7 +149,7 @@ An optional top-level `"root": { "settings": { … }, "properties": { … } }` a
 
 Since 5.21.4 a locale that isn't found logs a warning.
 
-**Parse only configs you trust (5.21.5).** The parser treats a config as code, not data: refs can reach any object from `@root`, and an adapter callback given as a ref can run code. `root.settings` can also set `sanitizeHTML: false`, after which an `html` setting's event handlers run. Don't parse configs from strangers' links or uploads as they are.
+**Parse only configs you trust.** The parser treats a config as code, not data: refs can reach any object from `@root`, and an adapter's `callback` that is a ref to an existing function runs it. `root.settings` can also set `sanitizeHTML: false`, after which an `html` setting's event handlers run. Don't parse configs from strangers' links or uploads as they are.
 
 ### 10. What a config cannot hold
 

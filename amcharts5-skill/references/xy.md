@@ -621,9 +621,9 @@ series.data.setAll([
 ```
 
 **Large scatter plots.** Every bullet is a sprite, and bullets get slow quickly.
-- **Bullets:** on a laptop CPU (5.21.5), 5,000 points take about 1.5 s to draw and 0.5 s per zoom step; 20,000 take 6 s and 2 s.
-- **Up to about 50,000 points:** paint all dots in one `am5.Graphics`. 20,000 then take about 1 s to draw, 0.3 s per zoom step and 0.2 s per cursor move.
-- **Past about 100,000 points:** nothing stays interactive (200,000: 6–7 s to draw, over 1 s per cursor move), so bin the points into a heat map of counts or sample them.
+- **Bullets** slow down with the count: on a laptop CPU (5.21.5), 50,000 took about 5 s to draw, and 200,000 took 16 s, with 6 s per hover.
+- **Up to about 50,000 points:** paint all dots in one `am5.Graphics`. It drew 20,000 points about 5 times faster than bullets did, and zoomed about 6 times faster.
+- **Past about 100,000 points** nothing stays interactive, even as one Graphics, so bin the points into a heat map of counts or sample them.
 
 ```js
 var series = chart.series.push(am5xy.LineSeries.new(root, {

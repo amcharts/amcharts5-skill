@@ -106,10 +106,10 @@ series.appear(1000);
 
 ### Group headers (parent labels above the children)
 
-`nodePaddingTop` is room inside every parent tile above its children, so it can hold the group's name. A parent's label is centred by default, behind its children. Move a tile's label into the band while that tile's children are showing. This keeps a named band on the tile you drilled into, and centred labels on collapsed tiles:
+`nodePaddingTop` is room inside every parent tile above its children, so it can hold the group's name. A parent's label is centred by default, behind its children. Move a tile's label into the band while that tile's children are showing. This keeps a named band on the tile you drilled into, and centred labels on collapsed tiles. Add it before `series.data.setAll()`: template adapters reach only the labels made after them.
 
 ```js
-series.set("nodePaddingTop", 20);   // header band in every parent tile
+series.set("nodePaddingTop", 20);   // header band in every parent tile; drop nodePaddingOuter from the block above, it overrides this
 
 function isOpen(label) {            // the tile's children are showing
   var di = label.dataItem;
@@ -340,7 +340,7 @@ series.nodes.template.events.on("click", function (ev) {
 });
 ```
 
-It needs `selectedDataItem` set after the data (see above).
+Add it before `series.data.setAll()` (template events reach only the nodes made after them), and set `selectedDataItem` after the data (see above). The way back up is a click on the open tile's header band, so give it one (`nodePaddingTop`, "Group headers").
 
 ### Breadcrumbs (for navigation)
 
@@ -351,6 +351,7 @@ const breadcrumbs = container.children.push(am5hierarchy.BreadcrumbBar.new(root,
   series: series
 }));
 ```
+
 ### Events on hierarchy nodes
 
 ```js

@@ -44,7 +44,7 @@ Docs: https://docs.amcharts.com/v5/
 12. **Disposal is mandatory in SPAs** — in React, Vue, Angular, Svelte or React Native use amCharts' framework package, which creates and disposes the root for you (see "Frameworks"); without one, call `root.dispose()` on component unmount. Not `chart.dispose()`.
 13. **Style through amCharts, not CSS** — charts draw on canvas by default, so CSS cannot reach chart internals. Even with the optional SVG renderer (5.21.0) the shapes carry no per-element classes or ids, are rewritten as the chart redraws, and exports ignore page CSS. Use amCharts settings/templates/themes instead.
 14. **Dark backgrounds require Dark theme** — If the user requests or the page clearly has a dark background, always add `am5themes_Dark.new(root)` to `root.setThemes()` alongside Animated. Without it, labels, grid, and tooltips will be invisible. If the background is not clearly dark, default to white/light and do NOT add the Dark theme unless asked.
-15. **Use default amCharts colors** — Do NOT invent custom color palettes unless the user explicitly asks for specific colors. amCharts assigns colors automatically from its built-in ColorSet. If you need a color programmatically, use `chart.get("colors").getIndex(index)` or `chart.get("colors").next()`. For pie/percent charts, use `series.get("colors")` instead. With 3 or more series in one XY chart, the default colors are near-identical blues and violets (hues 18° apart): set `chart.get("colors").set("step", 3)` before adding series, or use the `Colorblind` theme (see "ColorSet").
+15. **Use default amCharts colors** — Do NOT invent custom color palettes unless the user explicitly asks for specific colors. amCharts assigns colors automatically from its built-in ColorSet. If you need a color programmatically, use `chart.get("colors").getIndex(index)` or `chart.get("colors").next()`. For pie/percent charts, use `series.get("colors")` instead. With 3 or more series in one XY chart, the default colors are close blues and violets (hues 18° apart): set `chart.get("colors").set("step", 3)` before adding series, or use the `Colorblind` theme (see "ColorSet").
 
 ## Package / module map
 
@@ -546,7 +546,7 @@ const disposer = sprite.events.on("click", handler);
 disposer.dispose(); // removes the listener
 ```
 
-**Knowing when the chart has finished drawing.** There is no "rendered" event. `datavalidated` fires once the data is processed, and the next `frameended` can come long before drawing ends. With 5,000 bullets it came at 0.3 s and drawing ended at 1.3 s; with 50,000, at 1.2 s and 12 s. amCharts draws only while something has changed or is animating, so two animation frames in a row without a `frameended` mean it is done. Call this right after the change (`data.setAll()`, a zoom, `selectPeriod()`):
+**Knowing when the chart has finished drawing.** There is no "rendered" event. `datavalidated` fires once the data is processed, and the next `frameended` can come long before drawing ends. With 5,000 bullets drawing ended about 5 times later than that `frameended`, and with 50,000 about 10 times later. amCharts draws only while something has changed or is animating, so two animation frames in a row without a `frameended` mean it is done. Call this right after the change (`data.setAll()`, a zoom, `selectPeriod()`):
 
 ```js
 function whenRendered(root, callback) {
@@ -563,7 +563,7 @@ series.data.setAll(data);
 whenRendered(root, function () { /* everything is drawn */ });
 ```
 
-With `root.fps` set, frames are spaced `1000 / root.fps` ms apart, so wait longer than that instead of two animation frames. Endless animations (`loops: 0`) never settle. Without a license, the amCharts logo fades in 3 s after the root is created and draws for 1.5 s; a check during that time waits for it.
+With `root.fps` set, frames are spaced `1000 / root.fps` ms apart, so wait longer than that instead of two animation frames. Endless animations (`loops: Infinity` with `animate()`, `loops: 0` in declared `animations`) never settle. Without a license, the amCharts logo fades in 3 s after the root is created and draws for 1.5 s; a check during that time waits for it.
 
 **Opening a link on click needs no handler (5.20.7):** `series.set("urlField", "url")` makes each item's bullet, column, slice, Venn slice, map polygon or map line open the URL in its data row (`linkTarget`, default `"_self"`) — see "Recent API changes". Hierarchy nodes, flow nodes/links and word-cloud labels are not linked; keep a `click` handler there.
 
@@ -817,7 +817,7 @@ am5themes_Adaptive.new(root, { repeatLightness: false });
 
 With one chart on the root, `chart.get("colors").set("repeatLightness", 0)` before the data is set works too.
 
-**Three or more series.** Smallest color difference (CIEDE2000) among the first 4 / 6 series colors, 5.21.5 (about 15 or more reads as distinct):
+**Three or more series.** Smallest color difference (CIEDE2000) among the first 4 / 6 series colors, 5.21.5; higher is easier to tell apart:
 
 | Choice | First 4 / 6 | Note |
 |---|---|---|
@@ -1146,11 +1146,8 @@ onMount(() => { const root = am5.Root.new(chartdiv); /* ... */ return () => root
 41. **A setting changed after a hover snaps back on unhover** — the `"default"` state keeps the value from before the first hover. Change it there too: `sprite.states.lookup("default")?.set("fill", c)`. See "States".
 42. **`templateField` goes on the template, not on the series** — per-item settings from data rows are read by the elements a template makes: `series.columns.template.set("templateField", "columnSettings")`, likewise `slices.template`, `mapPolygons.template` or a bullet sprite. Set on the series, `templateField` does nothing and every column stays the same. For a pattern per column, see `references/xy.md` → "Different pattern per column".
 43. **A JSON-config map that draws nothing with npm imports** — the config names its geodata (`"geoJSON": "am5geodata_worldLow"`), and with npm imports there is no global of that name. Pass the pack in `resources` (5.21.4): `JsonParser.parse(config, { parent, resources: { am5geodata_worldLow } })`, `element.resources`, or the framework packages' `resources` prop. The same goes for a locale (`am5locales_de_DE`). Since 5.21.4 a console warning names the missing pack. Before 5.21.4, set `window.am5geodata_worldLow = am5geodata_worldLow` after importing it. A config serialized from such a chart copies the whole pack unless `ChartSerializer` gets the same `resources`.
-
 44. **An `am5.Graphics` redraws only when `draw` changes** — `graphics.set("draw", fn)` with the function it already has does nothing. Pass a new closure that captures the new points: `graphics.set("draw", (display) => paint(display, points))`.
-
 45. **A legend value without a cursor needs `calculateAggregates`** — `legendValueText` is used only under a cursor; otherwise the value label shows `legendRangeValueText`, which has no data item: `{valueY}` is empty there, and `{valueYClose}` (the latest value), `{valueYSum}`, `{valueYHigh}` and the other range values are empty unless the series has `calculateAggregates: true` (no warning, 5.21.5). See `references/xy.md` → Legend.
-
 46. **`#,###` does not round** — a number format without a `.` keeps every decimal (`6,708.044000000005` while animating); end it with `.` for whole numbers (`'#,###.'`) or give the decimals (`'#,###.00'`). Every number placeholder also gets a thousands separator, so `{year}` shows `2,024`: use `{year.formatNumber('#')}`. Sections are split by `|`, not `;`. See "Number formats".
 
 ## Easing functions
