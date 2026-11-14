@@ -75,4 +75,4 @@ The skill automatically loads the right reference documentation for the chart ty
 
 ## License
 
-MIT. amCharts 5 itself is licensed separately ([licenses explained](https://www.amcharts.com/online-store/licenses-explained/)): without a license, each chart shows a small amCharts logo, which the paid licenses remove.
+MIT. amCharts 5 itself is licensed separately ([licenses explained](https://www.amcharts.com/pricing/licenses-explained/)): without a license, each chart shows a small amCharts logo, which the paid licenses remove.
