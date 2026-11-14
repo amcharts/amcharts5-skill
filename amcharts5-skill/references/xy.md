@@ -123,6 +123,16 @@ series.columns.template.set("tooltipText", "{categoryX}: {valueY}");
 ```
 A tooltip enabled with no `labelText`/`tooltipText` shows an empty bubble — always give it text. See SKILL.md → Tooltip for background/text styling.
 
+**Computed values in the tooltip** (not in the data): add a `text` adapter to the series tooltip's label. Its `target.dataItem` is the hovered item (the same as `series.get("tooltipDataItem")`), and placeholders in the returned text are still filled:
+
+```js
+series.get("tooltip").label.adapters.add("text", function (text, target) {
+  var di = target.dataItem;
+  if (!di) return text;
+  return text + "\nnormal " + normalFor(di.get("valueX")).toFixed(1);   // normalFor: your own function
+});
+```
+
 ### Stacking
 ```js
 // On each series:
@@ -200,6 +210,11 @@ const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
 **Live updates — two settings that do not refresh on `set()`:**
 - **Date format maps** (`dateFormats`, `periodChangeDateFormats`, `minorDateFormats`): after `axis.set("dateFormats", {...})` already-rendered labels keep their old text. `axis.markDirtyValues()` is not enough — call **`axis.markDirtySize()`** to make the axis re-run label formatting.
 - **`groupIntervals`** (with `groupData: true`): amCharts only (re)computes grouping when a series' data is set, so changing the allowed intervals on an already-grouped axis does nothing until you re-set the data on every series bound to the axis: `series.data.setAll(series.data.values.slice())`.
+
+**Large data: first-render cost (5.21.5, laptop CPU).** Expect about 6 s per million points with `groupData: true`: 4 series × 250,000 took 5.8 s, and 4 × 1,250,000 took 34 s with a 3.5 GB heap. Zooming and panning are fast afterwards.
+- **Grouping** doesn't shorten the load, because every listed group interval is computed up front. A short `groupIntervals` list cut the load by about 30%.
+- **`groupData: false`** loads as fast, but zooms 2–8× slower.
+- **To open fast,** send fewer points: pre-aggregate on the server, or load detail as the user zooms (example `candlestick-ohlc/on-demand-data-loading`).
 
 **Data format:**
 ```js
@@ -495,12 +510,15 @@ legend.data.setAll(chart.series.values);
 ```js
 const series = chart.series.push(am5xy.LineSeries.new(root, {
   // ...
+  calculateAggregates: true,              // needed for {valueYClose} below
   legendLabelText: "{name}",
-  legendValueText: "{valueY}",
+  legendValueText: "{valueY}",            // while the cursor is on a data item
   legendRangeLabelText: "{name}",
-  legendRangeValueText: ""
+  legendRangeValueText: "{valueYClose}"   // otherwise: the latest value
 }));
 ```
+
+`legendValueText` is used only while a cursor points at a data item. Without a cursor, and after it leaves, the value label shows `legendRangeValueText` (empty if unset). That text has no data item, so `{valueY}` is empty there; it reads the series' range values, which exist only with `calculateAggregates: true`: `{valueYClose}` (the last value; follows `data.push()`), `{valueYOpen}`, `{valueYLow}`, `{valueYHigh}`, `{valueYSum}`, `{valueYAverage}`, `{valueYCount}`, and the same with `Selection` for the zoomed range (`{valueYCloseSelection}` is the last visible value). Without `calculateAggregates` they are empty, with no warning (5.21.5).
 
 ## Stacking
 
@@ -600,6 +618,37 @@ series.data.setAll([
 ]);
 ```
 
+**Large scatter plots.** Every bullet is a sprite, and bullets get slow quickly.
+- **Bullets:** on a laptop CPU (5.21.5), 5,000 points take about 1.5 s to draw and 0.5 s per zoom step; 20,000 take 6 s and 2 s.
+- **Up to about 50,000 points:** paint all dots in one `am5.Graphics`. 20,000 then take about 1 s to draw, 0.3 s per zoom step and 0.2 s per cursor move.
+- **Past about 100,000 points:** nothing stays interactive (200,000: 6–7 s to draw, over 1 s per cursor move), so bin the points into a heat map of counts or sample them.
+
+```js
+var series = chart.series.push(am5xy.LineSeries.new(root, {
+  xAxis: xAxis, yAxis: yAxis, valueXField: "x", valueYField: "y"
+}));
+series.strokes.template.set("visible", false);      // no line: the data only sets the axis ranges
+
+var dots = series.children.push(am5.Graphics.new(root, {}));
+function paint(display) {
+  var xr = xAxis.get("renderer"), yr = yAxis.get("renderer");
+  for (var i = 0; i < data.length; i++) {
+    var x = xr.positionToCoordinate(xAxis.valueToPosition(data[i].x));
+    var y = yr.positionToCoordinate(yAxis.valueToPosition(data[i].y));
+    display.beginPath();                              // one path per dot
+    display.beginFill(data[i].color, 0.6);
+    display.drawCircle(x, y, 2);
+    display.endFill();
+  }
+}
+function redraw() { dots.set("draw", function (display) { paint(display); }); }   // a new function makes it redraw
+xAxis.on("start", redraw); xAxis.on("end", redraw);          // zoom and pan
+yAxis.on("start", redraw); yAxis.on("end", redraw);
+["min", "max"].forEach(function (k) { xAxis.onPrivate(k, redraw); yAxis.onPrivate(k, redraw); });   // axis ranges found or changed
+chart.plotContainer.events.on("boundschanged", redraw);     // resize
+series.data.setAll(data);
+```
+
 **Equal scale on both axes** (orbits, floor plans: 1 unit = the same pixels on X and Y). There is no setting for it; fix both ranges and widen the longer side whenever the plot is resized:
 
 ```js
@@ -646,6 +695,9 @@ series.bullets.push(function(root, series, dataItem) {
 // Auto-hide bullets when too close together
 series.set("minBulletDistance", 20);
 
+// Bullets are clipped to the plot area; for labels that stick out past it (line ends), turn it off on the SERIES (XYChart has no maskBullets)
+series.set("maskBullets", false);
+
 // Bullets at the same spot can stack instead of overlapping: am5.Bullet.new(root, { stacked: "up" | "down" | "auto", ... })
 // (XY only; "up", and "auto" in the lower half, overlapped on vertical series before 5.21.0)
 
@@ -655,6 +707,16 @@ series.bullets.push(function(root, series, dataItem) {
     sprite: am5.Circle.new(root, { radius: 5, fill: series.get("fill"),
       animations: [{ key: "scale", from: 1, to: 1.6, duration: 800, loops: 0, yoyo: true, easing: "sine" }] })
   });
+});
+```
+
+**Bullet text that follows an animation.** A bullet `Label` with `populateText` refreshes its text each time the series positions bullets, so `{valueXWorking}` counts along with `dataItem.animate()`. A Label inside a `Container` sprite does not: it keeps its first text unless the `Bullet` has `dynamic: true` (5.21.5):
+
+```js
+series.bullets.push(function (root, series, dataItem) {
+  var box = am5.Container.new(root, { centerY: am5.p50 });
+  box.children.push(am5.Label.new(root, { text: "{valueXWorking.formatNumber('#.')}", populateText: true }));
+  return am5.Bullet.new(root, { locationX: 1, sprite: box, dynamic: true });   // without dynamic the label stays at its first value
 });
 ```
 
@@ -770,7 +832,7 @@ am5xy.XYChart.new(root, {
   wheelY: "zoomX",                // mouse wheel vertical
   pinchZoomX: true,               // mobile pinch zoom on X
   arrangeTooltips: true,          // de-overlap stacked series tooltips (NOTE: there is no `arrangeFields` setting)
-  maxTooltipDistance: 0,           // show tooltips for nearby series (-1 = all)
+  maxTooltipDistance: 0,           // the closest series' tooltip, plus any within this many px (-1 = only the closest; unset = every series)
 })
 ```
 
@@ -865,6 +927,69 @@ dataItem.setAll({ valueX: 4, valueY: 7, valueXWorking: 4, valueYWorking: 7 });  
 series.data.setIndex(0, { x: 4, y: 7 });   // animates over interpolationDuration
 // per-frame updates through setIndex: set interpolationDuration: 0 on the series, or the points lag behind
 ```
+
+## Value to pixel
+
+To place your own sprite at a data value, e.g. a label at a line's end in `chart.plotContainer`, convert value → position → pixel. The result is in plot-area pixels, follows zoom, and equals where the series draws the point:
+
+```js
+var x = xAxis.get("renderer").positionToCoordinate(xAxis.valueToPosition(value));   // a ValueAxis also has xAxis.getX(value, 1, 0)
+var y = yAxis.get("renderer").positionToCoordinate(yAxis.valueToPosition(value));   // and yAxis.getY(value, 1, 0)
+```
+
+On a `DateAxis` a series draws its point at `locationX` inside the item's time cell (default the middle of the `baseInterval`), so a raw timestamp lands at the cell start; `dataItem.get("point")` gives the drawn point. Bullets past the plot edge need `maskBullets: false` on the series.
+
+## Bar chart race (bars re-sorted as values change)
+
+No setting sorts a category axis by value. Re-sort it on a timer, as the "Bar Chart Race" demo does (`column-bar/bar-chart-race`):
+
+```js
+var stepDuration = 2000;   // one data step
+var yRenderer = am5xy.AxisRendererY.new(root, { minGridDistance: 20, inversed: true });   // the leader on top
+yRenderer.grid.template.set("visible", false);
+var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, { categoryField: "name", maxDeviation: 0, renderer: yRenderer }));
+var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+  min: 0, strictMinMax: true, extraMax: 0.1, maxDeviation: 0, renderer: am5xy.AxisRendererX.new(root, {})
+}));
+xAxis.setAll({ interpolationDuration: stepDuration / 10, interpolationEasing: am5.ease.linear });   // the scale follows the bars
+var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+  xAxis: xAxis, yAxis: yAxis, valueXField: "value", categoryYField: "name", colorByDataItem: true
+}));
+series.bullets.push(function (root, series, dataItem) {
+  return am5.Bullet.new(root, { locationX: 1, sprite: am5.Label.new(root, {
+    text: "{valueXWorking.formatNumber('#,###.')}", fill: root.interfaceColors.get("alternativeText"),
+    centerX: am5.p100, centerY: am5.p50, populateText: true    // inside the end of the bar: never clipped
+  }) });
+});
+
+function sortCategoryAxis() {
+  series.dataItems.sort(function (a, b) { return b.get("valueX") - a.get("valueX"); });   // biggest first
+  am5.array.each(yAxis.dataItems, function (axisItem) {
+    var seriesItem = series.dataItems.find(function (d) { return d.get("categoryY") === axisItem.get("category"); });
+    var index = series.dataItems.indexOf(seriesItem);
+    if (axisItem.get("index") !== index) {
+      var delta = (index - axisItem.get("index", 0)) / series.dataItems.length;
+      axisItem.set("index", index);
+      axisItem.set("deltaPosition", -delta);   // stay in place for now...
+      axisItem.animate({ key: "deltaPosition", to: 0, duration: stepDuration / 2, easing: am5.ease.out(am5.ease.cubic) });   // ...then slide to the new row
+    }
+  });
+  yAxis.dataItems.sort(function (a, b) { return a.get("index") - b.get("index"); });
+}
+function showStep(values) {   // values: { name: value }
+  am5.array.each(series.dataItems, function (dataItem) {
+    var v = values[dataItem.get("categoryY")];
+    dataItem.animate({ key: "valueX", to: v, duration: stepDuration, easing: am5.ease.linear });         // what the sort reads
+    dataItem.animate({ key: "valueXWorking", to: v, duration: stepDuration, easing: am5.ease.linear });  // what the bar and label show
+  });
+}
+yAxis.data.setAll(rows);   // rows: [{ name, value }] for the first step
+series.data.setAll(rows);
+setInterval(sortCategoryAxis, 100);   // re-sort ten times a second, so overtakes show as they happen
+// then call showStep(values) every stepDuration
+```
+
+Rows that swap cross each other while they slide; a shorter slide (e.g. 400 ms instead of `stepDuration / 2`) roughly halves the time their labels overlap. A value label outside the bar (`centerX: am5.p0`) needs the `extraMax` room.
 
 ---
 

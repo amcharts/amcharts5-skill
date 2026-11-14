@@ -87,6 +87,8 @@ CDN script objects use `am5` (core), `am5xy`, `am5percent`, `am5map`, `am5hierar
 Themes: `am5themes_Animated`, `am5themes_Dark`, etc.
 Geodata: `am5geodata_worldLow`, `am5geodata_usaLow`, etc.
 
+The npm package has no script-tag build: plain pages use the CDN. When bundling, keep code splitting on. A single-file bundle with `stock` is 1.4 MB gzipped instead of about 265 KB.
+
 ### Package > chart type mapping
 
 | You need | Import package |
@@ -187,6 +189,8 @@ colors.set("colors", [am5.color(0x095256), am5.color(0x087f8c)]);
 ```
 
 A scale through several colors (5.21.2): `am5.Color.interpolateColors(position, [ic.get("negative"), ic.get("warning"), ic.get("positive")])` with `var ic = root.interfaceColors` (`warning` is a yellow between red `negative` and green `positive`; `Color.interpolate()` between the two has a brown middle). `Adaptive`/`Monochrome` theme settings (5.21.2, all off by default): `interleave` (neighbouring series differ more), `mapShade` (lighter map land), `keepContrast` (`true` = 3:1 against the background, or a ratio).
+
+3+ series in one XY chart: `chart.get("colors").set("step", 3)` or the `Colorblind` theme. Not `Dataviz`, whose first colors repeat navy and red. Lines: `strokeWidths: [2]` on the chart; `legend.markers.template.setAll({ width: 24, height: 14 })`.
 
 Since 5.21.3, themes that reuse their list (Adaptive, Monochrome, Kelly, Material, Nord, Pastel, …, not Colorblind/Patterns/Dataviz) make each repeat round 10% lighter: `ColorSet` `repeatLightness` (HSL lightness per round, negative = darker, only with `reuse: true`). The color sets of one root share the theme's list, so whichever needs a new round first decides that round for every chart on the root. Same colors again, root-wide: `var t = am5.Theme.new(root); t.rule("ColorSet").set("repeatLightness", 0);` added last in `root.setThemes([...])`, or `repeatLightness: false` in the Adaptive/Monochrome theme settings.
 
@@ -463,6 +467,8 @@ disposer.dispose();
 
 To open a link on click, no handler is needed (5.20.7): `series.set("urlField", "url")` makes each item's bullet, column, slice, Venn slice, map polygon or map line open the URL from its data row (`linkTarget`, default `"_self"`). Hierarchy nodes, flow nodes/links and word-cloud labels are not linked — use a `click` handler there.
 
+On touch, a tap on a pannable chart (`panX`/`panY`), under a zoom/select cursor or on a `draggable` sprite fires no DOM `click`; amCharts' `events.on("click")` still fires (5.21.5).
+
 ## Adapters
 
 Dynamically modify a setting value before it's applied:
@@ -486,6 +492,8 @@ series.columns.template.states.create("hover", {
 ```
 
 Once a state has changed a setting, the `"default"` state keeps the value from before and restores it on every unhover. To change such a setting later, change it in both places: `sprite.set("fill", c); sprite.states.lookup("default")?.set("fill", c);`.
+
+`sprite.hover()` also shows its tooltip; to highlight other sprites from an event use `sprite.states.applyAnimate("hover")` / `"default"`, or the shared tooltip jumps to the last one.
 
 ## Heat rules
 
@@ -632,8 +640,13 @@ series.data.insertIndex(1, newItem);      // insert at index
 // Changing a data item's value directly: set the WORKING key too, or nothing moves
 xySeries.dataItems[0].setAll({ valueX: 4, valueY: 7, valueXWorking: 4, valueYWorking: 7 });
 pieSeries.dataItems[0].setAll({ value: 80, valueWorking: 80 });   // pie/funnel: valueWorking
+// dataItem.bullets is undefined until the item is drawn (not yet in datavalidated): style bullets inside the bullet function
 // A data item's bullets are a property: dataItem.bullets?.[0]?.get("sprite") (dataItem.get("bullets") is undefined)
 ```
+
+## Performance
+
+No zoom animation: `interpolationDuration: 0` on the X axis and the value axis (there is no `zoomAnimation`); `zoom…(a, b, 0)` jumps. Fast streams: `interpolationDuration: 0` on series and axes, plus `root.fps = 30`. Scatter: bullets up to about 5,000 points, one `am5.Graphics` up to about 50,000 (SKILL.md "Performance"). No "rendered" event: `datavalidated` + one `frameended` fires before drawing ends; done = two animation frames in a row with no `root` `frameended` (helper in SKILL.md "Events"). Bar chart race: no sort setting; re-sort `series.dataItems` and `yAxis.dataItems` every 100 ms with `deltaPosition` (references/xy.md, "Bar chart race").
 
 ## Data processor (for external/API data)
 
@@ -859,7 +872,7 @@ sbSeries.data.setAll(data);   // the preview series needs the data too
 
 31. **Do NOT exclude Antarctica (`exclude: ["AQ"]`) by default** — Many amCharts demos exclude Antarctica because they use Mercator projection where it appears disproportionately large. This is a demo-specific choice, not a best practice. Unless the user explicitly asks to exclude Antarctica, or references a demo that does so, keep Antarctica in the map. With non-Mercator projections (`geoNaturalEarth1`, `geoEqualEarth`, `geoOrthographic`, `geoEquirectangular`), Antarctica renders at a reasonable size.
 
-32. **Custom GeoJSON for `MapPolygonSeries` needs CLOCKWISE exterior rings** — the RFC 7946 counter-clockwise default is read by the spherical projection as "the globe minus the polygon", so every polygon floods the whole map. amCharts does not rewind; reverse each ring: `g.coordinates = g.coordinates.map(ring => ring.slice().reverse())`. To fit a custom region use `chart.zoomToGeoBounds({ left, right, top, bottom }, duration)` (left/right = longitude, top/bottom = latitude).
+32. **Custom GeoJSON for `MapPolygonSeries` needs CLOCKWISE exterior rings** — the RFC 7946 counter-clockwise default is read by the spherical projection as "the globe minus the polygon", so every polygon floods the whole map. amCharts does not rewind; reverse each polygon whose `am5map.getGeoArea({ type: "Polygon", coordinates: poly }) > 2 * Math.PI` (`poly.forEach(r => r.reverse())`): safe on clockwise data, and it catches rings flipped by simplifying. To fit a custom region use `chart.zoomToGeoBounds({ left, right, top, bottom }, duration)` (left/right = longitude, top/bottom = latitude).
 
 33. **`axis.dispose()` does NOT remove the axis from `chart.xAxes`/`yAxes`** — use `chart.yAxes.removeValue(axis)` / `removeIndex(i)` (the list disposes it). `series.dispose()` does self-remove from `chart.series`; axes are the exception.
 
@@ -871,11 +884,19 @@ sbSeries.data.setAll(data);   // the preview series needs the data too
 
 37. **`LinearGradient` `rotation` only works from 0 to 90** (bug since 5.20.8, still in 5.21.5): other angles give a flat or wrong fill. For the opposite direction reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops.
 
-38. **Several colors in one `am5.Graphics` `draw`:** call `display.beginPath()` before each color (`endFill()` fills everything since the last `beginPath()`), and give the Graphics no `fill` of its own (after `draw` it fills the current path again, so the last shape takes that `fill`).
+38. **Several colors in one `am5.Graphics` `draw`:** call `display.beginPath()` before each color (`endFill()` fills everything since the last `beginPath()`), and give the Graphics no `fill` of its own (after `draw` it fills the current path again, so the last shape takes that `fill`). An own stroke re-strokes the last path too.
 
-39. **XY live updates and zooming:** `zoomToValues()` right after `axis.setAll({ min, max })` uses the old range; call `axis.zoom((v0 - min) / (max - min), (v1 - min) / (max - min))` instead, or wait a frame. `maxZoomFactor` is an axis setting, not an `XYChart` one. On a `ValueAxis` X, a `CandlestickSeries` draws the wick at the `valueXField` edge: shift the `Candlestick` columns' `lowX0`/`lowX1`/`highX0`/`highX1` by `-target.width() / 2` with adapters on `series.columns.template`, or use a `DateAxis`.
+39. **XY live updates and zooming:** `zoomToValues()` right after `axis.setAll({ min, max })` uses the old range; call `axis.zoom((v0 - min) / (max - min), (v1 - min) / (max - min))` instead, or wait a frame. `maxZoomFactor` is an axis setting, not an `XYChart` one. On a `ValueAxis` X, a `CandlestickSeries` draws the wick at the `valueXField` edge: shift the `Candlestick` columns' `lowX0`/`lowX1`/`highX0`/`highX1` by `-target.width() / 2` with adapters on `series.columns.template`, or use a `DateAxis`. A Label inside a Container bullet keeps its first text (`{valueXWorking}` won't count along with `dataItem.animate()`) unless the `Bullet` has `dynamic: true`.
 
 40. **Map zoom and home:** `zoomStep` (default `2`) multiplies/divides `zoomLevel` for the buttons, `zoomIn()`/`zoomOut()`, the wheel (one step per wheel event) and double clicks, so use `1.1`–`1.2` for fine control; `wheelSensitivity` affects only wheel rotation. On a globe (`panX: "rotateX"`), `goHome()` restores rotation only from `homeRotationX`/`homeRotationY` (−longitude/−latitude), not from `homeGeoPoint`. With `autoHome: true` and no `homeZoomLevel`, home zoom is 1, so set `homeZoomLevel` to the starting `zoomLevel`. US congressional districts are packs under `geodata/region/usa/<pack>/` (`congressional`, `congressional2022`, `congressional2025`, `congressional120`), e.g. global `am5geodata_region_usa_congressional120_usaCongressionalLow`; there is no top-level `geodata/usaCongressionalLow.js`.
+
+41. **`am5.Graphics` redraws only when `draw` changes:** set a new closure each update, not the same function.
+
+42. **`templateField` goes on the template** (`series.columns.template.set("templateField", "columnSettings")`, likewise `mapPolygons.template`), not on the series. On maps, `setIndex` with a new `geometry` switches only when `interpolationDuration` ends: set it to 0 for per-frame updates.
+
+43. **Legend value without a cursor:** `legendValueText` shows only under a cursor; otherwise the value label uses `legendRangeValueText`, where `{valueY}` is empty and `{valueYClose}`/`{valueYSum}`/`{valueYHigh}`… need `calculateAggregates: true` on the series (empty, no warning, 5.21.5).
+
+44. **Number formats:** with no `.` nothing is rounded (`'#,###'` → `6,708.044000000005`); `'#,###.'` gives whole numbers, `'#,###.00'` two decimals. Number placeholders get thousands separators (`{year}` → `2,024`; use `{year.formatNumber('#')}`). Positive|negative|zero sections use `|`, not `;`; the negative part keeps its minus unless it has the `s` modifier (`#,###|(#,###.s)|'-'`).
 
 ## Frameworks (React, Vue, Angular, Svelte, React Native)
 
@@ -942,6 +963,7 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 - Layout: `"vertical"`, `"horizontal"` or `"grid"`. Animation: `"autoAppear": true` in settings. Theme colors: `"@colors.getIndex(n)"`, `"@root.interfaceColors.get('background')"`.
 - Maps: `"geoJSON": "am5geodata_worldLow"` and `"projectionName": "geoNaturalEarth1"` in `settings`. With script tags load the geodata's script; with npm imports pass it in `resources` (5.21.4): `parser.parse(config, { parent, resources: { am5geodata_worldLow } })`, `element.resources`, or the framework packages' `resources` prop. A locale (`"am5locales_de_DE"`) the same way. With npm, register `<am5-chart>` with `defineChartElement()` from `@amcharts/amcharts5/element`: esbuild drops a bare `import "@amcharts/amcharts5/element"`. Each heat rule needs `"__parse": true`, and the series needs `"calculateAggregates": true`.
 - A config can't hold themes (pass them beside it), functions, adapters, events or method calls.
+- Parse only trusted configs: refs and adapters can run code, and "root": { "settings": { "sanitizeHTML": false } } turns the HTML sanitiser off (5.21.5).
 - Scripts: `index.js`, then `plugins/json.js`, then every chart package the config uses (the parser does not load them), plus geodata.
 - Chart Maker link: `https://live.amcharts.com/open#config=` + `encodeURIComponent(JSON.stringify(config))`.
 

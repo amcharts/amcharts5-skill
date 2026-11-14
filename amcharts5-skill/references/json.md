@@ -149,6 +149,8 @@ An optional top-level `"root": { "settings": { … }, "properties": { … } }` a
 
 Since 5.21.4 a locale that isn't found logs a warning.
 
+**Parse only configs you trust (5.21.5).** The parser treats a config as code, not data: refs can reach any object from `@root`, and an adapter callback given as a ref can run code. `root.settings` can also set `sanitizeHTML: false`, after which an `html` setting's event handlers run. Don't parse configs from strangers' links or uploads as they are.
+
 ### 10. What a config cannot hold
 
 No functions (adapters, event handlers, bullet functions with logic, heat-rule `customFunction`, a `projection` object, the data processor), no themes, no method calls (`setAll`, `appear`, `am5.color`) and no `Date` objects. Use the declarative forms above instead: `autoAppear`, `projectionName`, `Bullet` objects, `heatRules`, `templateField` with per-row settings, and timestamps. Code that is still needed runs after `parse()` resolves, on the built chart:

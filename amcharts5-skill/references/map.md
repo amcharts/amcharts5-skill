@@ -135,25 +135,26 @@ polygonSeries.data.setAll([
 ]);
 ```
 
-**Custom GeoJSON: exterior rings must be CLOCKWISE.** amCharts projects on a sphere (d3-geo), where a ring's winding order decides which side is "inside". The GeoJSON spec (RFC 7946) winds exterior rings counter-clockwise, and d3-geo reads a CCW ring as *the whole globe minus the polygon* — so every polygon fills the entire viewport and the real shape shows only as a sliver (looks like a zoom/fit bug, is not). GIS exports are usually already clockwise; programmatically generated GeoJSON (grids, cells, buffers) usually is not. amCharts does **not** auto-rewind, so reverse the rings yourself:
+**Custom GeoJSON: exterior rings must be CLOCKWISE.** amCharts projects on a sphere (d3-geo), where a ring's winding order decides which side is "inside". The GeoJSON spec (RFC 7946) winds exterior rings counter-clockwise, and d3-geo reads a CCW ring as *the whole globe minus the polygon* — so every polygon fills the entire viewport and the real shape shows only as a sliver (looks like a zoom/fit bug, is not). GIS exports are usually already clockwise; programmatically generated GeoJSON (grids, cells, buffers) usually is not. amCharts does **not** auto-rewind, so reverse the polygons that come out inside out yourself:
 
 ```js
-// Fix winding before handing custom GeoJSON to MapPolygonSeries
-geojson.features.forEach(function(feature) {
-  var g = feature.geometry;
-  if (g.type === "Polygon") {
-    g.coordinates = g.coordinates.map(function(ring) { return ring.slice().reverse(); });
-  } else if (g.type === "MultiPolygon") {
-    g.coordinates = g.coordinates.map(function(poly) {
-      return poly.map(function(ring) { return ring.slice().reverse(); });
-    });
-  }
+// Fix winding before handing custom GeoJSON to MapPolygonSeries: reverse only polygons that are inside out
+geojson.features.forEach(function (f) {
+  var g = f.geometry;
+  var polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+  polys.forEach(function (poly) {
+    if (am5map.getGeoArea({ type: "Polygon", coordinates: poly }) > 2 * Math.PI) {   // more than half the globe
+      poly.forEach(function (ring) { ring.reverse(); });
+    }
+  });
 });
 polygonSeries.set("geoJSON", geojson);
 
 // Fit the map to a custom region (no country geodata needed): left/right = longitude, top/bottom = latitude
 chart.zoomToGeoBounds({ left: -8.6, right: 1.8, top: 60.9, bottom: 49.9 }, 500);
 ```
+
+The area check makes this safe on data that is already clockwise, where a blind reverse floods the map. It also catches small rings that simplifying or rounding turned over, even in clockwise data: a flipped 4-point islet measured 4π and filled the whole map, while no worldLow country exceeds 0.42.
 
 `zoomToGeoBounds(bounds, duration?)` is the most direct way to fit custom polygons. Since 5.21.0 it uses the `duration` you pass (it rotated with `animationDuration`) and no longer modifies the bounds object; `goHome()` also works when called before the map is ready or on a rotated map, and `autoHome: true` does the initial trip for you (see "Zoom controls").
 
@@ -179,6 +180,21 @@ const heatLegend = chart.children.push(am5.HeatLegend.new(root, {
 }));
 ```
 
+**Keep the heat legend off the map.** In `chart.children` the legend is drawn over the map, and zooms fit into the whole chart, so a zoomed country runs under it: after `clickZoom` on Brazil, its south was 38 px under a bottom legend. Stack the legend below the map and clip the map to its own area:
+
+```js
+root.container.set("layout", root.verticalLayout);
+var chart = root.container.children.push(am5map.MapChart.new(root, {
+  projection: am5map.geoEqualEarth(),
+  maskContent: true                        // the zoomed map doesn't draw into the legend's strip
+}));
+// ... series ...
+var heatLegend = root.container.children.push(am5.HeatLegend.new(root, {   // pushed after the chart: below it
+  orientation: "horizontal", startColor: am5.color(0xf7e9b9), endColor: am5.color(0x5a1d6e),
+  width: 360, x: am5.percent(50), centerX: am5.percent(50), paddingBottom: 20
+}));
+```
+
 For a scale through more than two colors (5.21.2), give the heat rule `stops` instead of `min`/`max` and the legend `colors` instead of `startColor`/`endColor`: see SKILL.md "Heat rules". `Adaptive` and `Monochrome` themes take `mapShade: true` (5.21.2) for map land in a lighter shade of their base color.
 
 **Styling heat-legend segments.** With `stepCount: N` the legend draws N discrete `RoundedRectangle` markers inside `heatLegend.markerContainer`, all styled through `heatLegend.markers.template` (it accepts the usual Graphics settings — `stroke`, `strokeWidth`, `strokeOpacity`, `fillOpacity`, `cornerRadius*`, `tooltipText` for a per-block hover tooltip). Segment **thickness** is the marker's cross-axis size: a **vertical** legend uses the marker `width` (default `15`) with `height: 100%`; a **horizontal** legend uses `height` (default `15`) with `width: 100%`. Style via the template — `heatLegend.markers.values` can read empty even while `markerContainer.children` holds the rectangles.
@@ -189,6 +205,34 @@ heatLegend.markers.template.setAll({
   stroke: am5.color(0xffffff),
   strokeWidth: 1,
   tooltipText: "{value}"
+});
+```
+
+**A panel behind the heat legend.** When the legend stays over the map, it has no background, so a zoomed or panned map shows through it. `HeatLegend` is a `Container`, so give it a `background` and padding:
+
+```js
+var heatLegend = chart.children.push(am5.HeatLegend.new(root, {
+  orientation: "horizontal",
+  startColor: am5.color(0xeeeeee), endColor: am5.color(0x0000cc),
+  x: am5.p50, centerX: am5.p50, y: am5.percent(100), centerY: am5.percent(100), width: am5.percent(50),
+  paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12,
+  background: am5.RoundedRectangle.new(root, { fill: am5.color(0xffffff), fillOpacity: 0.9 })
+}));
+```
+
+`startText: "Low"` and `endText: "High"` replace the end numbers; leave them out to show `startValue`/`endValue` (SKILL.md "Heat rules").
+
+**Countries without data** keep the template's fill, or the heat rule's `neutral` value, and `{value}` in their tooltip is empty ("Canada: "). Give them their own text with an adapter:
+
+```js
+polygonSeries.set("heatRules", [{
+  target: polygonSeries.mapPolygons.template, dataField: "value",
+  min: am5.color(0xffd19a), max: am5.color(0xb3261e),
+  neutral: am5.color(0xdddddd),   // polygons with no value
+  key: "fill"
+}]);
+polygonSeries.mapPolygons.template.adapters.add("tooltipText", function (text, target) {
+  return target.dataItem && target.dataItem.get("value") == null ? "{name}: no data" : text;
 });
 ```
 
@@ -234,11 +278,17 @@ pointSeries2.data.setAll([
 
 `surfaceBullets: true` (5.21.0) lays the bullets onto the map surface, and `altitudeField` (5.21.0) raises points — see "Bullets on the surface" and "Raised lines and points" below.
 
+**`affectsBounds`** says whether a series' shapes count when the map fits itself to its area: `true` on `MapPolygonSeries`, `false` on point, line, Sankey and night series (from the theme). Give overlay polygon series (highlights, storms) `affectsBounds: false` so the map fits the countries.
+
+**`autoScale: true`** (default `false`) scales a point series' bullets with `zoomLevel`.
+
 **A point's bullet sprite:** `dataItem.bullets` is a plain array property, not a setting (`dataItem.get("bullets")` is `undefined`), on every series type:
 
 ```js
 var sprite = pointSeries.dataItems[0].bullets?.[0]?.get("sprite");   // the Circle made by the bullet function
 ```
+
+A Container bullet with `tooltipText` gets a tooltip with no background: put `tooltipText` on a child with a fill (SKILL.md → "Shared vs per-sprite tooltip").
 
 **Points on lines as data rows (5.20.6):** `MapPointSeries` has `lineIdField` (default `"lineId"`), `positionOnLineField` (default `"positionOnLine"`), `autoRotateField` (default `"autoRotate"`) and `autoRotateAngleField` (default `"autoRotateAngle"`), so a point on a `MapLine` can be a plain row — `{ lineId: "jfk-lhr", positionOnLine: 0.5, autoRotate: true }`, where `lineId` is the line's data `id` in a `MapLineSeries` of the same chart — instead of `pushDataItem({ lineDataItem, positionOnLine })`. Data values of `autoRotate`/`autoRotateAngle` win over the bullet's own setting. `polygonIdField` still has **no** default — declare it as above. See "Animating bullets along lines".
 
@@ -287,7 +337,9 @@ lineSeries2.data.setAll([
 ]);
 ```
 
-`pointsToConnect` wins if a data item has both. Fixed points (`fixed: true`) cannot be used with either. `altitude` on `mapLines.template` (5.21.0) arcs lines above the surface — see "Raised lines and points". Changing `lineType` on the series or a data item redraws lines already drawn since 5.21.0.
+`pointsToConnect` wins if a data item has both. Fixed points (`fixed: true`) cannot be used with either. `altitude` on `mapLines.template` (5.21.0) arcs lines above the surface — see "Raised lines and points". `lineType` (`"curved"` default, or `"straight"`) is set on the series or as a data field (`{ geometry, lineType: "straight" }`), not on `MapLine`: on `mapLines.template` it is ignored (and a TypeScript error). Changing it redraws lines already drawn since 5.21.0.
+
+Each leg follows the great circle (`lineType: "curved"`, the default), so a long east–west leg bows toward the pole: a 924 km leg along 41°N passes 15 km north of the parallel at its middle. `lineType: "straight"` (on the series or a data item) draws legs straight on screen. For a line that must follow a path drawn in lon/lat, such as a sea route kept off land, add a point every ~0.15°.
 
 ### MapSankeySeries (geographic flow bands)
 
@@ -559,6 +611,52 @@ planeSeries.data.setAll([{ lineId: "jfk-lhr", positionOnLine: 0, autoRotate: tru
 - `positionOnLine` treats the entire line as one unit (0 = start, 1 = end). If a line has multiple segments (i.e. `pointsToConnect` has 3+ points), position 0.5 is the midpoint of the *entire* path.
 - For advanced per-segment animations (e.g., scaling the bullet differently at the midpoint of each segment, or pausing between segments), use **single-segment lines** (2 points each) instead of one multi-segment line. This gives you full control: animate `positionOnLine` from 0 to 1 on each segment line sequentially, with independent timing, easing, and callbacks per segment.
 - Example: instead of one line with points [A, B, C, D], create three lines: [A,B], [B,C], [C,D] and animate the bullet across them one at a time.
+
+### Live updates: moving points, growing lines
+
+- **Move a point:** set `latitude`/`longitude` on its data item. The bullet moves on the next frame, and no `markDirtyValues()` is needed (5.21.5). `series.data.setIndex(i, row)` animates the move under the Animated theme. Setting only `geometry` doesn't move it.
+- **Change a line or polygon every frame:** set a new `geometry` object on the element (`dataItem.get("mapLine")` / `"mapPolygon"`). The same object, changed, goes unnoticed. `data.setIndex()` animates each field over `interpolationDuration` (600 ms in the Animated theme), and a geometry can't be animated, so it switches only when that time ends. A row replaced every frame keeps its first shape. With `setIndex`, set `interpolationDuration: 0` on the series.
+- **A line that grows** (a track, a route drawn as it happens): keep one data item and set a new geometry on its line each frame, rather than replacing the data.
+
+```js
+var track = chart.series.push(am5map.MapLineSeries.new(root, {}));
+track.data.setAll([{ geometry: { type: "LineString", coordinates: [[0, 0], [1, 0]] } }]);
+
+function grow(coords) {   // call from your own timer
+  track.dataItems[0].get("mapLine").set("geometry", { type: "LineString", coordinates: coords });
+}
+```
+
+- **Many lines moving the same way** (traffic, flows): group them into a few lines with a `MultiLineString` each and animate those. With 1,500 two-point roads, one animated line per road ran at 12 fps; six bands ran at 31 fps (headless Chromium, 5.21.5).
+
+```js
+var roads = chart.series.push(am5map.MapLineSeries.new(root, {}));
+roads.mapLines.template.setAll({
+  stroke: am5.color(0xe03030), strokeWidth: 2, strokeDasharray: [6, 4],
+  animations: [{ key: "strokeDashoffset", from: 0, to: -10, duration: 1000, loops: 0 }]   // -10 = one dash + gap; 0 = forever
+});
+roads.data.setAll([
+  { geometry: { type: "MultiLineString", coordinates: [[[-10, 40], [20, 50]], [[-10, 30], [20, 35]]] } },   // one band: all its roads
+  { geometry: { type: "MultiLineString", coordinates: [[[30, 0], [40, 20], [50, 10]]] } }
+]);
+```
+
+### Textures in map shapes (clouds, smoke, storms)
+
+A `PicturePattern` on polygons shows a texture inside their shapes. Blobs from `am5map.getGeoCircle(point, radiusDegrees)` make soft outlines, and several overlapping ones a ragged edge.
+
+```js
+var storms = chart.series.push(am5map.MapPolygonSeries.new(root, { affectsBounds: false }));
+storms.mapPolygons.template.setAll({
+  fill: am5.color(0x996633), fillOpacity: 0.25,   // a haze under the texture
+  strokeOpacity: 0,
+  fillPattern: am5.PicturePattern.new(root, { src: textureUrl, width: 16, height: 16, fit: "pattern" })
+});
+storms.data.setAll([{ geometry: am5map.getGeoCircle({ longitude: 0, latitude: 0 }, 30) }]);
+```
+
+- The pattern is drawn over the fill, at its own opacity: `fillOpacity` dims only the fill. With a see-through texture, a full fill turns its gaps into one flat color.
+- To move the shapes, set a new `geometry` on each `mapPolygon` (see "Live updates").
 
 ### Raised lines and points — `altitude` (5.21.0)
 
@@ -838,6 +936,8 @@ var chart = root.container.children.push(am5map.MapChart.new(root, {
 
 With `autoHome` and no `homeZoomLevel`, home zoom is `1`, so a starting `zoomLevel` is overridden: set `homeZoomLevel` to the same value. Without `autoHome`, a `zoomLevel` given to `MapChart.new()` is the starting zoom (since 5.21.1; before, one set before the map loaded was ignored or left the map blank).
 
+**Detailed geodata: make the first fit instant.** Every frame of an animated zoom re-projects the whole map. A 1 s `zoomToGeoPoint()` on worldUltra cost 1.4 s of main-thread work against 0.2 s instant, and ran at about 3 fps with the CPU slowed 4× (5.21.5). Use `chart.goHome(0)` (safe before the map loads) or a duration of `0`, not `autoHome`, which animates under the Animated theme (`animationDuration` 1000).
+
 **Home on a globe.** On a map that pans by rotating (`panX: "rotateX"`, `panY: "rotateY"`), `goHome()` and the home button restore the rotation only from `homeRotationX` / `homeRotationY` (−longitude / −latitude). `homeGeoPoint` alone leaves the rotation as it is and shifts the globe sideways.
 
 ```js
@@ -942,6 +1042,8 @@ am5map.MapChart.new(root, {
 })
 ```
 
+`maxPanOut: 0` with `panX: "translateX"` stops all dragging at zoom level 1, on both axes. On a world map, pair it with `panX: "rotateX"`, which `maxPanOut` does not limit.
+
 **Polygon IDs** use ISO 3166-1 alpha-2 codes (e.g., `"US"`, `"CN"`, `"DE"`, `"FR"`).
 
 **Accessibility (5.21.0):** focusable map polygons can be focused (they could not before), objects left out with `include`/`exclude` get no focus element, objects panned or zoomed out of view are not TAB stops until at least partly back in view, and the zoom level is announced to screen readers once zooming settles.
@@ -978,6 +1080,8 @@ linkedSeries.data.setAll([{ id: "US", url: "https://en.wikipedia.org/wiki/United
 ```
 
 `urlField` has no default (links are off until set); the pointer cursor is set automatically unless you set `cursorOverStyle`; `javascript:`/`data:`/`vbscript:` URLs are never opened; override `series.openUrl(dataItem)` to intercept. `MapSankeySeries` nodes are not linked — keep a `click` handler there.
+
+**Which pixels:** `chart.convert(geoPoint)` and `chart.invert(point)` work in the map's area, inside the chart's padding (`chart.seriesContainer`'s space). A pointer event's `ev.point` is relative to the root. So the place clicked is `chart.invert(chart.seriesContainer.toLocal(ev.point))`, and a geo point's page position is `chart.seriesContainer.toGlobal(chart.convert(geoPoint))` plus the chart div's `getBoundingClientRect()`. `chart.invert(ev.point)` on its own is right only for a chart at the root's top-left with no padding.
 
 ## Disposal
 

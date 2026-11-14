@@ -117,6 +117,32 @@ series.appear(1000);
 | `nodePadding` | number | Gap between nodes (default: 10) |
 | `linkSort` | function \| null | Custom link sort, `null` for no sorting |
 
+### Link colors and highlighting connected links
+
+Links default to `fillStyle: "gradient"` (source colour to target colour) at `fillOpacity: 0.2`, with a `"hover"` state of 0.5. On a dense diagram this looks washed out, and the pale end can look like a gap before the target node, though links do reach it. Colour links by their source and raise the hover state along with the opacity. Hovering a node already highlights its own links. For the links connected to a hovered link, apply their `"hover"` state. Don't call `link.hover()` as the traceable-sankey-diagram example does: it also shows each link's tooltip, so the shared tooltip ends up on the last link (5.21.5).
+
+```js
+series.links.template.setAll({ fillStyle: "source", fillOpacity: 0.35 });   // "source" | "target" | "solid" | "gradient"
+series.links.template.states.create("hover", { fillOpacity: 0.8 });
+
+function highlightLinks(test, except) {
+  series.dataItems.forEach(function (di) {
+    var link = di.get("link");
+    if (link !== except) link.states.applyAnimate(test(di) ? "hover" : "default");
+  });
+}
+// links that share the hovered link's source or target
+series.links.template.events.on("pointerover", function (ev) {
+  var s = ev.target.dataItem.get("sourceId"), t = ev.target.dataItem.get("targetId");
+  highlightLinks(function (di) { return di.get("sourceId") === s || di.get("targetId") === t; }, ev.target);
+});
+series.links.template.events.on("pointerout", function (ev) {
+  highlightLinks(function () { return false; }, ev.target);
+});
+```
+
+To trace whole paths (traceable-sankey-diagram), give each row an `id` that names its path and step (`idField: "id"`, ids like `"A0-1"`). Then test `di.get("id").split("-")[0] === ev.target.dataItem.get("id").split("-")[0]` in the same helper.
+
 ## Chord diagram
 
 ```js

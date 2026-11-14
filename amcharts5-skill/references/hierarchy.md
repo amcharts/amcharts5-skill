@@ -71,7 +71,7 @@ const series = container.children.push(am5hierarchy.Treemap.new(root, {
   valueField: "value",
   categoryField: "name",
   childDataField: "children",
-  initialDepth: 2,           // how many levels visible initially
+  initialDepth: 2,           // levels opened below topDepth on load: here depths 1–3
   topDepth: 1,               // hide root node (start from first children)
   layoutAlgorithm: "squarify",  // "squarify" | "binary" | "slice" | "dice" | "sliceDice"
   nodePaddingOuter: 4,
@@ -98,8 +98,26 @@ series.labels.template.setAll({
 });
 
 series.data.setAll(data);
+series.set("selectedDataItem", series.dataItems[0]);  // after the data: the BreadcrumbBar shows the root, topDepth hides it
 series.appear(1000);
 ```
+
+### Group headers (parent labels above the children)
+
+`nodePaddingTop` is room inside every parent tile above its children, so it can hold the group's name. A parent's label is centred by default, behind its children. Move a tile's label into the band while that tile's children are showing. This keeps a named band on the tile you drilled into, and centred labels on collapsed tiles:
+
+```js
+series.set("nodePaddingTop", 20);   // header band in every parent tile
+
+function isOpen(label) {            // the tile's children are showing
+  var di = label.dataItem;
+  return !!(di && di.get("children") && !di.get("disabled"));
+}
+series.labels.template.adapters.add("y", function (y, label) { return isOpen(label) ? 0 : y; });
+series.labels.template.adapters.add("centerY", function (cy, label) { return isOpen(label) ? 0 : cy; });
+```
+
+Drilled views scale the band with the zoom. With `topDepth: 1`, the hidden root's own band stays as an empty strip above the top level. `nodePaddingOuter` overrides `nodePaddingTop`.
 
 ## Force-Directed Tree
 
@@ -298,9 +316,29 @@ series.get("colors").set("colors", [
 Clicking a node zooms into its children. Configure with:
 ```js
 series.set("topDepth", 1);       // hide root
-series.set("initialDepth", 2);   // initial visible depth
+series.set("initialDepth", 2);   // levels opened below topDepth on load
 series.set("downDepth", 1);      // how many levels to reveal on drill-down
 ```
+
+`initialDepth` counts the levels opened below `topDepth`: with `topDepth: 1`, `initialDepth: 1` draws depths 1 and 2, and `initialDepth: 2` draws depths 1–3. On a Treemap the deepest drawn level covers its parents, so only its tiles show. `initialDepth` works without `selectedDataItem`, but still call `series.set("selectedDataItem", series.dataItems[0])` after `data.setAll()`. Without it a `BreadcrumbBar` stays empty, and `topDepth` doesn't hide the root node.
+
+A click selects the clicked node itself. On a Treemap that shows nested levels, a click on an inner tile drills straight to that tile, two levels from the top view. `downDepth` and `upDepth` don't change which node is selected (5.21.5). For one level per click, replace the built-in click:
+
+```js
+series.nodes.template.set("toggleKey", "none");   // turn off the built-in click
+series.nodes.template.events.on("click", function (ev) {
+  var selected = series.get("selectedDataItem");
+  var di = ev.target.dataItem;
+  if (di === selected) {                           // the open node's own header band: up a level
+    if (di.get("parent")) series.selectDataItem(di);
+    return;
+  }
+  while (di && di.get("parent") !== selected) di = di.get("parent");   // climb to a child of the open node
+  if (di && di.get("children")) series.selectDataItem(di);
+});
+```
+
+It needs `selectedDataItem` set after the data (see above).
 
 ### Breadcrumbs (for navigation)
 
@@ -311,7 +349,6 @@ const breadcrumbs = container.children.push(am5hierarchy.BreadcrumbBar.new(root,
   series: series
 }));
 ```
-
 ### Events on hierarchy nodes
 
 ```js

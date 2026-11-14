@@ -44,7 +44,7 @@ Docs: https://docs.amcharts.com/v5/
 12. **Disposal is mandatory in SPAs** — in React, Vue, Angular, Svelte or React Native use amCharts' framework package, which creates and disposes the root for you (see "Frameworks"); without one, call `root.dispose()` on component unmount. Not `chart.dispose()`.
 13. **Style through amCharts, not CSS** — charts draw on canvas by default, so CSS cannot reach chart internals. Even with the optional SVG renderer (5.21.0) the shapes carry no per-element classes or ids, are rewritten as the chart redraws, and exports ignore page CSS. Use amCharts settings/templates/themes instead.
 14. **Dark backgrounds require Dark theme** — If the user requests or the page clearly has a dark background, always add `am5themes_Dark.new(root)` to `root.setThemes()` alongside Animated. Without it, labels, grid, and tooltips will be invisible. If the background is not clearly dark, default to white/light and do NOT add the Dark theme unless asked.
-15. **Use default amCharts colors** — Do NOT invent custom color palettes unless the user explicitly asks for specific colors. amCharts assigns colors automatically from its built-in ColorSet. If you need a color programmatically, use `chart.get("colors").getIndex(index)` or `chart.get("colors").next()`. For pie/percent charts, use `series.get("colors")` instead.
+15. **Use default amCharts colors** — Do NOT invent custom color palettes unless the user explicitly asks for specific colors. amCharts assigns colors automatically from its built-in ColorSet. If you need a color programmatically, use `chart.get("colors").getIndex(index)` or `chart.get("colors").next()`. For pie/percent charts, use `series.get("colors")` instead. With 3 or more series in one XY chart, the default colors are near-identical blues and violets (hues 18° apart): set `chart.get("colors").set("step", 3)` before adding series, or use the `Colorblind` theme (see "ColorSet").
 
 ## Package / module map
 
@@ -68,6 +68,8 @@ Docs: https://docs.amcharts.com/v5/
 | JSON | `@amcharts/amcharts5/plugins/json` | `plugins/json.js` | ChartSerializer, JsonParser |
 | Chart element (5.21.0) | `@amcharts/amcharts5/element` | `element.js` (after `plugins/json.js`) | `<am5-chart>` — see "Serializing to JSON" |
 | Framework packages | `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte`, `-react-native` (separate npm packages) | — | `useAmChart`, `<AmChart>`, `[amChart]`, `attachAmChart` — see "Frameworks" |
+
+**Loading.** In a plain HTML page, use the CDN scripts (`https://cdn.amcharts.com/lib/5/index.js` first, then the chart packages, then themes); the npm package has no script-tag build. Gzipped (5.21.5): `index.js` + `xy.js` 190 KB, + `stock.js` 268 KB. When bundling, keep code splitting on (esbuild: `splitting: true`, `format: "esm"`): a split stock chart loads about 265 KB gzipped, a single-file bundle 1.4 MB, because the libraries amCharts loads only on demand (PDF and Excel export, fonts) get inlined. Core + `xy` bundles to about 160 KB.
 
 ## Which reference to read
 
@@ -109,6 +111,8 @@ root.locale = am5locales_de_DE;
 root.dateFormatter.setAll({ dateFormat: "yyyy-MM-dd" });
 root.numberFormatter.setAll({ numberFormat: "#,###.##" });
 ```
+
+One Root per DOM element: a second `am5.Root.new()` on the same element throws "You cannot have multiple Roots on the same DOM node", so dispose the old root first. Separate elements on one page can each have their own Root (for example, a chart in a modal), and each is disposed on its own.
 
 **Canvas or SVG (5.21.0).** Charts draw on canvas by default. `am5.SVGRenderer` draws the same chart as live SVG instead — it can only be chosen when the root is created:
 
@@ -194,6 +198,8 @@ series.set("tooltip", am5.Tooltip.new(root, {
 
 **Inline formatting:** `"[bold]{name}[/]: [fontSize: 20px]{value}[/]"`
 
+Numbers in placeholders get thousands separators (`{year}` shows `2,024`): see "Number formats".
+
 **A tooltip with no text renders as an empty bubble.** Enabling a `am5.Tooltip` without `labelText` (or `series.tooltipText`) shows a blank tooltip. Series text lives on `tooltip.labelText` or `series.set("tooltipText", ...)`; for column/bar charts the text usually goes on `series.columns.template.set("tooltipText", "{categoryX}: {valueY}")`.
 
 ### Styling a tooltip
@@ -242,6 +248,38 @@ var shared = root.container.get("tooltip");
 shared.set("getFillFromSprite", false);
 shared.get("background").setAll({ fill: am5.color(0x000000), fillOpacity: 0.8 });
 ```
+
+**A tooltip on a `Container` has no background.** The tooltip takes its color from the target's `fill` (`getFillFromSprite`, default `true`), and a Container has none, even with a `background`: only black text shows. Put `tooltipText` on a child that has a fill. An invisible circle as the last child still takes hover and gives a bigger target. Or set `getFillFromSprite: false` and a background fill (above).
+
+```js
+pointSeries.bullets.push(function (root, series, dataItem) {
+  var box = am5.Container.new(root, {});
+  box.children.push(am5.Circle.new(root, { radius: 8, fill: am5.color(0xcc3300) }));
+  box.children.push(am5.Label.new(root, { text: "{name}", populateText: true, x: 10, centerY: am5.p50, fontSize: 12 }));
+  box.children.push(am5.Circle.new(root, {
+    radius: 12, fill: am5.color(0xcc3300), fillOpacity: 0,   // invisible; its fill colors the tooltip
+    tooltipText: "{name}"
+  }));
+  return am5.Bullet.new(root, { sprite: box });
+});
+```
+
+## Number formats
+
+Numbers in `{placeholders}` use `root.numberFormatter`'s `numberFormat` (default `"#,###.#####"`: separators, at most 5 decimals). Format one placeholder with `{valueY.formatNumber('#,###.00')}`; a `ValueAxis` has its own `numberFormat` and `tooltipNumberFormat`. A `numberFormatter` on a tooltip or a template doesn't change placeholders.
+
+| Format | 6708.044000000005 | 1.125 | 2024 |
+|---|---|---|---|
+| `#,###` | 6,708.044000000005 | 1.125 | 2,024 |
+| `#,###.` | 6,708 | 1 | 2,024 |
+| `#,###.#` | 6,708 | 1.1 | 2,024 |
+| `#,###.00` | 6,708.04 | 1.13 | 2,024.00 |
+| `#` | 6708.044000000005 | 1.125 | 2024 |
+
+- The part after `.` decides rounding. With no `.` nothing is rounded, unlike Excel's `#,###`; a format ending in `.` rounds to a whole number. For animated values (`{valueXWorking}` in a bar race) use `'#,###.'`.
+- Every number placeholder gets a thousands separator, so a year `{year}` shows `2,024`. Use `{year.formatNumber('#')}`, or keep the year a string in the data.
+- Positive, negative and zero formats are split by `|`, not `;` (`"#,###;'-'#,###;0"` prints `500;-500;0`). The negative part still gets a minus unless it has the `s` modifier: `"#,###|(#,###.s)|'-'"` gives `1,000`, `(1,000)`, `-`.
+- On a value axis with fractional steps, a trailing `.` makes duplicate labels (`1, 1, 2, 2`); use `maxPrecision: 0` there.
 
 ## Chart title
 
@@ -350,6 +388,8 @@ series.set("heatRules", [{
 }]);
 ```
 
+A `radius` rule is linear in radius: areas grow with the square of the value, and the smallest value gets `min`, not zero. For bubbles whose area matches the value, set the radius in the bullet function instead: `radius: maxRadius * Math.sqrt(value / maxValue)` (see `references/xy.md`, "Scatter / Bubble chart").
+
 **Heat rule settings:**
 
 | Setting | Type | Description |
@@ -359,6 +399,7 @@ series.set("heatRules", [{
 | `dataField` | string | Data field for the value: `"valueY"`, `"value"`, `"valueX"`, etc. |
 | `min` | color/number | Value applied at the lowest data value |
 | `max` | color/number | Value applied at the highest data value |
+| `neutral` | color/number | Value for elements whose data item has no value (otherwise they keep the template's) |
 | `stops` | array | Values for a scale through more than two (5.21.2), in place of `min`/`max`: the lowest data value gets the first, the highest the last, blended between. Numbers, percents or colors, all of one kind |
 | `minValue` | number | Override auto-calculated min (skips `calculateAggregates`; `0` is honored since 5.21.0) |
 | `maxValue` | number | Override auto-calculated max (skips `calculateAggregates`; `0` is honored since 5.21.0) |
@@ -401,12 +442,10 @@ var heatLegend = chart.children.push(am5.HeatLegend.new(root, {
   orientation: "horizontal",       // or "vertical"
   startColor: am5.color(0xe5dc36),
   endColor: am5.color(0x5faa46),
-  startText: "Low",
-  endText: "High",
   stepCount: 5                     // number of color stops
 }));
 
-// Sync legend range with series data
+// Sync legend range with series data: the end labels show these numbers
 series.events.on("datavalidated", function() {
   heatLegend.set("startValue", series.getPrivate("valueLow"));
   heatLegend.set("endValue", series.getPrivate("valueHigh"));
@@ -420,6 +459,8 @@ var scaleLegend = chart.children.push(am5.HeatLegend.new(root, {
   // stepCount: 1 (default) = a gradient through them; with stepCount > 1, one step per color
 }));
 ```
+
+`startText`/`endText` replace the numbers at the ends: with `startText: "Low"` the label says only "Low", whatever `startValue` is, and `""` leaves it blank. `{startValue}` in them is not filled in. Leave them out to show `startValue`/`endValue` as formatted numbers. On a map, give the legend a `background` so a zoomed map doesn't show through it (`references/map.md` → Choropleth).
 
 ## Animations
 
@@ -492,7 +533,28 @@ const disposer = sprite.events.on("click", handler);
 disposer.dispose(); // removes the listener
 ```
 
+**Knowing when the chart has finished drawing.** There is no "rendered" event. `datavalidated` fires once the data is processed, and the next `frameended` can come long before drawing ends. With 5,000 bullets it came at 0.3 s and drawing ended at 1.3 s; with 50,000, at 1.2 s and 12 s. amCharts draws only while something has changed or is animating, so two animation frames in a row without a `frameended` mean it is done. Call this right after the change (`data.setAll()`, a zoom, `selectPeriod()`):
+
+```js
+function whenRendered(root, callback) {
+  var frames = 0, seen = 0, quiet = 0;
+  var listener = root.events.on("frameended", function () { frames++; });
+  (function check() {
+    requestAnimationFrame(function () {
+      if (frames === seen) quiet++; else { quiet = 0; seen = frames; }
+      if (quiet >= 2) { listener.dispose(); callback(); } else check();
+    });
+  })();
+}
+series.data.setAll(data);
+whenRendered(root, function () { /* everything is drawn */ });
+```
+
+With `root.fps` set, frames are spaced `1000 / root.fps` ms apart, so wait longer than that instead of two animation frames. Endless animations (`loops: 0`) never settle. Without a license, the amCharts logo fades in 3 s after the root is created and draws for 1.5 s; a check during that time waits for it.
+
 **Opening a link on click needs no handler (5.20.7):** `series.set("urlField", "url")` makes each item's bullet, column, slice, Venn slice, map polygon or map line open the URL in its data row (`linkTarget`, default `"_self"`) — see "Recent API changes". Hierarchy nodes, flow nodes/links and word-cloud labels are not linked; keep a `click` handler there.
+
+**A tap fires no DOM `click` on a pannable chart.** On touch, a tap on an XYChart with `panX`/`panY`, under a cursor with a zoom or select `behavior`, or on a `draggable` sprite gives `pointerdown`/`pointerup` but no `mousedown`/`mouseup`/`click` on the page (Chrome touch emulation, 5.21.5). The amCharts `click` event still fires: use `events.on("click", …)`, not a DOM listener.
 
 ## Settings API
 
@@ -569,7 +631,23 @@ pieSeries.dataItems[0].setAll({ value: 80, valueWorking: 80 });                 
 // per-frame updates through setIndex on XY: set interpolationDuration: 0 on the series, or the points lag behind
 ```
 
+On maps it is worse: a `geometry` can't be animated, so with `setIndex` it switches only when `interpolationDuration` ends, and a line or polygon replaced every frame keeps its first shape. Set `interpolationDuration: 0`, or set the geometry on the element (`references/map.md` → "Live updates").
+
 A data item's bullets are a plain array **property**: `dataItem.bullets?.[0]?.get("sprite")` is the sprite the bullet function made (`dataItem.get("bullets")` is `undefined`).
+
+`dataItem.bullets` stays `undefined` until the series draws that item: right after `data.setAll()`, in `datavalidated` and in the first `frameended` (5.21.5: bullets appeared on the second frame), and, on a zoomed `DateAxis`, for items out of view. Decide a bullet's look inside the bullet function from `dataItem` (or with `templateField`), not by reaching into `dataItem.bullets` after setting the data.
+
+## Performance: big data, fast updates, no animation
+
+- **Animations off:** leave out the Animated theme. To keep it but stop one element animating, set `interpolationDuration: 0` (value changes, axis zoom and rescale) or `stateAnimationDuration: 0` (hover and show/hide states) on it.
+- **Zoom without animation:** an axis zooms over its own `interpolationDuration` (600 ms with the Animated theme). There is no `zoomAnimation` setting. Set it to 0 on the X axis and on value axes, which also animate their rescale after a zoom. `zoom()`, `zoomToDates()`, `zoomToValues()` and `zoomToCategories()` take a duration as their third argument; `0` jumps.
+- **Frame rate:** `root.fps = 30` redraws about 20 times a second instead of 60, which frees the main thread for incoming data.
+- **High-rate streams** (a point every 10 ms, 3 series):
+  - The Live Data pattern (`push` + `removeIndex(0)` per point, Animated theme) kept up with 30–60% of the points.
+  - `interpolationDuration: 0` on the series and axes, plus `root.fps = 30`, kept up with 80–90%.
+  - Collecting points and adding them once per frame with `data.pushAll()` adds little.
+  - A timer-driven feed drops the ticks a busy page skips; WebSocket messages queue instead.
+- **Large line data:** `references/xy.md`, "DateAxis". **Large scatter:** `references/xy.md`, "Scatter / Bubble chart". **Knowing when drawing has finished:** "Events".
 
 ## Adapters
 
@@ -611,6 +689,8 @@ series.columns.template.states.create("active", {
 polygon.set("fill", color);
 polygon.states.lookup("default")?.set("fill", color);
 ```
+
+**`sprite.hover()` also shows the sprite's tooltip.** To highlight other elements from an event (related links or columns), apply the state instead: `sprite.states.applyAnimate("hover")`, and `"default"` to undo it. Several `hover()` calls move the shared tooltip to the last sprite.
 
 ## Parameterized themes — Monochrome & Adaptive (5.20.0)
 
@@ -723,6 +803,18 @@ am5themes_Adaptive.new(root, { repeatLightness: false });
 ```
 
 With one chart on the root, `chart.get("colors").set("repeatLightness", 0)` before the data is set works too.
+
+**Three or more series.** Smallest color difference (CIEDE2000) among the first 4 / 6 series colors, 5.21.5 (about 15 or more reads as distinct):
+
+| Choice | First 4 / 6 | Note |
+|---|---|---|
+| default | 6.3 / 6.3 | blue to violet, 18° apart |
+| `chart.get("colors").set("step", 3)` | 19.1 / 19.1 | keeps the default look |
+| `Colorblind` | 21.7 / 21.7 | Okabe-Ito; the 4th color is a pale yellow |
+| `Kelly` | 22.8 / 17.0 | the 1st color is yellow, the weakest on white |
+| `Nord` | 22.1 / 14.2 | |
+
+Avoid these for many series: `Dataviz` (series 1 and 5 are the same navy: 4.0), `Frozen` (6.9), `Moonrise` (9.4), `Spirited` (10.2), `Material` (10.3). For lines, also set `strokeWidths: [2]` on the XYChart (the legend line follows) and `legend.markers.template.setAll({ width: 24, height: 14 })`.
 
 ## Data processor
 
@@ -1031,16 +1123,22 @@ onMount(() => { const root = am5.Root.new(chartdiv); /* ... */ return () => root
 31. **Globe rotation uses negative coordinates** — To center the globe (`geoOrthographic`) on a geographic point, set `rotationX` to **-longitude** and `rotationY` to **-latitude**. E.g., to center on Paris (48.86°N, 2.35°E): `chart.animate({ key: "rotationX", to: -2.35 }); chart.animate({ key: "rotationY", to: -48.86 });`. Using positive values rotates the globe the wrong way.
 32. **`positionOnLine` with multi-segment lines limits per-segment control** — `MapPointSeries` data items can animate along a line via `positionOnLine` (0→1). If the line has 3+ points (multi-segment), position 0.5 is the midpoint of the *entire* path, making per-segment effects (scaling at each segment midpoint, pausing between segments, etc.) difficult. For advanced per-segment animations, use **single-segment lines** (2 points each) and animate the bullet across them sequentially. E.g., instead of one line [A,B,C,D], create [A,B], [B,C], [C,D].
 33. **Do NOT exclude Antarctica (`exclude: ["AQ"]`) by default** — Many amCharts demos exclude Antarctica because they use Mercator projection where it appears disproportionately large. This is a demo-specific choice, not a best practice. Unless the user explicitly asks to exclude Antarctica, or references a demo that does so, keep Antarctica in the map. With non-Mercator projections (`geoNaturalEarth1`, `geoEqualEarth`, `geoOrthographic`, `geoEquirectangular`), Antarctica renders at a reasonable size.
-34. **Custom GeoJSON for `MapPolygonSeries` needs CLOCKWISE exterior rings** — amCharts projects on a sphere (d3-geo), where ring winding decides which side is "inside". The RFC 7946 default is counter-clockwise, which d3-geo reads as *the whole globe minus the polygon*, so every polygon floods the entire map and the real shape shows only as a sliver. Programmatically generated GeoJSON (grids, cells, buffers) is usually CCW. amCharts does **not** auto-rewind — reverse each ring yourself: `feature.geometry.coordinates = feature.geometry.coordinates.map(ring => ring.slice().reverse())` (for `MultiPolygon`, one level deeper). See `references/map.md`.
+34. **Custom GeoJSON for `MapPolygonSeries` needs CLOCKWISE exterior rings** — amCharts projects on a sphere (d3-geo), where ring winding decides which side is "inside". The RFC 7946 default is counter-clockwise, which d3-geo reads as *the whole globe minus the polygon*, so every polygon floods the entire map and the real shape shows only as a sliver. Programmatically generated GeoJSON (grids, cells, buffers) is usually CCW. amCharts does **not** auto-rewind — reverse only the polygons that come out inside out: if `am5map.getGeoArea({ type: "Polygon", coordinates: poly }) > 2 * Math.PI`, then `poly.forEach(ring => ring.reverse())`. That is safe on clockwise data and also catches small rings flipped by simplifying or rounding. See `references/map.md`.
 35. **`axis.dispose()` does NOT remove the axis from `chart.xAxes`/`chart.yAxes`** — unlike `series.dispose()`, which self-removes from `chart.series`. A disposed axis stays in the list, keeps showing up in anything built from `chart.yAxes`, and makes `ChartSerializer` throw `Template is disposed`. Remove axes with `chart.yAxes.removeValue(axis)` (or `removeIndex(i)`) — the list auto-disposes the removed axis, no separate `dispose()` needed.
 36. **Declare bullet callbacks as `function(root, series, dataItem)`** — amCharts passes all three; closing over an outer `root` works at runtime but breaks JSON round-trips (`ChartSerializer` captures the function source, and the outer `root` dangles on re-bind). Every `series.bullets.push(...)` in these references uses the parameter form — copy it.
 37. **A `ColorSet` must contain at least one color** — `colors.set("colors", [])` crashes the next `next()`/`getIndex()`. Swap in a fresh `am5.ColorSet.new(root, {})` instead. See "ColorSet" above.
 38. **`LinearGradient` `rotation` only works from 0 to 90** (bug since 5.20.8, still in 5.21.5) — other angles give a flat or wrong fill, and with a transparent end stop the shape can vanish. For the opposite direction keep the angle in range and reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops. See `references/xy.md` → Series gradients.
-39. **Several colors in one `am5.Graphics` `draw`** — `endFill()` fills everything since the last `beginPath()`, so start each color with `display.beginPath()`, or the last color paints over all shapes. Don't give such a Graphics its own `fill` either: after `draw` runs it fills the current path once more, so the last shape takes the Graphics' own `fill` (the default theme sets none). E.g. `draw: function (display) { display.beginPath(); display.beginFill(am5.color(0xff0000)); display.drawRect(0, 0, 10, 10); display.endFill(); display.beginPath(); display.beginFill(am5.color(0x0000ff)); display.drawRect(10, 0, 10, 10); display.endFill(); }`.
+39. **Several colors in one `am5.Graphics` `draw`** — `endFill()` fills everything since the last `beginPath()`, so start each color with `display.beginPath()`, or the last color paints over all shapes. Don't give such a Graphics its own `fill` either: after `draw` runs it fills the current path once more, so the last shape takes the Graphics' own `fill` (the default theme sets none). E.g. `draw: function (display) { display.beginPath(); display.beginFill(am5.color(0xff0000)); display.drawRect(0, 0, 10, 10); display.endFill(); display.beginPath(); display.beginFill(am5.color(0x0000ff)); display.drawRect(10, 0, 10, 10); display.endFill(); }`. An own `stroke` re-strokes the last path the same way.
 40. **Changing a value on a data item moves nothing** — series draw from the working values: set `valueYWorking` (XY) or `valueWorking` (pie) along with the value, or use `series.data.setIndex()`. See "Dynamic data".
 41. **A setting changed after a hover snaps back on unhover** — the `"default"` state keeps the value from before the first hover. Change it there too: `sprite.states.lookup("default")?.set("fill", c)`. See "States".
 42. **`templateField` goes on the template, not on the series** — per-item settings from data rows are read by the elements a template makes: `series.columns.template.set("templateField", "columnSettings")`, likewise `slices.template`, `mapPolygons.template` or a bullet sprite. Set on the series, `templateField` does nothing and every column stays the same. For a pattern per column, see `references/xy.md` → "Different pattern per column".
 43. **A JSON-config map that draws nothing with npm imports** — the config names its geodata (`"geoJSON": "am5geodata_worldLow"`), and with npm imports there is no global of that name. Pass the pack in `resources` (5.21.4): `JsonParser.parse(config, { parent, resources: { am5geodata_worldLow } })`, `element.resources`, or the framework packages' `resources` prop. The same goes for a locale (`am5locales_de_DE`). Since 5.21.4 a console warning names the missing pack. Before 5.21.4, set `window.am5geodata_worldLow = am5geodata_worldLow` after importing it. A config serialized from such a chart copies the whole pack unless `ChartSerializer` gets the same `resources`.
+
+44. **An `am5.Graphics` redraws only when `draw` changes** — `graphics.set("draw", fn)` with the function it already has does nothing. Pass a new closure that captures the new points: `graphics.set("draw", (display) => paint(display, points))`.
+
+45. **A legend value without a cursor needs `calculateAggregates`** — `legendValueText` is used only under a cursor; otherwise the value label shows `legendRangeValueText`, which has no data item: `{valueY}` is empty there, and `{valueYClose}` (the latest value), `{valueYSum}`, `{valueYHigh}` and the other range values are empty unless the series has `calculateAggregates: true` (no warning, 5.21.5). See `references/xy.md` → Legend.
+
+46. **`#,###` does not round** — a number format without a `.` keeps every decimal (`6,708.044000000005` while animating); end it with `.` for whole numbers (`'#,###.'`) or give the decimals (`'#,###.00'`). Every number placeholder also gets a thousands separator, so `{year}` shows `2,024`: use `{year.formatNumber('#')}`. Sections are split by `|`, not `;`. See "Number formats".
 
 ## Easing functions
 

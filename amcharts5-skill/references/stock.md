@@ -172,6 +172,36 @@ stockChart.set("volumeSeries", volumeSeries);
 volumeSeries.data.setAll(data);
 ```
 
+## Styling: candle colors, panel buttons, navigator position
+
+Candles take the interface colors `positive` (#50b300) and `negative` (#b30000) unless the stock chart gets its own. Give them when the stock chart is made (step 1 of "Core setup"); the rest uses the names from "Core setup" and the volume panel above:
+
+```js
+const stockChart = root.container.children.push(am5stock.StockChart.new(root, {
+  stockPositiveColor: am5.color(0x089981),   // candles closing at or above their open
+  stockNegativeColor: am5.color(0xf23645),   // candles closing below it
+  volumePositiveColor: am5.color(0x089981),  // what getVolumeColor() returns
+  volumeNegativeColor: am5.color(0xf23645),
+  autoHidePanelControls: true                // a panel's move, expand and close buttons show only while the pointer is over it
+}));
+
+// Volume columns colored by the price move
+volumeSeries.columns.template.adapters.add("fill", function (fill, target) {
+  return target.dataItem ? stockChart.getVolumeColor(target.dataItem) : fill;
+});
+// No gear or close button on the legend items (the gear opens the series settings dialog)
+legend.settingsButtons.template.set("forceHidden", true);
+legend.closeButtons.template.set("forceHidden", true);
+// Navigator below the panels: put it in the tools container, then move that container to the end
+stockChart.toolsContainer.children.push(scrollbar);
+stockChart.children.moveValue(stockChart.toolsContainer);
+stockChart.toolsContainer.set("paddingTop", 10);
+// Hide date labels cut off at the plot edges ("an 2020")
+dateAxis.get("renderer").labels.template.setAll({ minPosition: 0.01, maxPosition: 0.99 });
+```
+
+The colors are an example: any pair works.
+
 ## Adding indicators programmatically
 
 ```js
