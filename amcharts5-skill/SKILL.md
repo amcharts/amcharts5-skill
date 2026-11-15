@@ -201,8 +201,8 @@ legend.data.setAll(series.dataItems);
 
 **A legend that fits: `autoFit: true` (5.22.0).** As room runs out, it fits the legend in steps:
 1. Empty value labels give their room back.
-2. The legend gets smaller, down to three quarters of its size.
-3. Item names still too wide are shortened, and a legend still too tall scrolls.
+2. A legend that fits at three quarters of its size or more gets smaller.
+3. One that wouldn't fit even then scrolls instead, usually at full size, and item names too wide are shortened.
 4. When not even one row fits, the legend is hidden.
 
 Above or below the chart it takes at most 30% of the chart's height, beside it at most 40% of its width. A `width`, `height`, `maxWidth`, `maxHeight`, `scale` or `verticalScrollbar` you set on the legend is kept. Without it, a long legend below a pie can take the whole chart and leave the pie no room.
@@ -299,7 +299,7 @@ Numbers in `{placeholders}` use `root.numberFormatter`'s `numberFormat` (default
 
 - The part after `.` decides rounding. With no `.` nothing is rounded, unlike Excel's `#,###`; a format ending in `.` rounds to a whole number. For animated values (`{valueXWorking}` in a bar race) use `'#,###.'`.
 - Every number placeholder gets a thousands separator, so a year `{year}` shows `2,024`. Use `{year.formatNumber('#')}`, or keep the year a string in the data.
-- Positive, negative and zero formats are split by `|`, not `;` (`"#,###;'-'#,###;0"` prints `500;-500;0`). The negative part still gets a minus unless it has the `s` modifier: `"#,###|(#,###.s)|'-'"` gives `1,000`, `(1,000)`, `-`.
+- Positive, negative and zero formats are split by `|`, not `;` (`"#,###;'-'#,###;0"` prints `500;-500;0`). The negative part still gets a minus unless it has the `s` modifier: `"#,###|(#,###s)|'-'"` gives `1,000`, `(1,000)`, `-`. Before 5.22.0, `#,###s` lost the thousands separator.
 - On a value axis with fractional steps, a trailing `.` makes duplicate labels (`1, 1, 2, 2`); use `maxPrecision: 0` there.
 
 ## Chart title
@@ -370,7 +370,8 @@ root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]
 What it does:
 - It turns on the settings in the table below: `autoLabels` on axis renderers and on series (pie labels included), `autoFit` on legends, and `autoHide` on a chart's scrollbars.
 - A vertical scrollbar hides on a chart 400 px wide or less, a horizontal one on a chart 300 px tall or less. A stock chart is measured whole, not by panel.
-- When the chart's div is 400 px or less in either direction, text is drawn at 85% of its size (`fontSize: "0.85em"`), and scrollbars get smaller margins.
+- When the chart's div is 400 px or less in either direction, text is drawn at 85% of its size (`fontSize: "0.85em"`).
+- Scrollbar margins shrink too: a horizontal scrollbar's when the div is 400 px tall or less, a vertical one's when it is 400 px wide or less.
 - Labels you add with your own `fontSize`, such as a title, shrink when the div is smaller than 600 × 450 px, down to three quarters of their size.
 
 A setting you set in code wins over the theme: `autoLabels: false` on one series or renderer turns that part off. The theme also has `addRule()`, as below.
@@ -379,8 +380,8 @@ The settings also work on their own. All are off by default:
 
 | Setting | On | Does |
 |---|---|---|
-| `autoLabels: true` | `AxisRendererX` / `AxisRendererY` | Spaces labels by their own size. A short axis gets more labels (up to about eight). A category axis shows every label that fits, even closer than `minGridDistance`. Long labels are spaced by their width, so there can be fewer than without it. A label that would be cut off, or overlap another axis's labels, is hidden. |
-| `autoLabels: true` | `PieSeries` | Moves the pie aside or makes it smaller (down to half the chart's shorter side) to make room. Labels then wrap, are shortened or are hidden, smallest slices first. See `references/pie.md` → Labels. |
+| `autoLabels: true` | any axis renderer (`AxisRendererX`, `AxisRendererY`, radar's) | Spaces labels by their own size. A short axis gets more labels (up to about eight). A category axis shows every label that fits, even closer than `minGridDistance`. Long labels are spaced by their width, so there can be fewer than without it. A label that would be cut off, or overlap another axis's labels, is hidden. |
+| `autoLabels: true` | `PieSeries` | Moves the pie aside or makes it smaller (down to half the chart's shorter side) to make room. Labels then wrap, are shortened or are hidden, smallest slices first. See `references/pie.md`, "Labels". |
 | `autoLabels: true` | any other series | Hides a bullet's label while it overlaps an earlier label or is cut off. The bullet's shape stays. |
 | `autoFit: true` | `Legend` | See "Legend". |
 | `autoHide: 300` | a chart's `scrollbarX` / `scrollbarY` | Hides the scrollbar when the chart is that many pixels across it or less: a `scrollbarX` by the chart's height, a `scrollbarY` by its width. Meanwhile it turns on `pinchZoomX` / `pinchZoomY`, unless that is set in code. |
@@ -812,7 +813,7 @@ amCharts assigns colors automatically via a built-in ColorSet. Do not invent cus
 
 ```js
 // Get the chart's default color set
-var colors = chart.get("colors");       // XY, Radar, Percent charts only
+var colors = chart.get("colors");       // XY and Radar charts only (pie and other percent charts: series.get("colors"))
 var colors = series.get("colors");      // pie/percent charts use series-level colors
 
 // MapChart has NO built-in ColorSet — create your own:
@@ -890,7 +891,7 @@ Without `dateFormat`, since 5.21.1 the browser's `Date` parses the strings, so I
 
 - **Serialize the chart's top-level container child:** `serializer.serializeAll(root.container.children.getIndex(0))` — the chart, or on chart-less types (hierarchy, flow, word cloud, Venn) the series itself. Before 5.21.0 a series placed straight in `root.container`, or one whose `selectedDataItem` points back at itself, overflowed the stack (`Maximum call stack size exceeded`) or broke `JSON.stringify`; 5.21.0 serializes them. A drilled-down hierarchy's `selectedDataItem` is still not restored (it is written as `"@self.dataItems.-1"`).
 - **Adapters do not round-trip.** `includeAdapters` (default `true`) writes each adapter as `{ key, callback: "function (…) {…}" }`; the parser does not turn that string back into a function (and the closure's `chart`/`series`/`root` would not exist anyway). Before 5.20.4 the string was registered as a callback and crashed the chart (`i[s] is not a function` in `Entity.fold`); since 5.20.4 such adapters are skipped. Either way the effect is lost — replace palette-coloring adapters with declarative equivalents: `colorByDataItem: true` on column series (5.20.4), a per-item `fill` data field + `templateField`, or `heatRules`.
-- **Only user-set settings are serialized (5.20.3)** — theme and library defaults are left out, so a serialized config is much smaller than before and a value you never set will not appear in it. Add `includeRoot: true` (5.20.2) to also write a top-level `root` section (Root settings/properties, `interfaceColors`, formatters).
+- **Only user-set settings are serialized (5.20.3)** — theme and library defaults are left out, so a serialized config is much smaller than before and a value you never set will not appear in it. Add `includeRoot: true` (5.20.2) to also write a top-level `root` section (Root settings/properties, `interfaceColors`, formatters). Since 5.22.0 a parsed `root` section sets only those properties and a named locale, and never turns `sanitizeHTML` off, unless parsed with `trusted: true` (`references/json.md` rule 9).
 - **Re-parsing into an existing chart:** `parser.parse(config, { updateTargets: "soft" })` (5.20.3) applies settings onto an existing object of the same `type` instead of replacing it. The default `"strict"` replaces.
 - **Maps and locales with npm imports (5.21.4):** a geodata pack or locale that isn't a global is copied into the config whole, about 250 KB for `worldLow`, unless the serializer gets it in `resources`. `am5plugins_json.ChartSerializer.new(root, { resources: { am5geodata_worldLow } })` writes `"geoJSON": "am5geodata_worldLow"` instead; parse it back with the same `resources` (`references/json.md`, rule 8). With script tags the packs are globals and are written by name without it.
 - **Also saved (5.20.6 – 5.20.8):** `themeTags` you pass to `.new()` (5.20.6 — e.g. a `Button` with `themeTags: ["switch"]` keeps its look; tags the library adds are left out); a legend inside an `axisHeader` (5.20.7); declared `animations` (5.20.8, see "Animations"); and animations started in code that **loop forever** (`loops: Infinity`) with a nameable `am5.ease` easing — written as `animations` entries. `runningAnimations` (5.20.8, default `true`) controls the latter: `am5plugins_json.ChartSerializer.new(root, { runningAnimations: false })` turns it off. Never saved: finite animations (`appear()`, states, zoom) and loops with a custom-function or `pow` easing — for the opening animation use `autoAppear` (5.21.0, see "Animations").
@@ -1250,13 +1251,14 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 **New in 5.22.0:**
 - **Script files on npm CDNs:** the npm package has the script files in `dist/`, so jsDelivr and unpkg serve them (see "Plain HTML, no bundler"). Geodata 5.2.0 has `dist/` too, on unpkg.
 - **Fitting small charts:** `autoLabels` on axis renderers, `PieSeries` and other series; `autoFit` on `Legend`; `autoHide` on chart scrollbars; and the theme `am5themes_ResponsiveMax`, which turns them all on. See "Responsive rules".
-- **JSON:** a config is read as data, so one from users or another site cannot run script. Parse a config of your own that needs more with `trusted: true`. See `references/json.md` → "Configs from others".
+- **JSON:** a config is read as data, so one from users or another site cannot run script. Parse a config of your own that needs more with `trusted: true`. See `references/json.md`, "Configs from others".
 - **Map zooming:** `zoomToGeoBounds()`, `zoomToDataItem()` and click zoom fit what is drawn, also on globes and curved projections.
   - Bounds with `right` less than `left`, or past ±180, cross the date line. On a flat map the two sides meet only with a rotation passed, e.g. `zoomToGeoBounds(bounds, 500, -180)`.
   - A `zoomToGeoBounds()` or `zoomToDataItem()` call before the map has loaded waits for it.
   - Zooms keep `rotationZ`.
+  - Two `zoomToGeoPoint()` or `zoomToPoint()` calls in a row without animation end in the right place.
 - **Maps, data:**
-  - GeoJSON feature properties are read as data fields, so a custom GeoJSON with `"properties": { "value": 12 }` feeds `valueField` and heat rules without data rows. `"properties": null` no longer throws.
+  - GeoJSON feature properties are read as data fields: with `valueField: "value"` set, a custom GeoJSON with `"properties": { "value": 12 }` gives each polygon its value without data rows. `"properties": null` no longer throws.
   - When `include` and `exclude` both list an item, `exclude` wins.
   - The `zoomControl` is no longer drawn twice.
   - A map with panning and `pinchZoom` off no longer blocks page scrolling on touch screens.
@@ -1272,12 +1274,13 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
   - Bullets that take the series color follow it when it changes.
   - Setting `minBulletDistance` back to 0 shows the bullets again.
   - `data.setIndex()` and `updateData()` apply the row's `templateField` settings.
+- **Pie labels:** a label hidden with `forceHidden` no longer leaves a gap in its column.
 - **Hierarchy:** after `data.setAll()`, a `VoronoiTreemap` draws again, and a drilled-down Treemap or Sunburst shows the new data from the top.
 - **Word cloud:** a number as a category (a year) no longer throws, but shows formatted, `2,025`. See `references/wordcloud.md`.
 - **Text:** font names with spaces, and font lists such as `[fontFamily: 'Source Code Pro', monospace]`, are read right. Center- or right-aligned wrapped text no longer draws its bold or colored parts out of place.
 - **TypeScript:** `am5.IGraphics` and `am5.Animation` work as types.
-- **Size:** the script builds are smaller (`index.js` by about 50 KB, 10 KB gzipped). The npm package installs only the d3 modules it uses, not the whole `d3`.
-- **Geodata 5.2.0:** Nauru is named "Naoero"; its id `NR` is unchanged.
+- **Size:** the script builds are smaller (`index.js` by about 50 KB, 10 KB gzipped), and they no longer define the global `regeneratorRuntime`. The npm package installs only the d3 modules it uses, not the whole `d3`.
+- **Geodata 5.2.0:** Nauru is named "Naoero" (on the CDN since 5.20.2); its id `NR` is unchanged.
 
 **New in 5.21.5 (2026-10-26):**
 - `am5.renderToSVG()` writes SVG that design tools such as Figma read correctly, and its new option `includeNonExportable` also writes elements marked `exportable: false`. See "SVG export".
@@ -1322,7 +1325,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - SVG rendering: `renderer: am5.SVGRenderer` in `Root.new()` settings (only when the root is created), or `am5.Root.defaultRenderer = am5.SVGRenderer` before creating roots. Canvas stays the default; charts look and behave the same; blend modes `DST_OVER`, `SRC_ATOP` and `XOR` are canvas-only. See "Root element setup".
 - `am5.renderToSVG(rootOrElement, options?)` — SVG markup of the chart (or of one element, e.g. `pixelSeries.pixels`) as last drawn, from either renderer; screen readers read it as one image named by `title` / the Root `ariaLabel`. Exporting plugin: `"svg"` format (`download("svg")`, `getSVG()`, `exportSVG()`, `svgOptions`), listed in `ExportingMenu` by default. See "Exporting".
 - `<am5-chart>` element — a chart from a JSON config (`config` or `src`), with `themes` and `renderer="svg"`; load `element.js` after `plugins/json.js`, or with npm import `defineChartElement` from `@amcharts/amcharts5/element` and call it. See "Serializing to JSON".
-- The npm package now ships `AGENTS.md`, `docs/` (a bundled copy of these notes, possibly older) and `examples/<name>/index.ts` (61 also as `config.json`; `examples/examples.json` lists what each shows) — when the package is installed, those examples are verified starting points.
+- The npm package now ships `AGENTS.md`, `docs/` (a bundled copy of these notes, possibly older) and `examples/<name>/index.ts` (62 also as `config.json`; `examples/examples.json` lists what each shows) — when the package is installed, those examples are verified starting points.
 
 *Maps* (details and snippets in `references/map.md`)
 - `am5map.MapRasterSeries` — a whole-world equirectangular image (e.g. `https://cdn.amcharts.com/lib/5/geodata/images/earthDay2048.jpg`) reprojected as the map turns and zooms (WebGL2 where it can); `nightSrc` + `sunDate`/`sunPosition` show day and night.
@@ -1395,7 +1398,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 
 *Core / events*
 - New `globalpointerdown` event on all elements — fires on a press anywhere on the chart surface, mirroring `globalpointermove`/`globalpointerup`.
-- `Root`: `sanitizeHTML` (5.19.0, default `true`) — dynamically-set HTML (`html`/`labelHTML`, HTML tooltips, modal content) is sanitized; set `false` to opt out. Exports gained `escapeFormulas` (default `true`) to guard CSV/XLSX against formula injection.
+- `Root`: `sanitizeHTML` (5.19.0, default `true`) — dynamically-set HTML (`html`/`labelHTML`, HTML tooltips, modal content) is sanitized; set `false` in code to opt out. Since 5.22.0 a JSON config's `root` section can't turn it off unless parsed with `trusted: true`. Exports gained `escapeFormulas` (default `true`) to guard CSV/XLSX against formula injection.
 - `Root`: `ariaLabel` is now applied to the `<div>` holding the chart's focusable elements (5.20.0).
 - `Label`: `oversizedBehavior: "truncate"` now ignores `maxHeight` (there is no way to truncate text vertically).
 - A `Container`'s `Rectangle`/`RoundedRectangle` background now defaults `crisp` to `true` unless set explicitly (5.20.0).
@@ -1404,7 +1407,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 
 *JSON config / serialization (5.20.2 – 5.20.8)*
 - `ChartSerializer` now emits **only user-set settings** (5.20.3) — theme and library defaults are left out. Anything diffing or post-processing serializer output must expect much smaller configs.
-- A JSON config may carry a top-level **`root`** section (5.20.2) that applies settings and properties to the `Root` object before the chart is parsed; `ChartSerializer` writes it when `includeRoot: true` (default `false`). A `Root`'s `interfaceColors`, `utc`, `fps`, formatters and `tabindex` round-trip through it (5.20.3).
+- A JSON config may carry a top-level **`root`** section (5.20.2) that applies settings and properties to the `Root` object before the chart is parsed; `ChartSerializer` writes it when `includeRoot: true` (default `false`). A `Root`'s `interfaceColors`, `utc`, `fps`, formatters and `tabindex` round-trip through it (5.20.3). Since 5.22.0 a parsed `root` section sets only those properties, a named locale and Root settings, and sets `sanitizeHTML: false` only with `trusted: true`.
 - `JsonParser.parse(config, { updateTargets: "soft" })` (5.20.3) — an option on the **second argument of `parse()`**, not a parser setting. `"soft"` applies settings onto an existing object of the same `type` instead of replacing it; default `"strict"` replaces. `parse()` is async and returns a Promise.
 - Gantt charts are now serializable/parsable (5.20.3). Cross-references are written as references (`"@series.get('fill')"`) instead of copies; large values (a map's `geoJSON`, a `Root`'s locale) are written as the name of the pack they came from and rebuilt on parse.
 - An adapter whose callback did not survive the JSON round-trip is now **skipped** on parse instead of breaking the chart (5.20.4) — adapters still do not round-trip, see "Serializing to JSON" above.

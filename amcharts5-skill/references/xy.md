@@ -275,7 +275,7 @@ am5xy.AxisRendererX.new(root, {
   cellStartLocation: 0,      // 0–1, column start offset
   cellEndLocation: 1,         // 0–1, column end offset
   pan: "none",                // "zoom" → enable drag-zoom on axis
-  autoLabels: false,          // (5.22.0) true → labels spaced by their size; cut-off or overlapping ones hidden
+  autoLabels: false,          // (5.22.0) true: labels spaced by their size; cut-off or overlapping ones hidden
 })
 ```
 

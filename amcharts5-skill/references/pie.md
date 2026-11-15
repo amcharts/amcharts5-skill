@@ -148,7 +148,7 @@ series.slices.template.states.create("active", {
 ```js
 // Set colors per slice from data
 series.slices.template.adapters.add("fill", function(fill, target) {
-  return chart.get("colors").getIndex(series.slices.indexOf(target));
+  return series.get("colors").getIndex(series.slices.indexOf(target));
 });
 
 // Or in data:

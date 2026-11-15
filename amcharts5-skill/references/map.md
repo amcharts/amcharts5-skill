@@ -890,7 +890,7 @@ chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
 
 // Programmatic zoom, once the map has loaded
 polygonSeries.events.once("datavalidated", function() {
-  chart.zoomToGeoPoint({ latitude: 48.86, longitude: 2.35 }, 5);  // zoom level 5
+  chart.zoomToGeoPoint({ latitude: 48.86, longitude: 2.35 }, 5, true);  // zoom level 5; true centers the point
 });
 
 // Zoom to a polygon (5.21.0: prefer clickZoom, below)
@@ -1021,7 +1021,7 @@ worldSeries.mapPolygons.template.events.on("click", function(ev) {
   // Load country geodata dynamically
   import("@amcharts/amcharts5-geodata/usaLow").then(function(geodata) {
     countrySeries.set("geoJSON", geodata.default);
-    chart.zoomToDataItem(ev.target.dataItem);
+    worldSeries.zoomToDataItem(ev.target.dataItem);
   });
 });
 

@@ -151,7 +151,7 @@ root.setThemes([
   - `autoLabels: true` on axis renderers: labels spaced by their size, with cut-off and overlapping ones hidden;
   - `autoLabels: true` on a `PieSeries`: the pie moves aside or shrinks, and labels wrap, shorten or hide, smallest slices first;
   - `autoLabels: true` on other series: overlapping bullet labels are hidden;
-  - `autoFit: true` on a `Legend`: smaller, then scrolling, at most 30% of the chart's height;
+  - `autoFit: true` on a `Legend`: smaller (down to three quarters), or if that is not enough, scrolling, usually at full size; at most 30% of the chart's height above or below it;
   - `autoHide` on a chart's scrollbars, in px: the theme uses 400 for `scrollbarY` (chart width) and 300 for `scrollbarX` (chart height), and pinch zoom takes over.
 
   When the chart's div is 400 px or less in either direction, text is at 85%. A setting set in code wins over the theme.
@@ -678,7 +678,7 @@ series.data.processor = am5.DataProcessor.new(root, {
 const legend = chart.children.push(am5.Legend.new(root, {
   centerX: am5.percent(50),
   x: am5.percent(50)
-  // autoFit: true   // (5.22.0) a legend that doesn't fit gets smaller, then scrolls; long names are shortened
+  // autoFit: true   // (5.22.0) a legend that does not fit gets smaller, or scrolls; long names are shortened
 }));
 legend.data.setAll(chart.series.values);
 ```
@@ -907,7 +907,7 @@ sbSeries.data.setAll(data);   // the preview series needs the data too
 
 42. **Legend value without a cursor:** `legendValueText` shows only under a cursor; otherwise the value label uses `legendRangeValueText`, where `{valueY}` is empty and `{valueYClose}`/`{valueYSum}`/`{valueYHigh}`… need `calculateAggregates: true` on the series (empty, no warning, 5.21.5).
 
-43. **Number formats:** with no `.` nothing is rounded (`'#,###'` → `6,708.044000000005`); `'#,###.'` gives whole numbers, `'#,###.00'` two decimals. Number placeholders get thousands separators (`{year}` → `2,024`; use `{year.formatNumber('#')}`). Positive|negative|zero sections use `|`, not `;`; the negative part keeps its minus unless it has the `s` modifier (`#,###|(#,###.s)|'-'`).
+43. **Number formats:** with no `.` nothing is rounded (`'#,###'` → `6,708.044000000005`); `'#,###.'` gives whole numbers, `'#,###.00'` two decimals. Number placeholders get thousands separators (`{year}` → `2,024`; use `{year.formatNumber('#')}`). Positive|negative|zero sections use `|`, not `;`; the negative part keeps its minus unless it has the `s` modifier (`#,###|(#,###s)|'-'`; before 5.22.0 `#,###s` lost the separator).
 
 ## Frameworks (React, Vue, Angular, Svelte, React Native)
 
@@ -993,7 +993,7 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 }
 ```
 
-## Recent API changes (5.16 → 5.22.0)
+## Recent API changes (5.16 to 5.22.0)
 
 **Renamed settings** (old name still works but is deprecated):
 
@@ -1010,11 +1010,11 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 - The npm package has the script files in `dist/` (jsDelivr, unpkg), and geodata 5.2.0 does too (unpkg).
 - New: `autoLabels` (axis renderers, series), `autoFit` on `Legend`, `autoHide` on chart scrollbars, and `am5themes_ResponsiveMax` (see "Available themes").
 - JSON configs are read as data; use `trusted: true` for your own.
-- Map zooms fit what is drawn (globes, curved projections, across the date line). GeoJSON feature properties are read as data fields. When `include` and `exclude` both list an item, `exclude` wins.
+- Map zooms fit what is drawn (globes, curved projections, across the date line). GeoJSON feature properties are read as data fields (set `valueField`). When `include` and `exclude` both list an item, `exclude` wins.
 - Heat-rule values outside `minValue` / `maxValue` get `min` / `max`.
 - Fixed: `LinearGradient` takes any `rotation`; an empty `ColorSet` list no longer crashes; `#,###s` keeps its separator; a logarithmic axis with `min: 0` works; `minBulletDistance` back to 0 shows the bullets.
 - A number as a word-cloud category works, shown as `2,025`, so pass years as strings.
-- Nauru is "Naoero" in geodata 5.2.0 (id `NR`).
+- Nauru is "Naoero" in npm geodata 5.2.0 (on the CDN since 5.20.2; id `NR`).
 
 **5.21.5 (2026-10-26):** `am5.renderToSVG()` writes SVG that design tools such as Figma read, and its option `includeNonExportable` also writes `exportable: false` elements. JSON saves theme colors in data, and colors made past the theme's list, as references (`"@colors.getIndex(n)"`), so they follow the theme. A bare `import "@amcharts/amcharts5/element"` now works with esbuild.
 
