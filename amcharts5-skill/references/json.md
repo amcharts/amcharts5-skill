@@ -103,7 +103,7 @@ A legend lists XY series as `"data": ["#series-0", "#series-1"]`, and pie slices
 - colors and percents;
 - arrays, plain objects, and plain values (strings, numbers).
 
-A step onto anything else stops the ref. Examples: a function (`"#series-0.dispose"`), a DOM element (`"@root.dom"`), or an object's `events`, `states`, `adapters` or `root`. A key that starts with `_`, or is `constructor` or `prototype`, stops it too. A stopped ref gives `undefined`, and the parser logs a warning. The object that receives `undefined` may then fail.
+A step onto anything else stops the ref. Examples: a function (`"#series-0.dispose"`), a DOM element (`"@root.dom"`), or an object's `events`, `states`, `adapters` or `root`. A key that starts with `_`, or is `constructor` or `prototype`, stops it too. A stopped ref leaves out the setting, property, list item or child that holds it, with a warning. The chart is built without it, unless what was left out is required, such as a series' `xAxis`.
 
 A `properties` block sets only public keys, on the same kinds of objects. A `__proto__` key in `settings` or in a parsed row is left out. `trusted: true` lifts all of this (see "Configs from others" under rule 9).
 
@@ -167,7 +167,10 @@ Anything else is left out with a warning, and `trusted: true` lifts this too.
 
 **Configs from others.** Since 5.22.0 the parser reads a config as data, so one from users or another site cannot run script. Its refs and `properties` reach only chart objects and data (rule 4). Its `root` section sets only the properties above, and never turns HTML sanitizing off.
 
-`properties` keys, `__proto__` keys and root entries it may not set are left out. A ref it may not follow gives `undefined`, which can still make `parse()` reject, so add a `.catch()` when parsing others' configs.
+What it may not set or follow is left out:
+- `properties` keys and `__proto__` keys;
+- root entries;
+- the setting, property, list item or child that holds a refused ref.
 
 The parser logs one console warning for each thing refused, pointing to `trusted: true`. For a config of your own that needs more, parse it as code: `parser.parse(config, { parent: root.container, trusted: true })`. `<am5-chart>` and the framework packages' `config` prop have no such option, so from 5.22.0 they always read the config as data; build a chart that needs `trusted: true` with `JsonParser` in code instead.
 
