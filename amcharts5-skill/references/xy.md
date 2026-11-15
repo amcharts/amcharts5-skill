@@ -19,7 +19,7 @@ import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Core setup pattern
 
@@ -275,8 +275,16 @@ am5xy.AxisRendererX.new(root, {
   cellStartLocation: 0,      // 0–1, column start offset
   cellEndLocation: 1,         // 0–1, column end offset
   pan: "none",                // "zoom" → enable drag-zoom on axis
+  autoLabels: false,          // (5.22.0) true → labels spaced by their size; cut-off or overlapping ones hidden
 })
 ```
+
+**`autoLabels: true` (5.22.0)** lets the axis arrange its labels to fit:
+- A short axis gets more labels than `minGridDistance` would leave (up to about eight), and labels never come closer than their own size.
+- A category axis shows every label that fits, even closer than `minGridDistance`. Rotated labels (`rotation: -90`) can sit as close as lines of text. Long horizontal labels are spaced by their width, so there can be fewer than without it.
+- A label that would be cut off at the chart's edge, or overlap another axis's labels, is hidden. A value axis gives way to a category or date axis.
+
+`am5themes_ResponsiveMax` turns it on for every axis (SKILL.md "Responsive rules").
 
 **Configuring grid lines:**
 ```js
@@ -466,6 +474,7 @@ chart.set("scrollbarX", am5.Scrollbar.new(root, {
   orientation: "horizontal"
   // opposite: true     // (5.20.2) place below the plot instead of above (scrollbarY: left instead of right)
   // outsideAxes: true  // (5.21.0) beyond the axes on that side; false = between axes and plot; unset = chart decides
+  // autoHide: 300      // (5.22.0) hidden while the chart is 300 px tall or less (a scrollbarY: that wide); pinchZoomX takes over
 }));
 // Hiding it (visible: false / forceHidden / hide()) leaves no empty band above the plot since 5.21.0
 
@@ -697,6 +706,9 @@ series.bullets.push(function(root, series, dataItem) {
 // Auto-hide bullets when too close together
 series.set("minBulletDistance", 20);
 
+// (5.22.0) Hide only the bullet LABELS that overlap an earlier label or are cut off; shapes stay, labels come back when they fit
+series.set("autoLabels", true);
+
 // Bullets are clipped to the plot area; for labels that stick out past it (line ends), turn it off on the SERIES (XYChart has no maskBullets)
 series.set("maskBullets", false);
 
@@ -865,15 +877,7 @@ series.fills.template.set("fillGradient", am5.LinearGradient.new(root, {
 
 `Series` also has `fillGradient` and `strokeGradient` settings (5.20.0), but the series' own fills, lines and columns don't use them: they are handed to bullets. A bullet `Graphics` that sets none of `fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient` inherits all of them from its series, so bullets pick up series gradients and patterns automatically.
 
-**`LinearGradient` `rotation` only works from 0 to 90** (a bug since 5.20.8, still in 5.21.5, any element). Other angles give a flat or wrong fill, and with a transparent end stop the shape can vanish. For the opposite direction keep the angle in that range and reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops:
-
-```js
-// what rotation: 180 with stops [{ opacity: 0.6 }, { opacity: 0 }] should draw (it doesn't):
-series.fills.template.set("fillGradient", am5.LinearGradient.new(root, {
-  rotation: 0,
-  stops: [{ opacity: 0 }, { opacity: 0.6 }]    // the same stops, reversed: clear on the left, 0.6 on the right
-}));
-```
+`rotation` takes any angle: `0` runs left to right, `90` top to bottom, `180` right to left. From 5.20.8 to 5.21.5 only 0 to 90 worked; other angles gave a flat or wrong fill.
 
 `RadialGradient` is centered on map polygons, line and area fills and bullets since 5.21.1 (with `target` set, on the target). 5.21.1 put one with pixel `x`/`y` off-center on radar fills and similar shapes; 5.21.2 fixes that.
 

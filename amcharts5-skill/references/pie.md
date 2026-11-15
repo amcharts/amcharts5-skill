@@ -19,7 +19,7 @@ import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Pie / Donut chart setup
 
@@ -104,6 +104,26 @@ series.labels.template.setAll({
 // Hide labels
 series.labels.template.set("forceHidden", true);
 series.ticks.template.set("forceHidden", true);
+```
+
+**Labels that fit: `autoLabels: true` (5.22.0)** on the `PieSeries` fits the labels into the chart, a step at a time as room runs out:
+1. The pie moves aside so each side gets the room its widest label needs. Then it gets smaller, down to half the chart's shorter side.
+2. A label too wide for its column wraps onto up to three lines where there is height to spare, and is shortened where there is not.
+3. The labels of the smallest slices are hidden where a column can't hold them all.
+
+More details:
+- With `alignLabels: false`, labels stay next to their slices: the pie gets smaller, labels wrap or are shortened, and where two still overlap, the smaller slice's label is hidden.
+- A `maxWidth` on `labels.template` is the most a label may take. `oversizedBehavior: "truncate"` there only shortens; `"wrap"` wraps first.
+- A label in the middle of a donut (in `chart.seriesContainer.children`) is made smaller where it wouldn't fit the hole.
+
+Without it, long labels on a small chart run off the edges.
+
+```js
+var series = chart.series.push(am5percent.PieSeries.new(root, {
+  valueField: "value",
+  categoryField: "category",
+  autoLabels: true
+}));
 ```
 
 ### Slice appearance

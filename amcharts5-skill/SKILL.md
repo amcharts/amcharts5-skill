@@ -69,17 +69,17 @@ Docs: https://docs.amcharts.com/v5/
 | Chart element (5.21.0) | `@amcharts/amcharts5/element` | `element.js` (after `plugins/json.js`) | `<am5-chart>` — see "Serializing to JSON" |
 | Framework packages | `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte`, `-react-native` (separate npm packages) | — | `useAmChart`, `<AmChart>`, `[amChart]`, `attachAmChart` — see "Frameworks" |
 
-**Plain HTML, no bundler.** Load the script files ("CDN script" above) with `<script>` tags: `index.js` first, then the chart packages, then themes. They are on the amCharts CDN (`https://cdn.amcharts.com/lib/5/index.js`), and since 5.x.x also in the npm package's `dist/` folder, so npm CDNs serve them:
+**Plain HTML, no bundler.** Load the script files ("CDN script" above) with `<script>` tags: `index.js` first, then the chart packages, then themes. They are on the amCharts CDN (`https://cdn.amcharts.com/lib/5/index.js`), and since 5.22.0 also in the npm package's `dist/` folder, so npm CDNs serve them:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/index.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/xy.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/themes/Animated.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/xy.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/themes/Animated.js"></script>
 ```
 
-- **Which CDN:** cdn.amcharts.com by default. Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), use jsDelivr or unpkg (`https://unpkg.com/@amcharts/amcharts5@5.x.x/dist/index.js`). The files are also at `node_modules/@amcharts/amcharts5/dist/`.
+- **Which CDN:** cdn.amcharts.com by default. Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), use jsDelivr or unpkg (`https://unpkg.com/@amcharts/amcharts5@5.22.0/dist/index.js`). The files are also at `node_modules/@amcharts/amcharts5/dist/`.
 - **Pin one version for every file,** and use classic script tags, not `type="module"`: the lazy parts (PDF, Excel and annotation export) load from the `deps/` folder beside `index.js`.
-- **Maps:** the package's `dist/geodata/` has only `worldLow.js` and `usaLow.js`. Other maps are in the `@amcharts/amcharts5-geodata` package's `dist/`, at the same path as below `geodata/` on the amCharts CDN (`dist/worldLow.js`, `dist/region/world/europeLow.js`), on unpkg (`https://unpkg.com/@amcharts/amcharts5-geodata@5.1.x/dist/worldLow.js`) but not jsDelivr, which refuses a package that large.
+- **Maps:** the package's `dist/geodata/` has only `worldLow.js` and `usaLow.js`. Other maps are in the `@amcharts/amcharts5-geodata` package's `dist/`, at the same path as below `geodata/` on the amCharts CDN (`dist/worldLow.js`, `dist/region/world/europeLow.js`), on unpkg (`https://unpkg.com/@amcharts/amcharts5-geodata@5.2.0/dist/worldLow.js`) but not jsDelivr, which refuses a package that large.
 - **PDF fonts** (`am5fonts_*`) are only on cdn.amcharts.com.
 
 **Bundling.** Keep code splitting on (esbuild: `splitting: true`, `format: "esm"`). With the stock toolbar's drawing or indicator controls, `<am5-chart>`, the JSON plugin or the exporting plugin, a single-file bundle inlines the exporting plugin's lazy parts (PDF, Excel, annotations), about 1 MB gzipped more: a stock chart with those controls loads about 265 KB gzipped split, 1.4 MB as one file (the toolbar itself and `PeriodSelector` add almost nothing). So does `import * as am5stock` when the whole namespace object is kept (assigned to a variable or `window`); `am5stock.StockChart` and the like keep only what they use. A stock chart without those controls bundles to about 120–190 KB, core + `xy` to about 160 KB. The script files gzipped (5.21.5): `index.js` + `xy.js` 190 KB, + `stock.js` 268 KB. Docs: https://docs.amcharts.com/v5/getting-started/#bundling.
@@ -137,11 +137,11 @@ am5.Root.defaultRenderer = am5.SVGRenderer;
 
 Charts look and behave the same with either (text is measured the same way, interaction and image export work as usual); only blend modes `DST_OVER`, `SRC_ATOP` and `XOR` are canvas-only (drawn as normal in SVG, with a console warning). Keep the canvas default unless the user asks for SVG in the page. An SVG **file** does not need it — `am5.renderToSVG()` and the exporting menu make SVG from either renderer (see "Exporting"). In SVG mode pointer input is still resolved by amCharts (the `<svg>` layers have `pointer-events="none"`), so attach handlers with `events.on()`, not DOM listeners.
 
-**Available themes** (as of 5.20.0):
+**Available themes** (as of 5.22.0):
 
 | Kind | Themes |
 |------|--------|
-| Behavioral | `Animated` (animations), `Micro` (stripped-down micro charts), `Responsive` (size-based rules) |
+| Behavioral | `Animated` (animations), `Micro` (stripped-down micro charts), `Responsive` (size-based rules), `ResponsiveMax` (5.22.0: fits labels, legends and scrollbars to small charts; see "Responsive rules") |
 | Light palettes | `Dataviz`, `Frozen`, `Kelly`, `Material`, `Moonrise`, `Spirited`, `Ember`, `Nord`, `Pastel`, `Petroleum`, `Savanna`, `Colorblind` (Okabe-Ito, color-blindness safe), `Patterns` (pattern fills instead of flat colors) |
 | Dark | `Dark`, `Midnight`, plus a dark variant of most palettes: `DatavizDark`, `FrozenDark`, `KellyDark`, `MaterialDark`, `MoonriseDark`, `SpiritedDark`, `NordDark`, `PastelDark`, `ColorblindDark`, `PatternsDark` |
 | Parameterized (5.20.0) | `Monochrome`, `Adaptive` — see below |
@@ -198,6 +198,14 @@ legend.data.setAll(chart.series.values);
 // Pie/Percent charts:
 legend.data.setAll(series.dataItems);
 ```
+
+**A legend that fits: `autoFit: true` (5.22.0).** As room runs out, it fits the legend in steps:
+1. Empty value labels give their room back.
+2. The legend gets smaller, down to three quarters of its size.
+3. Item names still too wide are shortened, and a legend still too tall scrolls.
+4. When not even one row fits, the legend is hidden.
+
+Above or below the chart it takes at most 30% of the chart's height, beside it at most 40% of its width. A `width`, `height`, `maxWidth`, `maxHeight`, `scale` or `verticalScrollbar` you set on the legend is kept. Without it, a long legend below a pie can take the whole chart and leave the pie no room.
 
 ## Tooltip
 
@@ -351,6 +359,35 @@ root.events.once("frameended", function () {
 Options: `width`, `height`, `precision` (default `3`), `idPrefix` (`"am5-"`; vary it when several SVGs share a page), `title` (screen-reader name; default the Root `ariaLabel`), `background` (CSS color; default transparent), `includeNonExportable` (5.21.5, default `false`: also write elements marked `exportable: false`, such as scrollbar grips). Left out: elements with `exportable: false` (unless `includeNonExportable`), cross-origin images without CORS, and fully transparent elements. Since 5.21.5 the SVG suits design tools such as Figma: fonts are attributes with sizes in pixels, text is placed without `dominant-baseline`, patterns are drawn as shapes, and layers are named after series, data items, axes and the legend.
 
 ## Responsive rules
+
+**Small or resizing charts: `am5themes_ResponsiveMax` (5.22.0).** One theme fits the chart to its space, and hides parts only as the last step. Prefer it for dashboards, cards and phones:
+
+```js
+import am5themes_ResponsiveMax from "@amcharts/amcharts5/themes/ResponsiveMax";   // script tag: themes/ResponsiveMax.js
+root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
+```
+
+What it does:
+- It turns on the settings in the table below: `autoLabels` on axis renderers and on series (pie labels included), `autoFit` on legends, and `autoHide` on a chart's scrollbars.
+- A vertical scrollbar hides on a chart 400 px wide or less, a horizontal one on a chart 300 px tall or less. A stock chart is measured whole, not by panel.
+- When the chart's div is 400 px or less in either direction, text is drawn at 85% of its size (`fontSize: "0.85em"`), and scrollbars get smaller margins.
+- Labels you add with your own `fontSize`, such as a title, shrink when the div is smaller than 600 × 450 px, down to three quarters of their size.
+
+A setting you set in code wins over the theme: `autoLabels: false` on one series or renderer turns that part off. The theme also has `addRule()`, as below.
+
+The settings also work on their own. All are off by default:
+
+| Setting | On | Does |
+|---|---|---|
+| `autoLabels: true` | `AxisRendererX` / `AxisRendererY` | Spaces labels by their own size. A short axis gets more labels (up to about eight). A category axis shows every label that fits, even closer than `minGridDistance`. Long labels are spaced by their width, so there can be fewer than without it. A label that would be cut off, or overlap another axis's labels, is hidden. |
+| `autoLabels: true` | `PieSeries` | Moves the pie aside or makes it smaller (down to half the chart's shorter side) to make room. Labels then wrap, are shortened or are hidden, smallest slices first. See `references/pie.md` → Labels. |
+| `autoLabels: true` | any other series | Hides a bullet's label while it overlaps an earlier label or is cut off. The bullet's shape stays. |
+| `autoFit: true` | `Legend` | See "Legend". |
+| `autoHide: 300` | a chart's `scrollbarX` / `scrollbarY` | Hides the scrollbar when the chart is that many pixels across it or less: a `scrollbarX` by the chart's height, a `scrollbarY` by its width. Meanwhile it turns on `pinchZoomX` / `pinchZoomY`, unless that is set in code. |
+
+`ChartSerializer` saves these settings when you set them in code. It does not save what they decide (hidden labels, a smaller legend, the pinch zoom), nor what a theme turns on, so a config saved from a small chart opens full size.
+
+**Rules of your own** go on `am5themes_Responsive` (or `am5themes_ResponsiveMax`):
 
 ```js
 import am5themes_Responsive from "@amcharts/amcharts5/themes/Responsive";
@@ -799,7 +836,7 @@ colors.set("colors", [
 ]);
 ```
 
-**A `ColorSet` must always hold at least one color.** `colorSet.set("colors", [])` crashes the next `next()`/`getIndex()` call (`Maximum call stack size exceeded`, or `Cannot read properties of undefined (reading 'toHSL')` inside `generateColors`) as soon as a series iterates the palette — still in 5.21.5, the empty list is not guarded. To "reset" a palette, swap in a fresh `am5.ColorSet.new(root, {})` instead of emptying the list. The theme's `baseColor` also resolves lazily, so a **synchronous** re-color right after swapping a `ColorSet` can read a transient value (sprites momentarily black); re-set the series data and let amCharts' own data pass recolor the sprites.
+**Swapping a `ColorSet`.** The theme's `baseColor` resolves lazily, so a **synchronous** re-color right after swapping a `ColorSet` can read a transient value (sprites momentarily black). Re-set the series data and let amCharts' own data pass recolor the sprites. Before 5.22.0, `colorSet.set("colors", [])` crashed the next `next()`/`getIndex()`. Since 5.22.0 an empty list starts from `baseColor`.
 
 **`step` with a theme that reuses its colors** (`reuse: true`: Adaptive, Monochrome, Nord, Pastel, Kelly, …): before 5.21.2 a `step` sharing a factor with the list length used only a few of the colors (a word cloud or treemap with Nord got two or three). Now every color is used before any repeats, so `step: count / 2` interleaves the palette.
 
@@ -1114,7 +1151,7 @@ onMount(() => { const root = am5.Root.new(chartdiv); /* ... */ return () => root
 9. **Using CSS to style chart elements** — amCharts draws on canvas by default; even with `am5.SVGRenderer` (5.21.0) its shapes have no per-element classes, are rewritten on redraw, and exports ignore page CSS. Style through settings, templates and themes.
 10. **Wrong package import** — check the package map table above.
 11. **Calling `.each()` on `dataItems`** — `series.dataItems` is a plain array, not an amCharts `List`. Use `am5.array.each(series.dataItems, fn)` or standard `forEach`/`for` loops. Only `series.data` (the `ListData` object) has `.each()`.
-12. **CDN script load order** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` → `xy.js` → `radar.js` / `timeline.js` / `gantt.js` → `themes/*.js`. From an npm CDN (5.x.x+) the order and file names are the same under `…/@amcharts/amcharts5@<version>/dist/`; load every file from one pinned version.
+12. **CDN script load order** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` → `xy.js` → `radar.js` / `timeline.js` / `gantt.js` → `themes/*.js`. From an npm CDN (5.22.0+) the order and file names are the same under `…/@amcharts/amcharts5@<version>/dist/`; load every file from one pinned version.
 13. **No `minorGrid` / `minorTicks` / `minorLabels` objects** — These do not exist on axes. Minor grid is enabled via boolean flags on the **renderer**: `minorGridEnabled: true` and optionally `minorLabelsEnabled: true`. Styling is done through theme rules targeting the `"minor"` tag, not through separate object properties.
 14. **Flow chart animated bullets go on `series.bullets`, NOT `series.links.template.bullets`** — To animate labels/circles flowing along Sankey or Chord links, use `series.bullets.push(function(...) { ... })`. Animate `bullet.locationX` (Sankey) or `bullet.locationY` (Chord) from 0→1 with `loops: Infinity`. Use an adapter on opacity for fade effect. See `references/flow.md` → "Animated bullets along links".
 15. **`MapPointSeries` needs `latitudeField`/`longitudeField` when your data fields are named anything other than `latitude`/`longitude`** — Since 5.16.1 the series defaults to `latitudeField: "latitude"`, `longitudeField: "longitude"`, so data using exactly those names works with no declaration. Any other naming (`lat`/`lng`, `y`/`x`, …) must be declared or the points silently won't appear: `am5map.MapPointSeries.new(root, { latitudeField: "lat", longitudeField: "lng" })`. Neither is needed with `pushDataItem({ latitude: ..., longitude: ... })`, which passes coordinates directly. On amCharts **older than 5.16.1** there were no defaults, so declare the fields explicitly if you must support those versions.
@@ -1139,16 +1176,14 @@ onMount(() => { const root = am5.Root.new(chartdiv); /* ... */ return () => root
 34. **Custom GeoJSON for `MapPolygonSeries` needs CLOCKWISE exterior rings** — amCharts projects on a sphere (d3-geo), where ring winding decides which side is "inside". The RFC 7946 default is counter-clockwise, which d3-geo reads as *the whole globe minus the polygon*, so every polygon floods the entire map and the real shape shows only as a sliver. Programmatically generated GeoJSON (grids, cells, buffers) is usually CCW. amCharts does **not** auto-rewind — reverse only the polygons that come out inside out: if `am5map.getGeoArea({ type: "Polygon", coordinates: poly }) > 2 * Math.PI`, then `poly.forEach(ring => ring.reverse())`. That is safe on clockwise data and also catches small rings flipped by simplifying or rounding. See `references/map.md`.
 35. **`axis.dispose()` does NOT remove the axis from `chart.xAxes`/`chart.yAxes`** — unlike `series.dispose()`, which self-removes from `chart.series`. A disposed axis stays in the list, keeps showing up in anything built from `chart.yAxes`, and makes `ChartSerializer` throw `Template is disposed`. Remove axes with `chart.yAxes.removeValue(axis)` (or `removeIndex(i)`) — the list auto-disposes the removed axis, no separate `dispose()` needed.
 36. **Declare bullet callbacks as `function(root, series, dataItem)`** — amCharts passes all three; closing over an outer `root` works at runtime but breaks JSON round-trips (`ChartSerializer` captures the function source, and the outer `root` dangles on re-bind). Every `series.bullets.push(...)` in these references uses the parameter form — copy it.
-37. **A `ColorSet` must contain at least one color** — `colors.set("colors", [])` crashes the next `next()`/`getIndex()`. Swap in a fresh `am5.ColorSet.new(root, {})` instead. See "ColorSet" above.
-38. **`LinearGradient` `rotation` only works from 0 to 90** (bug since 5.20.8, still in 5.21.5) — other angles give a flat or wrong fill, and with a transparent end stop the shape can vanish. For the opposite direction keep the angle in range and reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops. See `references/xy.md` → Series gradients.
-39. **Several colors in one `am5.Graphics` `draw`** — `endFill()` fills everything since the last `beginPath()`, so start each color with `display.beginPath()`, or the last color paints over all shapes. Don't give such a Graphics its own `fill` either: after `draw` runs it fills the current path once more, so the last shape takes the Graphics' own `fill` (the default theme sets none). E.g. `draw: function (display) { display.beginPath(); display.beginFill(am5.color(0xff0000)); display.drawRect(0, 0, 10, 10); display.endFill(); display.beginPath(); display.beginFill(am5.color(0x0000ff)); display.drawRect(10, 0, 10, 10); display.endFill(); }`. An own `stroke` re-strokes the last path the same way.
-40. **Changing a value on a data item moves nothing** — series draw from the working values: set `valueYWorking` (XY) or `valueWorking` (pie) along with the value, or use `series.data.setIndex()`. See "Dynamic data".
-41. **A setting changed after a hover snaps back on unhover** — the `"default"` state keeps the value from before the first hover. Change it there too: `sprite.states.lookup("default")?.set("fill", c)`. See "States".
-42. **`templateField` goes on the template, not on the series** — per-item settings from data rows are read by the elements a template makes: `series.columns.template.set("templateField", "columnSettings")`, likewise `slices.template`, `mapPolygons.template` or a bullet sprite. Set on the series, `templateField` does nothing and every column stays the same. For a pattern per column, see `references/xy.md` → "Different pattern per column".
-43. **A JSON-config map that draws nothing with npm imports** — the config names its geodata (`"geoJSON": "am5geodata_worldLow"`), and with npm imports there is no global of that name. Pass the pack in `resources` (5.21.4): `JsonParser.parse(config, { parent, resources: { am5geodata_worldLow } })`, `element.resources`, or the framework packages' `resources` prop. The same goes for a locale (`am5locales_de_DE`). Since 5.21.4 a console warning names the missing pack. Before 5.21.4, set `window.am5geodata_worldLow = am5geodata_worldLow` after importing it. A config serialized from such a chart copies the whole pack unless `ChartSerializer` gets the same `resources`.
-44. **An `am5.Graphics` redraws only when `draw` changes** — `graphics.set("draw", fn)` with the function it already has does nothing. Pass a new closure that captures the new points: `graphics.set("draw", (display) => paint(display, points))`.
-45. **A legend value without a cursor needs `calculateAggregates`** — `legendValueText` is used only under a cursor; otherwise the value label shows `legendRangeValueText`, which has no data item: `{valueY}` is empty there, and `{valueYClose}` (the latest value), `{valueYSum}`, `{valueYHigh}` and the other range values are empty unless the series has `calculateAggregates: true` (no warning, 5.21.5). See `references/xy.md` → Legend.
-46. **`#,###` does not round** — a number format without a `.` keeps every decimal (`6,708.044000000005` while animating); end it with `.` for whole numbers (`'#,###.'`) or give the decimals (`'#,###.00'`). Every number placeholder also gets a thousands separator, so `{year}` shows `2,024`: use `{year.formatNumber('#')}`. Sections are split by `|`, not `;`. See "Number formats".
+37. **Several colors in one `am5.Graphics` `draw`** — `endFill()` fills everything since the last `beginPath()`, so start each color with `display.beginPath()`, or the last color paints over all shapes. Don't give such a Graphics its own `fill` either: after `draw` runs it fills the current path once more, so the last shape takes the Graphics' own `fill` (the default theme sets none). E.g. `draw: function (display) { display.beginPath(); display.beginFill(am5.color(0xff0000)); display.drawRect(0, 0, 10, 10); display.endFill(); display.beginPath(); display.beginFill(am5.color(0x0000ff)); display.drawRect(10, 0, 10, 10); display.endFill(); }`. An own `stroke` re-strokes the last path the same way.
+38. **Changing a value on a data item moves nothing** — series draw from the working values: set `valueYWorking` (XY) or `valueWorking` (pie) along with the value, or use `series.data.setIndex()`. See "Dynamic data".
+39. **A setting changed after a hover snaps back on unhover** — the `"default"` state keeps the value from before the first hover. Change it there too: `sprite.states.lookup("default")?.set("fill", c)`. See "States".
+40. **`templateField` goes on the template, not on the series** — per-item settings from data rows are read by the elements a template makes: `series.columns.template.set("templateField", "columnSettings")`, likewise `slices.template`, `mapPolygons.template` or a bullet sprite. Set on the series, `templateField` does nothing and every column stays the same. For a pattern per column, see `references/xy.md` → "Different pattern per column".
+41. **A JSON-config map that draws nothing with npm imports** — the config names its geodata (`"geoJSON": "am5geodata_worldLow"`), and with npm imports there is no global of that name. Pass the pack in `resources` (5.21.4): `JsonParser.parse(config, { parent, resources: { am5geodata_worldLow } })`, `element.resources`, or the framework packages' `resources` prop. The same goes for a locale (`am5locales_de_DE`). Since 5.21.4 a console warning names the missing pack. Before 5.21.4, set `window.am5geodata_worldLow = am5geodata_worldLow` after importing it. A config serialized from such a chart copies the whole pack unless `ChartSerializer` gets the same `resources`.
+42. **An `am5.Graphics` redraws only when `draw` changes** — `graphics.set("draw", fn)` with the function it already has does nothing. Pass a new closure that captures the new points: `graphics.set("draw", (display) => paint(display, points))`.
+43. **A legend value without a cursor needs `calculateAggregates`** — `legendValueText` is used only under a cursor; otherwise the value label shows `legendRangeValueText`, which has no data item: `{valueY}` is empty there, and `{valueYClose}` (the latest value), `{valueYSum}`, `{valueYHigh}` and the other range values are empty unless the series has `calculateAggregates: true` (no warning, 5.21.5). See `references/xy.md` → Legend.
+44. **`#,###` does not round** — a number format without a `.` keeps every decimal (`6,708.044000000005` while animating); end it with `.` for whole numbers (`'#,###.'`) or give the decimals (`'#,###.00'`). Every number placeholder also gets a thousands separator, so `{year}` shows `2,024`: use `{year.formatNumber('#')}`. Sections are split by `|`, not `;`. See "Number formats".
 
 ## Easing functions
 
@@ -1193,7 +1228,7 @@ Skip this step entirely if you cannot execute code (e.g., chat-only context with
 
 ## Recent API changes
 
-Latest release covered here: **5.21.5** (2026-10-26), and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 (2026-10-23) and react-native 5.0.2 (2026-10-26). These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
+Latest release covered here: **5.22.0**, with geodata 5.2.0, and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 (2026-10-23) and react-native 5.0.2 (2026-10-26). These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
 
 **Renamed settings (old name still works but is deprecated — use the new one):**
 
@@ -1211,6 +1246,38 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 **Breaking change — WordCloud internals (5.20.1):** the layout is now computed synchronously in one pass (much faster). The per-data-item `ghostLabel` is gone and labels live in an internal container, so `dataItem.get("ghostLabel")` and any code walking `series.children` to find labels must be updated — use `series.labels` / `dataItem.get("label")` instead.
 
 **Framework packages (5.0.0, 2026-10-22):** `@amcharts/amcharts5-react`, `@amcharts/amcharts5-vue`, `@amcharts/amcharts5-angular`, `@amcharts/amcharts5-svelte` and `@amcharts/amcharts5-react-native`. They make and dispose the chart with the component and work with server rendering. Prefer them over hand-written `Root.new()`/`dispose()` code in those frameworks. See "Frameworks".
+
+**New in 5.22.0:**
+- **Script files on npm CDNs:** the npm package has the script files in `dist/`, so jsDelivr and unpkg serve them (see "Plain HTML, no bundler"). Geodata 5.2.0 has `dist/` too, on unpkg.
+- **Fitting small charts:** `autoLabels` on axis renderers, `PieSeries` and other series; `autoFit` on `Legend`; `autoHide` on chart scrollbars; and the theme `am5themes_ResponsiveMax`, which turns them all on. See "Responsive rules".
+- **JSON:** a config is read as data, so one from users or another site cannot run script. Parse a config of your own that needs more with `trusted: true`. See `references/json.md` → "Configs from others".
+- **Map zooming:** `zoomToGeoBounds()`, `zoomToDataItem()` and click zoom fit what is drawn, also on globes and curved projections.
+  - Bounds with `right` less than `left`, or past ±180, cross the date line. On a flat map the two sides meet only with a rotation passed, e.g. `zoomToGeoBounds(bounds, 500, -180)`.
+  - A `zoomToGeoBounds()` or `zoomToDataItem()` call before the map has loaded waits for it.
+  - Zooms keep `rotationZ`.
+- **Maps, data:**
+  - GeoJSON feature properties are read as data fields, so a custom GeoJSON with `"properties": { "value": 12 }` feeds `valueField` and heat rules without data rows. `"properties": null` no longer throws.
+  - When `include` and `exclude` both list an item, `exclude` wins.
+  - The `zoomControl` is no longer drawn twice.
+  - A map with panning and `pinchZoom` off no longer blocks page scrolling on touch screens.
+- **Heat rules:** values outside `minValue` / `maxValue` get `min` / `max` instead of going past the ends. On a `logarithmic` rule, zero and below get `min`.
+- **Number formats:** a modifier right after the digits, as in `#,###s`, keeps the thousands separator.
+- **ValueAxis:** a `logarithmic` axis with `min: 0` starts at `treatZeroAs`, or where the data starts, instead of drawing nothing.
+- **Colors and drawing:**
+  - `LinearGradient` takes any `rotation` (5.20.8 to 5.21.5 drew only 0 to 90).
+  - An empty `ColorSet` `colors` list starts from `baseColor` instead of crashing.
+  - A `PicturePattern` the size of its picture shows it.
+  - `drawEllipse(x, y, …)` draws at x, y.
+- **Series and bullets:**
+  - Bullets that take the series color follow it when it changes.
+  - Setting `minBulletDistance` back to 0 shows the bullets again.
+  - `data.setIndex()` and `updateData()` apply the row's `templateField` settings.
+- **Hierarchy:** after `data.setAll()`, a `VoronoiTreemap` draws again, and a drilled-down Treemap or Sunburst shows the new data from the top.
+- **Word cloud:** a number as a category (a year) no longer throws, but shows formatted, `2,025`. See `references/wordcloud.md`.
+- **Text:** font names with spaces, and font lists such as `[fontFamily: 'Source Code Pro', monospace]`, are read right. Center- or right-aligned wrapped text no longer draws its bold or colored parts out of place.
+- **TypeScript:** `am5.IGraphics` and `am5.Animation` work as types.
+- **Size:** the script builds are smaller (`index.js` by about 50 KB, 10 KB gzipped). The npm package installs only the d3 modules it uses, not the whole `d3`.
+- **Geodata 5.2.0:** Nauru is named "Naoero"; its id `NR` is unchanged.
 
 **New in 5.21.5 (2026-10-26):**
 - `am5.renderToSVG()` writes SVG that design tools such as Figma read correctly, and its new option `includeNonExportable` also writes elements marked `exportable: false`. See "SVG export".

@@ -15,7 +15,7 @@ All UI elements are in the core package (`am5`) except ColorPicker (and Exportin
 <script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ### ES modules
 ```ts
@@ -433,5 +433,5 @@ var chart = row.children.push(am5xy.XYChart.new(root, {
 
 amCharts has no 3D chart, but a 3D scatter (or another custom view) works with core sprites:
 - one `am5.Container` per point (a `Circle` and a `Label`), moved each frame from your own projection with `setAll({ x, y, scale, opacity })`. `label.set("scale", 1 / k)` keeps names one size. Tooltips and hover states work as usual.
-- all lines of one style in one `am5.Graphics`, redrawn with a new `draw` closure each frame (SKILL.md pitfall 44).
-- many differently coloured polygons (a mesh, a hand-made heatmap) in one Graphics: `beginPath()` / `beginFill()` / `endFill()` per shape (SKILL.md pitfall 39).
+- all lines of one style in one `am5.Graphics`, redrawn with a new `draw` closure each frame (SKILL.md pitfall 42).
+- many differently coloured polygons (a mesh, a hand-made heatmap) in one Graphics: `beginPath()` / `beginFill()` / `endFill()` per shape (SKILL.md pitfall 37).

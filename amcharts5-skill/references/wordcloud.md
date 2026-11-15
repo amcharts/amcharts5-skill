@@ -22,7 +22,7 @@ import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Setup
 
@@ -59,7 +59,7 @@ series.appear(1000);
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `categoryField` | string | — | Data field for word text (required) |
+| `categoryField` | string | — | Data field for word text (required). A number there (a year) works since 5.22.0, but shows formatted, `2,025`: give years as strings (`"2025"`). (`root.numberFormatter.set("numberFormat", "#")` also works, but changes every number on the root.) |
 | `valueField` | string | — | Data field for word weight/size (required) |
 | `maxFontSize` | number \| Percent | `am5.percent(15)` | Maximum font size (a `Percent` is relative to the smaller chart dimension) |
 | `minFontSize` | number \| Percent | `am5.percent(2)` | Minimum font size (a `Percent` is relative to the smaller chart dimension) |

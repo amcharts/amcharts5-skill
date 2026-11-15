@@ -87,7 +87,7 @@ CDN script objects use `am5` (core), `am5xy`, `am5percent`, `am5map`, `am5hierar
 Themes: `am5themes_Animated`, `am5themes_Dark`, etc.
 Geodata: `am5geodata_worldLow`, `am5geodata_usaLow`, etc.
 
-Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), the same files are in the npm package's `dist/` since 5.x.x: `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/index.js` (or unpkg, or `node_modules/@amcharts/amcharts5/dist/`). Pin one version for every file; classic `<script>` tags, not `type="module"`. Maps beyond `dist/geodata/worldLow.js`/`usaLow.js`: `https://unpkg.com/@amcharts/amcharts5-geodata@5.1.x/dist/<name>.js` (unpkg only, not jsDelivr). PDF fonts only on cdn.amcharts.com.
+Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), the same files are in the npm package's `dist/` since 5.22.0: `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/index.js` (or unpkg, or `node_modules/@amcharts/amcharts5/dist/`). Pin one version for every file; classic `<script>` tags, not `type="module"`. Maps beyond `dist/geodata/worldLow.js`/`usaLow.js`: `https://unpkg.com/@amcharts/amcharts5-geodata@5.2.0/dist/<name>.js` (unpkg only, not jsDelivr). PDF fonts only on cdn.amcharts.com.
 
 When bundling, keep code splitting on: with the stock toolbar's drawing/indicator controls, `<am5-chart>`, the JSON plugin or exporting, a single-file bundle inlines PDF/Excel/annotation code, about 1 MB gzipped more.
 
@@ -144,9 +144,17 @@ root.setThemes([
 
 **Rule:** Only add Dark theme when background is clearly dark. Default to white/light with no Dark theme unless the user asks.
 
-## Available themes (as of 5.20.0)
+## Available themes (as of 5.22.0)
 
-- **Behavioral:** `Animated`, `Micro`, `Responsive`
+- **Behavioral:** `Animated`, `Micro`, `Responsive`, `ResponsiveMax` (5.22.0)
+- **Small or resizing charts (5.22.0):** `root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)])` (`themes/ResponsiveMax.js`). It turns on, and each also works alone:
+  - `autoLabels: true` on axis renderers: labels spaced by their size, with cut-off and overlapping ones hidden;
+  - `autoLabels: true` on a `PieSeries`: the pie moves aside or shrinks, and labels wrap, shorten or hide, smallest slices first;
+  - `autoLabels: true` on other series: overlapping bullet labels are hidden;
+  - `autoFit: true` on a `Legend`: smaller, then scrolling, at most 30% of the chart's height;
+  - `autoHide` on a chart's scrollbars, in px: the theme uses 400 for `scrollbarY` (chart width) and 300 for `scrollbarX` (chart height), and pinch zoom takes over.
+
+  When the chart's div is 400 px or less in either direction, text is at 85%. A setting set in code wins over the theme.
 - **Light palettes:** `Dataviz`, `Frozen`, `Kelly`, `Material`, `Moonrise`, `Spirited`, `Ember`, `Nord`, `Pastel`, `Petroleum`, `Savanna`, `Colorblind` (Okabe-Ito, color-blindness safe), `Patterns` (pattern fills instead of flat colors)
 - **Dark:** `Dark`, `Midnight`, plus dark variants of most palettes — `DatavizDark`, `FrozenDark`, `KellyDark`, `MaterialDark`, `MoonriseDark`, `SpiritedDark`, `NordDark`, `PastelDark`, `ColorblindDark`, `PatternsDark`
 
@@ -670,6 +678,7 @@ series.data.processor = am5.DataProcessor.new(root, {
 const legend = chart.children.push(am5.Legend.new(root, {
   centerX: am5.percent(50),
   x: am5.percent(50)
+  // autoFit: true   // (5.22.0) a legend that doesn't fit gets smaller, then scrolls; long names are shortened
 }));
 legend.data.setAll(chart.series.values);
 ```
@@ -685,6 +694,7 @@ chart.set("cursor", am5xy.XYCursor.new(root, {
 ```js
 chart.set("scrollbarX", am5.Scrollbar.new(root, {
   orientation: "horizontal"
+  // autoHide: 300   // (5.22.0) hidden while the chart is 300 px tall or less; pinch zoom takes over
 }));
 ```
 
@@ -879,27 +889,25 @@ sbSeries.data.setAll(data);   // the preview series needs the data too
 
 33. **`axis.dispose()` does NOT remove the axis from `chart.xAxes`/`yAxes`** — use `chart.yAxes.removeValue(axis)` / `removeIndex(i)` (the list disposes it). `series.dispose()` does self-remove from `chart.series`; axes are the exception.
 
-34. **Declare bullet callbacks as `function(root, series, dataItem)`** — closing over an outer `root` breaks JSON round-trips through `ChartSerializer`. A `ColorSet` must always contain ≥1 color (`set("colors", [])` crashes `next()`); swap in a fresh `am5.ColorSet.new(root, {})` instead.
+34. **Declare bullet callbacks as `function(root, series, dataItem)`** — closing over an outer `root` breaks JSON round-trips through `ChartSerializer`.
 
 35. **Tooltips on non-XY charts need no `am5.Tooltip` instance** — just `tooltipText` on the right template (`slices.template`, `nodes.template`, flow `nodes.nodes.template` / `links.template`, wordcloud `labels.template`, `mapPolygons.template`); the root's shared tooltip (`root.container.get("tooltip")`) is used. Create a `Tooltip` only when it must look different, or on XY charts where series/axis tooltips are cursor-driven. Heat rules on bullets: `target` must be the `am5.Template` the sprite is built from, `dataField` is the property key (`"valueY"`, not the column name), and `calculateAggregates: true` is required — otherwise every bullet silently gets the same size.
 
 36. **Serialize the chart's top container child** (`serializer.serializeAll(root.container.children.getIndex(0))` — the chart, or the series on chart-less types). Before 5.21.0 a series straight in `root.container` or one with `selectedDataItem` set overflowed the stack; 5.21.0 handles both (a drilled-down hierarchy selection is still not restored). `ChartSerializer` does not capture adapters, Venn `hoverGraphics`, a `ZoomTools` you added to a hand-made `ZoomableContainer` (use `am5.SerialChartContainer`), or data items added with `pushDataItem()` — re-apply those after `JsonParser.parse()`. It does save user `themeTags` (5.20.6), declared `animations`, endless code-started loops (`loops: Infinity`, named easing) as `animations` entries (5.20.8, `runningAnimations`, default `true`), and since 5.21.0 a data-item loop started in code (on the bullet sprite; since 5.21.3 loops that differ per item go in each data row), hidden series, elements added to plot/axis containers, a `ZoomableContainer`'s `contents`, `Date` values, and `root.interfaceColors` colors as `"@root.interfaceColors.get('…')"` references (palette colors as `"@colors.getIndex(n)"` since 5.21.3). Prefer a declared `animations` entry over `animate()` for effects that must survive JSON; for the opening animation use `autoAppear: true` (5.21.0).
 
-37. **`LinearGradient` `rotation` only works from 0 to 90** (bug since 5.20.8, still in 5.21.5): other angles give a flat or wrong fill. For the opposite direction reverse the `stops`: 180 = `rotation: 0` with reversed stops, 270 = `rotation: 90` with reversed stops.
+37. **Several colors in one `am5.Graphics` `draw`:** call `display.beginPath()` before each color (`endFill()` fills everything since the last `beginPath()`), and give the Graphics no `fill` of its own (after `draw` it fills the current path again, so the last shape takes that `fill`). An own stroke re-strokes the last path too.
 
-38. **Several colors in one `am5.Graphics` `draw`:** call `display.beginPath()` before each color (`endFill()` fills everything since the last `beginPath()`), and give the Graphics no `fill` of its own (after `draw` it fills the current path again, so the last shape takes that `fill`). An own stroke re-strokes the last path too.
+38. **XY live updates and zooming:** `zoomToValues()` right after `axis.setAll({ min, max })` uses the old range; call `axis.zoom((v0 - min) / (max - min), (v1 - min) / (max - min))` instead, or wait a frame. `maxZoomFactor` is an axis setting, not an `XYChart` one. On a `ValueAxis` X, a `CandlestickSeries` draws the wick at the `valueXField` edge: shift the `Candlestick` columns' `lowX0`/`lowX1`/`highX0`/`highX1` by `-target.width() / 2` with adapters on `series.columns.template`, or use a `DateAxis`. A Label inside a Container bullet keeps its first text (`{valueXWorking}` won't count along with `dataItem.animate()`) unless the `Bullet` has `dynamic: true`.
 
-39. **XY live updates and zooming:** `zoomToValues()` right after `axis.setAll({ min, max })` uses the old range; call `axis.zoom((v0 - min) / (max - min), (v1 - min) / (max - min))` instead, or wait a frame. `maxZoomFactor` is an axis setting, not an `XYChart` one. On a `ValueAxis` X, a `CandlestickSeries` draws the wick at the `valueXField` edge: shift the `Candlestick` columns' `lowX0`/`lowX1`/`highX0`/`highX1` by `-target.width() / 2` with adapters on `series.columns.template`, or use a `DateAxis`. A Label inside a Container bullet keeps its first text (`{valueXWorking}` won't count along with `dataItem.animate()`) unless the `Bullet` has `dynamic: true`.
+39. **Map zoom and home:** `zoomStep` (default `2`) multiplies/divides `zoomLevel` for the buttons, `zoomIn()`/`zoomOut()`, the wheel (one step per wheel event) and double clicks, so use `1.1`–`1.2` for fine control; `wheelSensitivity` affects only wheel rotation. On a globe (`panX: "rotateX"`), `goHome()` restores rotation only from `homeRotationX`/`homeRotationY` (−longitude/−latitude), not from `homeGeoPoint`. With `autoHome: true` and no `homeZoomLevel`, home zoom is 1, so set `homeZoomLevel` to the starting `zoomLevel`. US congressional districts are packs under `geodata/region/usa/<pack>/` (`congressional`, `congressional2022`, `congressional2025`, `congressional120`), e.g. global `am5geodata_region_usa_congressional120_usaCongressionalLow`; there is no top-level `geodata/usaCongressionalLow.js`.
 
-40. **Map zoom and home:** `zoomStep` (default `2`) multiplies/divides `zoomLevel` for the buttons, `zoomIn()`/`zoomOut()`, the wheel (one step per wheel event) and double clicks, so use `1.1`–`1.2` for fine control; `wheelSensitivity` affects only wheel rotation. On a globe (`panX: "rotateX"`), `goHome()` restores rotation only from `homeRotationX`/`homeRotationY` (−longitude/−latitude), not from `homeGeoPoint`. With `autoHome: true` and no `homeZoomLevel`, home zoom is 1, so set `homeZoomLevel` to the starting `zoomLevel`. US congressional districts are packs under `geodata/region/usa/<pack>/` (`congressional`, `congressional2022`, `congressional2025`, `congressional120`), e.g. global `am5geodata_region_usa_congressional120_usaCongressionalLow`; there is no top-level `geodata/usaCongressionalLow.js`.
+40. **`am5.Graphics` redraws only when `draw` changes:** set a new closure each update, not the same function.
 
-41. **`am5.Graphics` redraws only when `draw` changes:** set a new closure each update, not the same function.
+41. **`templateField` goes on the template** (`series.columns.template.set("templateField", "columnSettings")`, likewise `mapPolygons.template`), not on the series.
 
-42. **`templateField` goes on the template** (`series.columns.template.set("templateField", "columnSettings")`, likewise `mapPolygons.template`), not on the series.
+42. **Legend value without a cursor:** `legendValueText` shows only under a cursor; otherwise the value label uses `legendRangeValueText`, where `{valueY}` is empty and `{valueYClose}`/`{valueYSum}`/`{valueYHigh}`… need `calculateAggregates: true` on the series (empty, no warning, 5.21.5).
 
-43. **Legend value without a cursor:** `legendValueText` shows only under a cursor; otherwise the value label uses `legendRangeValueText`, where `{valueY}` is empty and `{valueYClose}`/`{valueYSum}`/`{valueYHigh}`… need `calculateAggregates: true` on the series (empty, no warning, 5.21.5).
-
-44. **Number formats:** with no `.` nothing is rounded (`'#,###'` → `6,708.044000000005`); `'#,###.'` gives whole numbers, `'#,###.00'` two decimals. Number placeholders get thousands separators (`{year}` → `2,024`; use `{year.formatNumber('#')}`). Positive|negative|zero sections use `|`, not `;`; the negative part keeps its minus unless it has the `s` modifier (`#,###|(#,###.s)|'-'`).
+43. **Number formats:** with no `.` nothing is rounded (`'#,###'` → `6,708.044000000005`); `'#,###.'` gives whole numbers, `'#,###.00'` two decimals. Number placeholders get thousands separators (`{year}` → `2,024`; use `{year.formatNumber('#')}`). Positive|negative|zero sections use `|`, not `;`; the negative part keeps its minus unless it has the `s` modifier (`#,###|(#,###.s)|'-'`).
 
 ## Frameworks (React, Vue, Angular, Svelte, React Native)
 
@@ -985,7 +993,7 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 }
 ```
 
-## Recent API changes (5.16 → 5.21.5)
+## Recent API changes (5.16 → 5.22.0)
 
 **Renamed settings** (old name still works but is deprecated):
 
@@ -997,6 +1005,16 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 **Breaking — WordCloud (5.20.1):** layout is now computed synchronously in one pass. The per-data-item `ghostLabel` is gone and labels live in an internal container — use `series.labels` / `dataItem.get("label")` instead of walking `series.children`.
 
 **Framework packages (5.0.0, 2026-10-22):** `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte`, `-react-native`. See "Frameworks".
+
+**5.22.0:**
+- The npm package has the script files in `dist/` (jsDelivr, unpkg), and geodata 5.2.0 does too (unpkg).
+- New: `autoLabels` (axis renderers, series), `autoFit` on `Legend`, `autoHide` on chart scrollbars, and `am5themes_ResponsiveMax` (see "Available themes").
+- JSON configs are read as data; use `trusted: true` for your own.
+- Map zooms fit what is drawn (globes, curved projections, across the date line). GeoJSON feature properties are read as data fields. When `include` and `exclude` both list an item, `exclude` wins.
+- Heat-rule values outside `minValue` / `maxValue` get `min` / `max`.
+- Fixed: `LinearGradient` takes any `rotation`; an empty `ColorSet` list no longer crashes; `#,###s` keeps its separator; a logarithmic axis with `min: 0` works; `minBulletDistance` back to 0 shows the bullets.
+- A number as a word-cloud category works, shown as `2,025`, so pass years as strings.
+- Nauru is "Naoero" in geodata 5.2.0 (id `NR`).
 
 **5.21.5 (2026-10-26):** `am5.renderToSVG()` writes SVG that design tools such as Figma read, and its option `includeNonExportable` also writes `exportable: false` elements. JSON saves theme colors in data, and colors made past the theme's list, as references (`"@colors.getIndex(n)"`), so they follow the theme. A bare `import "@amcharts/amcharts5/element"` now works with esbuild.
 

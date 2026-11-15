@@ -21,13 +21,13 @@ import am5geodata_worldLow from "@amcharts/amcharts5-geodata/worldLow";
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.x.x/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Geodata (map files)
 
 NPM: `@amcharts/amcharts5-geodata`
 CDN: `https://cdn.amcharts.com/lib/5/geodata/{mapName}.js`
-npm CDN (AI sandboxes, strict CSPs): unpkg serves the geodata package's `dist/` (`https://unpkg.com/@amcharts/amcharts5-geodata@5.1.x/dist/{mapName}.js`). Files have the same path as below `geodata/` on the amCharts CDN (e.g. `dist/region/world/europeLow.js`) and the same globals. jsDelivr refuses the package (too large); there, only `worldLow.js` and `usaLow.js` are available, in the library's own `…/@amcharts/amcharts5@5.x.x/dist/geodata/`.
+npm CDN (AI sandboxes, strict CSPs): unpkg serves the geodata package's `dist/` (`https://unpkg.com/@amcharts/amcharts5-geodata@5.2.0/dist/{mapName}.js`). Files have the same path as below `geodata/` on the amCharts CDN (e.g. `dist/region/world/europeLow.js`) and the same globals. jsDelivr refuses the package (too large); there, only `worldLow.js` and `usaLow.js` are available, in the library's own `…/@amcharts/amcharts5@5.22.0/dist/geodata/`.
 
 | Map | ES import | CDN global |
 |-----|----------|-----------|
@@ -834,7 +834,13 @@ raster.events.on("loaded", function () { /* src (and nightSrc) are drawn */ });
 raster.events.on("loaderror", function () { /* failed, or cross-origin without CORS */ });
 ```
 
-- The image must be **equirectangular** ("plate carrée": longitude −180…180 left to right, latitude 90…−90 top to bottom). The CDN has `geodata/images/{earthDay,earthNight,moon,mars}{2048,4096}.jpg`, e.g. `https://cdn.amcharts.com/lib/5/geodata/images/moon4096.jpg` (the npm geodata package has no images). The Earth images are from NASA Earth Observatory: credit the source, e.g. with a small `am5.Label`.
+- The image must be **equirectangular** ("plate carrée": longitude −180…180 left to right, latitude 90…−90 top to bottom). The CDN has `geodata/images/`, e.g. `https://cdn.amcharts.com/lib/5/geodata/images/moon2048.jpg`:
+  - `earthDay`, `earthNight`, `moon`, `mars`, `venus`, `io` and `ganymede`, each at 1024, 2048 and 4096 px wide;
+  - `jupiter` at 1024 and 2048 only.
+
+  Use 1024 for small charts, 2048 for most charts and phones, and 4096 for large charts and zooming in; a 4096 image takes 32 MB of memory once decoded. Since geodata 5.2.0 the npm package has them in `images/`, and a bundler turns an import into the URL: `import moon from "@amcharts/amcharts5-geodata/images/moon2048.jpg"`.
+
+  All are NASA, JPL or USGS works in the public domain, and credit is appreciated, not required. For the Earth images, a credit line reads "Imagery: NASA Earth Observatory", e.g. in a small `am5.Label`.
 - `cors` (default `"anonymous"`): a cross-origin image is drawn only if its server sends CORS headers. A page opened from disk (`file://`) cannot read an image file beside it — serve the page, or use the CDN copy.
 - The series counts as the whole world in the map's bounds; on a regional map set `affectsBounds: false`. The projection needs `invert`, so nothing is drawn while `animateProjection()` runs.
 - Draw country borders over it with a `MapPolygonSeries` pushed after it, `fillOpacity: 0` on `mapPolygons.template`. `twilight` (default `12` degrees of sun height) sets how wide the day/night blend is.
