@@ -97,6 +97,16 @@ XY axes live in `refs`. The chart lists them, and each series points at them:
 
 A legend lists XY series as `"data": ["#series-0", "#series-1"]`, and pie slices as `"data": "#series-0.dataItems"`.
 
+**What a ref can reach (5.22.0+).** A ref steps only through chart objects and data:
+- amCharts objects: elements, data items, and objects such as `interfaceColors` and a `ColorSet`;
+- templates and lists;
+- colors and percents;
+- arrays, plain objects, and plain values (strings, numbers).
+
+A step onto anything else stops the ref. Examples: a function (`"#series-0.dispose"`), a DOM element (`"@root.dom"`), or an object's `events`, `states`, `adapters` or `root`. A key that starts with `_`, or is `constructor` or `prototype`, stops it too. A stopped ref gives `undefined`, and the parser logs a warning. The object that receives `undefined` may then fail.
+
+A `properties` block sets only public keys, on the same kinds of objects. A `__proto__` key in `settings` or in a parsed row is left out. `trusted: true` lifts all of this (see "Configs from others" under rule 9).
+
 ### 5. Colors, percents, layouts
 
 | Code | JSON |
@@ -149,7 +159,24 @@ An optional top-level `"root": { "settings": { … }, "properties": { … } }` a
 
 Since 5.21.4 a locale that isn't found logs a warning.
 
-**Parse only configs you trust.** The parser treats a config as code, not data: refs can reach any object from `@root`, and an adapter's `callback` that is a ref to an existing function runs it. `root.settings` can also set `sanitizeHTML: false`, after which an `html` setting's event handlers run. Don't parse configs from strangers' links or uploads as they are.
+Since 5.22.0 the `root` section is limited:
+- `properties` takes `locale`, `utc`, `fps`, `tabindex`, `numberFormatter`, `dateFormatter`, `durationFormatter` and `interfaceColors`, the ones `ChartSerializer` writes. The locale must be a name, as above, not an object of translations.
+- `settings` takes any Root setting, but `sanitizeHTML` only as `true`. A config serialized from a page with `sanitizeHTML: false` loses that setting when parsed.
+
+Anything else is left out with a warning, and `trusted: true` lifts this too.
+
+**Configs from others.** Since 5.22.0 the parser reads a config as data, so one from users or another site cannot run script. Its refs and `properties` reach only chart objects and data (rule 4). Its `root` section sets only the properties above, and never turns HTML sanitizing off.
+
+`properties` keys, `__proto__` keys and root entries it may not set are left out. A ref it may not follow gives `undefined`, which can still make `parse()` reject, so add a `.catch()` when parsing others' configs.
+
+The parser logs one console warning for each thing refused, pointing to `trusted: true`. For a config of your own that needs more, parse it as code: `parser.parse(config, { parent: root.container, trusted: true })`. `<am5-chart>` has no such option, so it always reads its config as data.
+
+Before 5.22.0, and with `trusted: true`, the parser treats a config as code:
+- refs can reach any object from `@root`;
+- an adapter's `callback` that is a ref to an existing function runs it;
+- `root.settings` can set `sanitizeHTML: false`, after which an `html` setting's event handlers run.
+
+There, don't parse configs from strangers' links or uploads as they are.
 
 ### 10. What a config cannot hold
 
