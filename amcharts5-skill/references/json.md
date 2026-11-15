@@ -169,7 +169,7 @@ Anything else is left out with a warning, and `trusted: true` lifts this too.
 
 `properties` keys, `__proto__` keys and root entries it may not set are left out. A ref it may not follow gives `undefined`, which can still make `parse()` reject, so add a `.catch()` when parsing others' configs.
 
-The parser logs one console warning for each thing refused, pointing to `trusted: true`. For a config of your own that needs more, parse it as code: `parser.parse(config, { parent: root.container, trusted: true })`. `<am5-chart>` has no such option, so it always reads its config as data.
+The parser logs one console warning for each thing refused, pointing to `trusted: true`. For a config of your own that needs more, parse it as code: `parser.parse(config, { parent: root.container, trusted: true })`. `<am5-chart>` and the framework packages' `config` prop have no such option, so from 5.22.0 they always read the config as data; build a chart that needs `trusted: true` with `JsonParser` in code instead.
 
 Before 5.22.0, and with `trusted: true`, the parser treats a config as code:
 - refs can reach any object from `@root`;
