@@ -757,7 +757,7 @@ var chart = root.container.children.push(am5xy.XYChart.new(root, { ... }));
 
 11. **`dataItems` is a plain array** — `series.dataItems` does NOT have `.each()`. Use `series.dataItems.forEach(fn)` or `am5.array.each(series.dataItems, fn)`. Only `series.data` (the ListData object) has `.each()`.
 
-12. **CDN script load order matters** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` > `xy.js` > `radar.js` / `timeline.js` / `gantt.js` > `themes/*.js`. From an npm CDN, the same order under `…/@amcharts/amcharts5@<version>/dist/`, every file from one pinned version.
+12. **CDN script load order matters** — `index.js` must load first, then `xy.js`, then any package that depends on it (`radar.js`, `timeline.js`, `gantt.js`). Wrong order causes runtime errors. Correct order: `index.js` > `xy.js` > `radar.js` / `timeline.js` / `gantt.js` > `themes/*.js`. Gantt also needs `plugins/colorPicker.js` before `gantt.js`. From an npm CDN, the same order under `…/@amcharts/amcharts5@<version>/dist/`, every file from one pinned version.
 
 13. **No `minorGrid` / `minorTicks` / `minorLabels` objects** — These properties don't exist. Enable minor grid via renderer flags:
 ```js

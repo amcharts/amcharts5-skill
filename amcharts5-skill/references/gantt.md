@@ -279,8 +279,8 @@ chart.series.data.setAll(restored.series);
   <title>Gantt Chart</title>
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
-  <script src="https://cdn.amcharts.com/lib/5/gantt.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/gantt.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
   <style>
     #chartdiv { width: 100%; height: 500px; }

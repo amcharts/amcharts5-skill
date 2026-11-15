@@ -25,6 +25,9 @@ What code passes to `.new(root, { … })` goes into `settings` here, unchanged. 
 | Sankey, chord, arc | `flow.js` |
 | Treemap, sunburst, force-directed, pack | `hierarchy.js` |
 | Radar, gauge | `xy.js`, `radar.js` |
+| Gantt | `xy.js`, `plugins/colorPicker.js`, `gantt.js` |
+| Word cloud | `wc.js` |
+| Venn | `venn.js` |
 
 All files are at `https://cdn.amcharts.com/lib/5/`, and since 5.22.0 under the npm package's `dist/` on jsDelivr and unpkg (`https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all; SKILL.md "Plain HTML, no bundler"). Theme files, e.g. `themes/Animated.js`, go after the chart packages.
 
