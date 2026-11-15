@@ -679,6 +679,7 @@ const legend = chart.children.push(am5.Legend.new(root, {
   centerX: am5.percent(50),
   x: am5.percent(50)
   // autoFit: true   // (5.22.0) a legend that does not fit gets smaller, or scrolls; long names are shortened
+  // direction: "rtl" // (5.22.0) right to left; also itemContainers.template and labels.template direction "rtl", valueLabels.template textAlign "right"
 }));
 legend.data.setAll(chart.series.values);
 ```
@@ -1010,8 +1011,9 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 - The npm package has the script files in `dist/` (jsDelivr, unpkg), and geodata 5.2.0 does too (unpkg).
 - New: `autoLabels` (axis renderers, series), `autoFit` on `Legend`, `autoHide` on chart scrollbars, and `am5themes_ResponsiveMax` (see "Available themes").
 - JSON configs are read as data; use `trusted: true` for your own.
-- Map zooms fit what is drawn (globes, curved projections, across the date line). GeoJSON feature properties are read as data fields (set `valueField`). When `include` and `exclude` both list an item, `exclude` wins.
+- Map zooms fit what is drawn (globes, curved projections, across the date line). GeoJSON feature properties are read as data fields (set `valueField`), heat rules included. `zoomToGeoPoint()` before the map is drawn zooms once it is. When `include` and `exclude` both list an item, `exclude` wins.
 - Heat-rule values outside `minValue` / `maxValue` get `min` / `max`.
+- Containers take `direction: "rtl"` (horizontal and grid layouts from right to left; not `reverseChildren`). A `Label` with a `width` keeps its text in its box for every `textAlign`.
 - Fixed: `LinearGradient` takes any `rotation`; an empty `ColorSet` list no longer crashes; `#,###s` keeps its separator; a logarithmic axis with `min: 0` works; `minBulletDistance` back to 0 shows the bullets.
 - A number as a word-cloud category works, shown as `2,025`, so pass years as strings.
 - Nauru is "Naoero" in npm geodata 5.2.0 (on the CDN since 5.20.2; id `NR`).

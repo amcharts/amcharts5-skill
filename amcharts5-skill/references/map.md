@@ -888,10 +888,8 @@ lunarNight.get("sun").set("forceHidden", true);    // hide the sun marker
 chart.set("zoomControl", am5map.ZoomControl.new(root, {}));
 // its home button is hidden by default: zoomControl.homeButton.set("visible", true)
 
-// Programmatic zoom, once the map has loaded
-polygonSeries.events.once("datavalidated", function() {
-  chart.zoomToGeoPoint({ latitude: 48.86, longitude: 2.35 }, 5, true);  // zoom level 5; true centers the point
-});
+// Programmatic zoom (before 5.22.0, call it once the map has loaded, e.g. in the polygon series' "datavalidated" event)
+chart.zoomToGeoPoint({ latitude: 48.86, longitude: 2.35 }, 5, true);  // zoom level 5; true centers the point
 
 // Zoom to a polygon (5.21.0: prefer clickZoom, below)
 polygonSeries.mapPolygons.template.events.on("click", function(ev) {

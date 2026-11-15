@@ -207,6 +207,21 @@ legend.data.setAll(series.dataItems);
 
 Above or below the chart it takes at most 30% of the chart's height, beside it at most 40% of its width. A `width`, `height`, `maxWidth`, `maxHeight`, `scale` or `verticalScrollbar` you set on the legend is kept. Without it, a long legend below a pie can take the whole chart and leave the pie no room.
 
+**A right-to-left legend (5.22.0)**, for Hebrew or Arabic: the first item on the right, and in each item the marker, then the name, then the value:
+
+```js
+const legend = chart.children.push(am5.Legend.new(root, {
+  centerX: am5.percent(50),
+  x: am5.percent(50),
+  direction: "rtl"                                         // items from right to left
+}));
+legend.itemContainers.template.set("direction", "rtl");     // marker on the right of the name
+legend.labels.template.set("direction", "rtl");             // right-to-left text in the names
+legend.valueLabels.template.set("textAlign", "right");      // the value next to its name ("left" lines values up at the far left)
+```
+
+A `Label` with a `width` keeps its text inside its box for every `textAlign` and `direction` since 5.22.0: `left` and `right` are the box's sides, `start` and `end` follow the direction.
+
 ## Tooltip
 
 ```js
@@ -971,6 +986,8 @@ container.setAll({
 
 Use layouts to arrange charts, legends, controls, and labels within containers.
 
+**Right to left: `direction: "rtl"` (5.22.0).** On a container with a horizontal or grid layout, it places the children from right to left, as a mirror image: a child's `marginLeft` ends up on its right. Rows of a grid still go top to bottom. For right-to-left languages, see "Legend". `reverseChildren: true` only reverses the order, so a grid starts at the bottom row; don't use it for RTL.
+
 ## UI Elements
 
 amCharts 5 provides built-in interactive UI widgets. **Prefer these over HTML elements** when building controls, unless instructed otherwise. Read `references/ui-elements.md` for full API and examples.
@@ -1254,11 +1271,12 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - **JSON:** a config is read as data, so one from users or another site cannot run script. Parse a config of your own that needs more with `trusted: true`. See `references/json.md`, "Configs from others".
 - **Map zooming:** `zoomToGeoBounds()`, `zoomToDataItem()` and click zoom fit what is drawn, also on globes and curved projections.
   - Bounds with `right` less than `left`, or past ±180, cross the date line. On a flat map the two sides meet only with a rotation passed, e.g. `zoomToGeoBounds(bounds, 500, -180)`.
-  - A `zoomToGeoBounds()` or `zoomToDataItem()` call before the map has loaded waits for it.
+  - A `zoomToGeoBounds()`, `zoomToDataItem()` or `zoomToGeoPoint()` call before the map is drawn zooms once it is.
   - Zooms keep `rotationZ`.
   - Two `zoomToGeoPoint()` or `zoomToPoint()` calls in a row without animation end in the right place.
 - **Maps, data:**
-  - GeoJSON feature properties are read as data fields: with `valueField: "value"` set, a custom GeoJSON with `"properties": { "value": 12 }` gives each polygon its value without data rows. `"properties": null` no longer throws.
+  - GeoJSON feature properties are read as data fields: with `valueField: "value"` set, a custom GeoJSON with `"properties": { "value": 12 }` gives each polygon its value without data rows, and heat rules their range. `"properties": null` no longer throws.
+  - A series with heat rules whose `geoJSON` is set later (a drill-down) draws.
   - When `include` and `exclude` both list an item, `exclude` wins.
   - The `zoomControl` is no longer drawn twice.
   - A map with panning and `pinchZoom` off no longer blocks page scrolling on touch screens.
@@ -1277,6 +1295,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - **Pie labels:** a label hidden with `forceHidden` no longer leaves a gap in its column.
 - **Hierarchy:** after `data.setAll()`, a `VoronoiTreemap` draws again, and a drilled-down Treemap or Sunburst shows the new data from the top.
 - **Word cloud:** a number as a category (a year) no longer throws, but shows formatted, `2,025`. See `references/wordcloud.md`.
+- **Right to left:** containers take `direction: "rtl"`, which lays out a horizontal or grid layout from right to left. A `Label` with a `width` keeps its text inside its box for every `textAlign` and `direction`. See "Legend" for a right-to-left legend.
 - **Text:** font names with spaces, and font lists such as `[fontFamily: 'Source Code Pro', monospace]`, are read right. Center- or right-aligned wrapped text no longer draws its bold or colored parts out of place.
 - **TypeScript:** `am5.IGraphics` and `am5.Animation` work as types.
 - **Size:** the script builds are smaller (`index.js` by about 50 KB, 10 KB gzipped), and they no longer define the global `regeneratorRuntime`. The npm package installs only the d3 modules it uses, not the whole `d3`.
