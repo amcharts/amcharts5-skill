@@ -66,7 +66,7 @@ chart.appear(1000, 100);
 | `am5xy.DurationAxis` | Duration values | `value` | No |
 | `am5xy.GaplessDateAxis` | Time data without gaps | `value` (timestamps) | No |
 
-`DurationAxis` values are amounts of its `baseUnit` (e.g. `"second"`), labelled by `root.durationFormatter` (`durationFormat`, `durationFormats`). Since 5.21.0 durations between a month and a year use the month formats again (`1m 15d 00:00:00`, not `45d 00:00:00`), and format codes `H`, `D`, `Y`, `K`, `k`, `n` work (they gave `NaN`, e.g. `"HH:mm:ss"`). `GaplessDateAxis` with grouped data and `root.timezone` set no longer stays blank (5.21.0).
+`DurationAxis` values are amounts of its `baseUnit` (e.g. `"second"`), labelled by `root.durationFormatter` (`durationFormat`, `durationFormats`). Durations between a month and a year use the month formats (`1m 15d 00:00:00`, not `45d 00:00:00`), and format codes `H`, `D`, `Y`, `K`, `k`, `n` work like `h`, `d`, `y`, `h`, `h`, `S` (e.g. `"HH:mm:ss"`).
 
 ## Series types
 
@@ -103,8 +103,8 @@ chart.set("cursor", am5xy.XYCursor.new(root, {
 ### Scrollbar
 ```js
 chart.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
-// opposite: true (5.20.2) puts scrollbarX below the plot / scrollbarY on the left
-// outsideAxes: true (5.21.0) puts it beyond the axes on its side, false between them and the plot
+// opposite: true puts scrollbarX below the plot / scrollbarY on the left
+// outsideAxes: true puts it beyond the axes on its side, false between them and the plot
 ```
 
 ### Legend
@@ -186,7 +186,7 @@ xAxis.data.setAll(data);
 - `tooltip` — shows category under cursor
 
 **Gotchas:**
-- Since 5.20.6 series data need **not** follow the axis-category order for every item to be drawn (before, out-of-order items — e.g. Gantt-like column charts sorted by date — could silently disappear). Line series still connect points in **data** order, so keep line data in category order.
+- Series data need **not** follow the axis-category order for every item to be drawn (e.g. Gantt-like column charts sorted by date). Line series still connect points in **data** order, so keep line data in category order.
 - Forgetting `xAxis.data.setAll()` is the #1 mistake — the chart will render empty
 
 ## DateAxis
@@ -215,7 +215,7 @@ const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
 - **Date format maps** (`dateFormats`, `periodChangeDateFormats`, `minorDateFormats`): after `axis.set("dateFormats", {...})` already-rendered labels keep their old text. `axis.markDirtyValues()` is not enough — call **`axis.markDirtySize()`** to make the axis re-run label formatting.
 - **`groupIntervals`** (with `groupData: true`): amCharts only (re)computes grouping when a series' data is set, so changing the allowed intervals on an already-grouped axis does nothing until you re-set the data on every series bound to the axis: `series.data.setAll(series.data.values.slice())`.
 
-**Large data: first-render cost (5.21.5, laptop CPU).** Expect about 6 s per million points with `groupData: true`: 4 series × 250,000 took 5.8 s, and 4 × 1,250,000 took 34 s with a 3.5 GB heap. Zooming and panning are fast afterwards.
+**Large data: first-render cost (laptop CPU).** Expect about 6 s per million points with `groupData: true`: 4 series × 250,000 took 5.8 s, and 4 × 1,250,000 took 34 s with a 3.5 GB heap. Zooming and panning are fast afterwards.
 - **Grouping** doesn't shorten the load, because every listed group interval is computed up front. A short `groupIntervals` list cut the load by about 30%.
 - **`groupData: false`** loads as fast, but zooms 2–8× slower.
 - **To open fast,** send fewer points: pre-aggregate on the server, or load detail as the user zooms (example `candlestick-ohlc/on-demand-data-loading`).
@@ -230,7 +230,7 @@ series.data.setAll([
 ]);
 ```
 
-String dates need a `DataProcessor` with `dateFields: ["date"]` (see SKILL.md "Data processor"). With a `dateFormat` (e.g. `"yyyy-MM-dd"`) they are read as local time (UTC with `root.utc: true`). Without one, since 5.21.1 the browser's `Date` parses them, and a date-only string such as `"2024-01-01"` is midnight **UTC**. Before 5.21.1 every such string became 1 January 1970.
+String dates need a `DataProcessor` with `dateFields: ["date"]` (see SKILL.md "Data processor"). With a `dateFormat` (e.g. `"yyyy-MM-dd"`) they are read as local time (UTC with `root.utc: true`). Without one, the browser's `Date` parses them, and a date-only string such as `"2024-01-01"` is midnight **UTC**.
 
 ## ValueAxis
 
@@ -253,7 +253,7 @@ const yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
 }));
 ```
 
-A `logarithmic` axis cannot show values ≤ 0. Since 5.21.0 such data logs a console warning ("…Set `treatZeroAs` to show them.") instead of silently drawing nothing — set `treatZeroAs` (e.g. `0.1`) when the data has zeros.
+A `logarithmic` axis cannot show values ≤ 0. Such data logs a console warning ("…Set `treatZeroAs` to show them.") — set `treatZeroAs` (e.g. `0.1`) when the data has zeros.
 
 **Zooming to values right after changing `min`/`max`:** `zoomToValues()` converts with the axis's current range, which updates a frame after `setAll({ min, max })`. In the same tick, compute the positions yourself, or call `zoomToValues()` on the next frame:
 
@@ -277,18 +277,18 @@ am5xy.AxisRendererX.new(root, {
   cellStartLocation: 0,      // 0–1, column start offset
   cellEndLocation: 1,         // 0–1, column end offset
   pan: "none",                // "zoom" → enable drag-zoom on axis
-  autoLabels: false,          // (5.22.0) true: labels spaced by their size; cut-off or overlapping ones hidden
+  autoLabels: false,          // true: labels spaced by their size; cut-off or overlapping ones hidden
 })
 ```
 
-**`autoLabels: true` (5.22.0)** lets the axis arrange its labels to fit:
+**`autoLabels: true`** lets the axis arrange its labels to fit:
 - A short axis gets more labels than `minGridDistance` would leave (up to about eight), and labels never come closer than their own size.
 - A category axis shows every label that fits, even closer than `minGridDistance`. Rotated labels (`rotation: -90`) can sit as close as lines of text. Long horizontal labels are spaced by their width, so there can be fewer than without it.
 - A label that would be cut off at the chart's edge, or overlap another axis's labels, is hidden. A value axis gives way to a category or date axis.
 
 `am5themes_ResponsiveMax` turns it on for every axis (SKILL.md "Responsive rules").
 
-**`keepInView: true` (5.22.0)** on axis labels keeps the label of a category or date period that is only partly in view. After a zoom, the first month on a date axis keeps "Feb" in the part still showing, instead of hiding it once the label's center leaves the plot:
+**`keepInView: true`** on axis labels keeps the label of a category or date period that is only partly in view. After a zoom, the first month on a date axis keeps "Feb" in the part still showing, instead of hiding it once the label's center leaves the plot:
 
 ```js
 xAxis.get("renderer").labels.template.set("keepInView", true);
@@ -390,15 +390,10 @@ series.columns.template.setAll({
   width: am5.percent(80),        // column width
 });
 
-// Individual column colors (5.20.4) — declarative, serializes to JSON:
+// Individual column colors — declarative, serializes to JSON:
 series.set("colorByDataItem", true);          // each column takes the next color from series.get("colors")
 // series.set("colors", am5.ColorSet.new(root, { colors: [...] }));   // optional own palette (the series makes one if absent)
 // Per-item color from data instead: templateField + a `fill` in each data item (see pie.md "Data-driven slice colors")
-
-// Pre-5.20.4 fallback — an adapter (does NOT survive JSON serialization):
-series.columns.template.adapters.add("fill", (fill, target) => {
-  return chart.get("colors").getIndex(series.columns.indexOf(target));
-});
 ```
 
 **Horizontal bar chart:** swap axes — put CategoryAxis on Y, ValueAxis on X:
@@ -430,7 +425,7 @@ const series = chart.series.push(am5xy.CandlestickSeries.new(root, {
 }));
 ```
 
-**Candlesticks on a `ValueAxis` X** (e.g. candle index; the `CandlestickSeries` takes the body width from `openValueXField` + `valueXField`): the wick is drawn at the `valueXField` edge, not the middle, because a `ValueAxis` ignores the cell location (still in 5.21.2). Shift the wick by half the body, or use a `DateAxis`:
+**Candlesticks on a `ValueAxis` X** (e.g. candle index; the `CandlestickSeries` takes the body width from `openValueXField` + `valueXField`): the wick is drawn at the `valueXField` edge, not the middle, because a `ValueAxis` ignores the cell location. Shift the wick by half the body, or use a `DateAxis`:
 
 ```js
 ["lowX0", "lowX1", "highX0", "highX1"].forEach(function (k) {
@@ -461,7 +456,7 @@ chart.set("cursor", am5xy.XYCursor.new(root, { snapToSeries: [series] }));
 
 **Do NOT** pass `lineX`/`lineY` as constructor options to `XYCursor.new()`. Always access `cursor.lineX` / `cursor.lineY` after creation.
 
-**Easier edge selections (`clickTolerance`, 5.20.0)** — by default a zoom/select drag can only begin inside the plot area, which makes selecting right up to an edge fiddly. `clickTolerance` widens the area where a press may *start*:
+**Easier edge selections (`clickTolerance`)** — by default a zoom/select drag can only begin inside the plot area, which makes selecting right up to an edge fiddly. `clickTolerance` widens the area where a press may *start*:
 
 ```js
 chart.set("cursor", am5xy.XYCursor.new(root, {
@@ -482,11 +477,11 @@ Enables zooming/panning via scrollbar. Can optionally include a preview chart.
 // Simple scrollbar:
 chart.set("scrollbarX", am5.Scrollbar.new(root, {
   orientation: "horizontal"
-  // opposite: true     // (5.20.2) place below the plot instead of above (scrollbarY: left instead of right)
-  // outsideAxes: true  // (5.21.0) beyond the axes on that side; false = between axes and plot; unset = chart decides
-  // autoHide: 300      // (5.22.0) hidden while the chart is 300 px tall or less (a scrollbarY: that wide); pinchZoomX takes over
+  // opposite: true     // place below the plot instead of above (scrollbarY: left instead of right)
+  // outsideAxes: true  // beyond the axes on that side; false = between axes and plot; unset = chart decides
+  // autoHide: 300      // hidden while the chart is 300 px tall or less (a scrollbarY: that wide); pinchZoomX takes over
 }));
-// Hiding it (visible: false / forceHidden / hide()) leaves no empty band above the plot since 5.21.0
+// Hiding it (visible: false / forceHidden / hide()) leaves no empty band above the plot
 
 // Scrollbar with preview chart:
 const scrollbar = am5xy.XYChartScrollbar.new(root, {
@@ -539,7 +534,7 @@ const series = chart.series.push(am5xy.LineSeries.new(root, {
 }));
 ```
 
-`legendValueText` is used only while a cursor points at a data item. Without a cursor, and after it leaves, the value label shows `legendRangeValueText` (empty if unset). That text has no data item, so `{valueY}` is empty there; it reads the series' range values, which exist only with `calculateAggregates: true`: `{valueYClose}` (the last value; follows `data.push()`), `{valueYOpen}`, `{valueYLow}`, `{valueYHigh}`, `{valueYSum}`, `{valueYAverage}`, `{valueYCount}`, and the same with `Selection` for the zoomed range (`{valueYCloseSelection}` is the last visible value). Without `calculateAggregates` they are empty, with no warning (5.21.5). Docs: https://docs.amcharts.com/v5/charts/xy-chart/legend-xy-series/#values-without-a-cursor.
+`legendValueText` is used only while a cursor points at a data item. Without a cursor, and after it leaves, the value label shows `legendRangeValueText` (empty if unset). That text has no data item, so `{valueY}` is empty there; it reads the series' range values, which exist only with `calculateAggregates: true`: `{valueYClose}` (the last value; follows `data.push()`), `{valueYOpen}`, `{valueYLow}`, `{valueYHigh}`, `{valueYSum}`, `{valueYAverage}`, `{valueYCount}`, and the same with `Selection` for the zoomed range (`{valueYCloseSelection}` is the last visible value). Without `calculateAggregates` they are empty, with no warning. Docs: https://docs.amcharts.com/v5/charts/xy-chart/legend-xy-series/#values-without-a-cursor.
 
 ## Stacking
 
@@ -640,7 +635,7 @@ series.data.setAll([
 ```
 
 **Large scatter plots.** Every bullet is a sprite, and bullets get slow quickly.
-- **Bullets** slow down with the count: on a laptop CPU (5.21.5), 50,000 took about 5 s to draw, and 200,000 took 16 s, with 6 s per hover.
+- **Bullets** slow down with the count: on a laptop CPU, 50,000 took about 5 s to draw, and 200,000 took 16 s, with 6 s per hover.
 - **Up to about 50,000 points:** paint all dots in one `am5.Graphics`. It drew 20,000 points about 5 times faster than bullets did, and zoomed about 6 times faster.
 - **Past about 100,000 points** nothing stays interactive, even as one Graphics, so bin the points into a heat map of counts or sample them.
 
@@ -716,16 +711,16 @@ series.bullets.push(function(root, series, dataItem) {
 // Auto-hide bullets when too close together
 series.set("minBulletDistance", 20);
 
-// (5.22.0) Hide only the bullet LABELS that overlap an earlier label or are cut off; shapes stay, labels come back when they fit
+// Hide only the bullet LABELS that overlap an earlier label or are cut off; shapes stay, labels come back when they fit
 series.set("autoLabels", true);
 
 // Bullets are clipped to the plot area; for labels that stick out past it (line ends), turn it off on the SERIES (XYChart has no maskBullets)
 series.set("maskBullets", false);
 
 // Bullets at the same spot can stack instead of overlapping: am5.Bullet.new(root, { stacked: "up" | "down" | "auto", ... })
-// (XY only; "up", and "auto" in the lower half, overlapped on vertical series before 5.21.0)
+// (XY only)
 
-// Pulsing bullet declared as data (5.20.8) — survives JSON serialization, unlike animate()
+// Pulsing bullet declared as data — survives JSON serialization, unlike animate()
 series.bullets.push(function(root, series, dataItem) {
   return am5.Bullet.new(root, {
     sprite: am5.Circle.new(root, { radius: 5, fill: series.get("fill"),
@@ -734,7 +729,7 @@ series.bullets.push(function(root, series, dataItem) {
 });
 ```
 
-**Bullet text that follows an animation.** A bullet `Label` with `populateText` refreshes its text each time the series positions bullets, so `{valueXWorking}` counts along with `dataItem.animate()`. A Label inside a `Container` sprite does not: it keeps its first text unless the `Bullet` has `dynamic: true` (5.21.5):
+**Bullet text that follows an animation.** A bullet `Label` with `populateText` refreshes its text each time the series positions bullets, so `{valueXWorking}` counts along with `dataItem.animate()`. A Label inside a `Container` sprite does not: it keeps its first text unless the `Bullet` has `dynamic: true`:
 
 ```js
 series.bullets.push(function (root, series, dataItem) {
@@ -838,7 +833,7 @@ xAxis.events.on("rangechanged", function() {
   console.log("Axis range changed (zoomed/scrolled)");
 });
 
-// Open a URL on click without a handler (5.20.7): columns and bullets of the series are linked
+// Open a URL on click without a handler: columns and bullets of the series are linked
 series.set("urlField", "url");          // data row: { category: "A", value: 10, url: "https://…" }
 series.set("linkTarget", "_blank");     // default "_self"
 ```
@@ -860,7 +855,7 @@ am5xy.XYChart.new(root, {
 })
 ```
 
-## Distinguishing line series without color (5.20.0)
+## Distinguishing line series without color
 
 `XYChart` can cycle stroke widths and dash patterns across line series as they are added, exactly the way `colors` cycles series colors. Useful for print, for color-blind-safe output, or with the `Patterns` theme.
 
@@ -873,7 +868,7 @@ const chart = root.container.children.push(am5xy.XYChart.new(root, {
 
 Each added line series takes the next entry by position, wrapping around when the array runs out.
 
-## Series gradients (5.20.0)
+## Series gradients
 
 Put a gradient on the element that draws it: `series.fills.template` (area), `series.columns.template` (columns), `series.strokes.template` (`strokeGradient`, the line):
 
@@ -885,11 +880,11 @@ series.fills.template.set("fillGradient", am5.LinearGradient.new(root, {
 }));
 ```
 
-`Series` also has `fillGradient` and `strokeGradient` settings (5.20.0), but the series' own fills, lines and columns don't use them: they are handed to bullets. A bullet `Graphics` that sets none of `fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient` inherits all of them from its series, so bullets pick up series gradients and patterns automatically.
+`Series` also has `fillGradient` and `strokeGradient` settings, but the series' own fills, lines and columns don't use them: they are handed to bullets. A bullet `Graphics` that sets none of `fill`, `fillGradient`, `fillPattern`, `stroke`, `strokeGradient` inherits all of them from its series, so bullets pick up series gradients and patterns automatically.
 
-`rotation` takes any angle: `0` runs left to right, `90` top to bottom, `180` right to left. From 5.20.8 to 5.21.5 only 0 to 90 worked; other angles gave a flat or wrong fill.
+`rotation` takes any angle: `0` runs left to right, `90` top to bottom, `180` right to left.
 
-`RadialGradient` is centered on map polygons, line and area fills and bullets since 5.21.1 (with `target` set, on the target). 5.21.1 put one with pixel `x`/`y` off-center on radar fills and similar shapes; 5.21.2 fixes that.
+`RadialGradient` is centered on map polygons, line and area fills and bullets (with `target` set, on the target).
 
 ## Different pattern per column
 
@@ -914,12 +909,12 @@ series.data.setAll(data);
 ```
 
 - `templateField` is a setting of `series.columns.template`. Set on the series, it does nothing and the columns stay plain.
-- A pattern's `color` is the color of its lines, dots or squares. The gaps show the column's `fill`, or the pattern's own `fill` (with `fillOpacity`) when it has one. A `color` equal to what shows in the gaps makes the column look solid. Always set `color`: without one, the shapes are black whatever the column's colors (5.21.3).
+- A pattern's `color` is the color of its lines, dots or squares. The gaps show the column's `fill`, or the pattern's own `fill` (with `fillOpacity`) when it has one. A `color` equal to what shows in the gaps makes the column look solid. Always set `color`: without one, the shapes are black whatever the column's colors.
 - `LinePattern`: set the line direction with `angle` (5.14+; 0 is horizontal, 90 upright). `rotation` turns the whole tile instead, and at 45° the tile edges show as broken lines.
 - Make each pattern once, as above. An adapter that returns `am5.LinePattern.new(…)` makes a new pattern every time the setting is read.
 - In a JSON config, a row that holds a pattern needs `"__parse": true`, and so does its settings object (`references/json.md`, rule 3): `{ "source": "Search", "visits": 4200, "columnSettings": { "fillPattern": { "type": "LinePattern", "settings": { "color": { "type": "Color", "value": "#000000" }, "angle": 45 } }, "__parse": true }, "__parse": true }`.
 
-## Changing fields and axes after creation (5.20.0)
+## Changing fields and axes after creation
 
 ```js
 // Swap which data field a series plots — then re-set the data
@@ -930,7 +925,7 @@ series.data.setAll(data);
 series.set("yAxis", secondaryYAxis);
 ```
 
-Both were previously fixed at creation time. Re-setting the series data is required for a value-field change to take effect.
+Re-setting the series data is required for a value-field change to take effect.
 
 ## Moving a point without touching the data list
 

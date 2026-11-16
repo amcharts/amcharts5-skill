@@ -171,7 +171,7 @@ series.data.setAll(data);
 
 On `ForceDirected`, `nodePadding` (default `0`) is room in pixels kept free around each node (its collision radius is its radius + `nodePadding`), so neighbours stay at least twice that apart. It is not the `Sankey` `nodePadding`, which is a real gap between nodes.
 
-Since 5.21.0 changing `manyBodyStrength`, `centerStrength`, or a link's `distance`/`strength` takes effect after the layout has settled (it used to do nothing) — no need to re-set the data to apply new forces.
+Changing `manyBodyStrength`, `centerStrength`, or a link's `distance`/`strength` takes effect after the layout has settled — no need to re-set the data to apply new forces.
 
 ## Sunburst
 
@@ -192,7 +192,7 @@ series.labels.template.set("forceHidden", true);  // hide labels if crowded
 series.data.setAll(data);
 ```
 
-`Sunburst` ignores `singleBranchOnly` since 5.21.0 — drilling down always collapses the other branches (they would overlap the zoomed one), so don't set it. Also fixed in 5.21.0: with only one of `startAngle`/`endAngle` set the chart was sized for other angles; changing the angles on a drawn chart left labels and bullets behind; changing `nodePadding` (also on `Partition`) after drawing had no effect until a resize.
+`Sunburst` ignores `singleBranchOnly` — drilling down always collapses the other branches (they would overlap the zoomed one), so don't set it.
 
 ## Pack (Packed Circles)
 
@@ -326,7 +326,7 @@ series.set("downDepth", 1);      // how many levels to reveal on drill-down
 
 `initialDepth` counts the levels opened below `topDepth`: with `topDepth: 1`, `initialDepth: 1` draws depths 1 and 2, and `initialDepth: 2` draws depths 1–3. On a Treemap the deepest drawn level covers its parents, so only its tiles show. `initialDepth` works without `selectedDataItem`, but still call `series.set("selectedDataItem", series.dataItems[0])` after `data.setAll()`. Without it a `BreadcrumbBar` stays empty, and `topDepth` doesn't hide the root node. Docs: https://docs.amcharts.com/v5/charts/hierarchy/#tree-depth.
 
-A click selects the clicked node itself. On a Treemap that shows nested levels, a click on an inner tile drills straight to that tile, two levels from the top view. `downDepth` and `upDepth` don't change which node is selected (5.21.5). For one level per click, replace the built-in click:
+A click selects the clicked node itself. On a Treemap that shows nested levels, a click on an inner tile drills straight to that tile, two levels from the top view. `downDepth` and `upDepth` don't change which node is selected. For one level per click, replace the built-in click:
 
 ```js
 series.nodes.template.set("toggleKey", "none");   // turn off the built-in click
@@ -369,11 +369,11 @@ series.events.on("datavalidated", function() {
 });
 ```
 
-**Keyboard (5.21.0):** focusable nodes in a `focusableGroup` are one TAB stop; arrow keys move between them even though nodes are draggable, and SHIFT + arrow keys drag them. Nodes with children get `aria-expanded` (the new `ariaExpanded` setting). `Pack`, `ForceDirected` and `Tree` nodes could not be focused before 5.21.0, and a `Sunburst` node's focus outline was misplaced.
+**Keyboard:** focusable nodes in a `focusableGroup` are one TAB stop; arrow keys move between them even though nodes are draggable, and SHIFT + arrow keys drag them. Nodes with children get `aria-expanded` (the `ariaExpanded` setting).
 
-## Zoomable / pannable hierarchy — `SerialChartContainer` (5.20.2)
+## Zoomable / pannable hierarchy — `SerialChartContainer`
 
-`am5.SerialChartContainer` (exported from the **`am5` root module**, not `am5hierarchy`) is a directly usable `SerialChart` whose `seriesContainer` sits inside a `ZoomableContainer`, so a large `ForceDirected`, `Tree` or `Pack` can be wheel-zoomed and dragged. Prefer it over hand-wrapping the chart in `am5.ZoomableContainer` — it round-trips through `ChartSerializer` with its `zoomTools` wired up. A manual `ZoomableContainer`'s `contents` are saved since 5.21.0 (not before), but a `ZoomTools` added to it comes back pointing at a copy and must be re-targeted after `parse()`.
+`am5.SerialChartContainer` (exported from the **`am5` root module**, not `am5hierarchy`) is a directly usable `SerialChart` whose `seriesContainer` sits inside a `ZoomableContainer`, so a large `ForceDirected`, `Tree` or `Pack` can be wheel-zoomed and dragged. Prefer it over hand-wrapping the chart in `am5.ZoomableContainer` — it round-trips through `ChartSerializer` with its `zoomTools` wired up. A manual `ZoomableContainer`'s `contents` are saved, but a `ZoomTools` added to it comes back pointing at a copy and must be re-targeted after `parse()`.
 
 ```js
 const chart = root.container.children.push(am5.SerialChartContainer.new(root, {
@@ -390,7 +390,7 @@ series.data.setAll(data);
 chart.zoomableContainer.setAll({ maxZoomLevel: 8 });   // the ZoomableContainer holding the series
 ```
 
-Bullets on series inside a `SerialChartContainer` are drawn as of 5.20.4, and flow-chart (`Sankey`/`Chord`/`ArcDiagram`) bullets are placed correctly inside one as of 5.20.5.
+Bullets on series inside a `SerialChartContainer` are drawn, and flow-chart (`Sankey`/`Chord`/`ArcDiagram`) bullets are placed correctly inside one.
 
 ## Disposal
 

@@ -61,14 +61,14 @@ series.appear(1000);
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `categoryField` | string | — | Data field for word text (required). A number there (a year) works since 5.22.0, but shows formatted, `2,025`: give years as strings (`"2025"`). (`root.numberFormatter.set("numberFormat", "#")` also works, but changes every number on the root.) |
+| `categoryField` | string | — | Data field for word text (required). A number there (a year) shows formatted, `2,025`: give years as strings (`"2025"`). (`root.numberFormatter.set("numberFormat", "#")` also works, but changes every number on the root.) |
 | `valueField` | string | — | Data field for word weight/size (required) |
 | `maxFontSize` | number \| Percent | `am5.percent(15)` | Maximum font size (a `Percent` is relative to the smaller chart dimension) |
 | `minFontSize` | number \| Percent | `am5.percent(2)` | Minimum font size (a `Percent` is relative to the smaller chart dimension) |
-| `angles` | number[] | `[0, -90]` | Allowed rotation angles for words. **Any angle works** as of 5.20.1 (e.g. `[0, -30, -45]`), not just `0`/`±90` as in earlier versions |
-| `randomizeAngles` | boolean | `true` | `true` = each word picks a random angle from `angles`. `false` = words cycle through `angles` in order (word 0 → `angles[0]`, …) which, with `randomness: 0`, makes the layout reproducible. *(5.20.1)* |
+| `angles` | number[] | `[0, -90]` | Allowed rotation angles for words. **Any angle works** (e.g. `[0, -30, -45]`) |
+| `randomizeAngles` | boolean | `true` | `true` = each word picks a random angle from `angles`. `false` = words cycle through `angles` in order (word 0 → `angles[0]`, …) which, with `randomness: 0`, makes the layout reproducible. |
 | `randomness` | number (0–1) | `0` | Layout randomness (0 = ordered by value, 1 = fully random) |
-| `allowNesting` | boolean | `true` | `true` = small words tuck into the concavities of bigger ones (tight packing, bounding boxes may overlap). `false` = whole bounding boxes are packed so they never overlap — use this when labels have an opaque `background`. *(5.20.1)* |
+| `allowNesting` | boolean | `true` | `true` = small words tuck into the concavities of bigger ones (tight packing, bounding boxes may overlap). `false` = whole bounding boxes are packed so they never overlap — use this when labels have an opaque `background`. |
 | `minWordLength` | number | `1` | Skip words shorter than this |
 | `minValue` | number | — | Skip words occurring fewer times than this |
 | `maxCount` | number | — | Maximum number of words to display |
@@ -78,14 +78,14 @@ series.appear(1000);
 | `fillField` | string | — | Data field holding a per-word label fill color |
 | `autoFit` | boolean | `true` | Scale font sizes down so all words fit the available area |
 | `step` | number | `15` | Step size used when searching for the next word placement |
-| `svgPath` | string | — | Arrange words to fill this SVG path shape (experimental) *(5.20.1)* |
-| `maskByShape` | boolean | `false` | Clip words to the `svgPath` outline for a crisp silhouette. Requires `svgPath`. *(5.20.1)* |
-| `shapeTolerance` | number | `0` | Extra pixels a word may spill past the `svgPath` outline; negative pulls words inside, creating padding. Requires `svgPath`. *(5.20.1)* |
+| `svgPath` | string | — | Arrange words to fill this SVG path shape (experimental) |
+| `maskByShape` | boolean | `false` | Clip words to the `svgPath` outline for a crisp silhouette. Requires `svgPath`. |
+| `shapeTolerance` | number | `0` | Extra pixels a word may spill past the `svgPath` outline; negative pulls words inside, creating padding. Requires `svgPath`. |
 | `animationDuration` | number | — | Duration of word animation on chart resize |
 | `sequencedInterpolation` | boolean | `true` | Stagger the word reveal instead of showing all at once |
 | `sequencedDelay` | number | `15` | Milliseconds between words when `sequencedInterpolation` is on |
 
-**Parser settings and `text`:** `minValue`, `maxCount`, `minWordLength` and `excludeWords` are consumed when `text` is parsed. Since **5.20.0** changing any of them on a live series re-parses `text` automatically. On older versions they only took effect on the next `text` assignment — set them **before** `text`, or re-assign `text` after changing them. Before **5.21.0** a word failing more than one of `minValue`, `minWordLength` and `excludeWords` also removed a neighbouring word — if you filtered words out of the data yourself to avoid that, the settings are safe to use now.
+**Parser settings and `text`:** `minValue`, `maxCount`, `minWordLength` and `excludeWords` are consumed when `text` is parsed. Changing any of them on a live series re-parses `text` automatically.
 
 ### excludeWords example
 
@@ -97,7 +97,7 @@ am5wc.WordCloud.new(root, {
 });
 ```
 
-## Shaped word clouds — `svgPath` (5.20.1)
+## Shaped word clouds — `svgPath`
 
 Words can be arranged to fill an arbitrary shape. The path is scaled proportionally to fit the plot area.
 
@@ -127,9 +127,9 @@ Style `fill`/`stroke` only — the series manages the shape's geometry (`svgPath
 
 **Caveats:** this is an experimental feature and the fit is approximate. Favor simple, bold shapes over thin or highly concave ones, and tune `shapeTolerance`, `maskByShape`, `angles`, `minFontSize`/`maxFontSize` per shape. `shapeTolerance` affects placement only — the drawn outline never moves.
 
-## Diagonal angles (5.20.1)
+## Diagonal angles
 
-Before 5.20.1 only `0`, `90` and `-90` were handled. The layout rewrite rasterizes each word and its collision mask at the word's actual angle, so arbitrary angles now work — and neighbors pack into the corners of a rotated word's footprint instead of reserving its full axis-aligned bounding box.
+The layout rasterizes each word and its collision mask at the word's actual angle, so any angle works, and neighbors pack into the corners of a rotated word's footprint instead of reserving its full axis-aligned bounding box.
 
 ```js
 am5wc.WordCloud.new(root, {
@@ -165,12 +165,12 @@ series.labels.template.setAll({
 });
 ```
 
-## Breaking change in 5.20.1
+## Layout and labels
 
-The layout is now computed synchronously in a single pass instead of one word per animation frame — much faster for large clouds. Consequences for existing code:
+The layout is computed synchronously in a single pass:
 
-- The per-data-item `ghostLabel` no longer exists — `dataItem.get("ghostLabel")` returns `undefined`.
-- Labels are held in an internal container, so code walking `series.children` to find labels breaks. Use `series.labels` (the `ListTemplate`) or `dataItem.get("label")`.
+- There is no per-data-item `ghostLabel`: `dataItem.get("ghostLabel")` returns `undefined`.
+- Labels are held in an internal container, so code walking `series.children` doesn't find them. Use `series.labels` (the `ListTemplate`) or `dataItem.get("label")`.
 - The reveal is staggered via `sequencedInterpolation`/`sequencedDelay` (defaults `true` / `15`ms) rather than by the layout itself.
 
 ## Customizing labels

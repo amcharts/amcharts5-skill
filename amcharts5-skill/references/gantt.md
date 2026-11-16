@@ -105,7 +105,7 @@ chart.yAxis.setAll({
 });
 ```
 
-`nameField` and `colorField` are fully honored since 5.21.0. Before, bar colors were always read from (and color-picker changes written to) `color` whatever `colorField` said — on older versions keep the field named `color`.
+`nameField` and `colorField` are honored: bar colors are read from, and color-picker changes written to, the field `colorField` names.
 
 ### Series data fields
 
@@ -157,9 +157,9 @@ Access: `chart.xAxis` (primary) and `chart.xAxisMinor` (secondary).
 chart.xAxisMinor.hide();
 ```
 
-Since 5.22.0 the date rows' labels have `keepInView: true`: a month or week running out of view keeps its label in the part still showing (see `references/xy.md`, "keepInView").
+The date rows' labels have `keepInView: true`: a month or week running out of view keeps its label in the part still showing (see `references/xy.md`, "keepInView").
 
-**Small Gantt charts (5.22.0):** with `am5themes_ResponsiveMax`, a chart 600 px wide or less drops the expand, collapse and color buttons, keeping add, link and clear. Both scrollbars hide at 500 px wide or less, and the horizontal one also at 400 px tall or less; the plot is dragged to move through time and tasks.
+**Small Gantt charts:** with `am5themes_ResponsiveMax`, a chart 600 px wide or less drops the expand, collapse and color buttons, keeping add, link and clear. Both scrollbars hide at 500 px wide or less, and the horizontal one also at 400 px tall or less; the plot is dragged to move through time and tasks.
 
 ## Weekend & holiday configuration
 
@@ -213,7 +213,7 @@ chart.controls.hide(0);
 chart.editButton.show(0);
 ```
 
-**Keyboard (5.21.0):** tasks with subtasks expose `aria-expanded` (`ariaExpanded`), the expand/collapse button of a task without subtasks is no longer a TAB stop, toolbar and task buttons have screen-reader names, scrollbar grips include the category in their name, and an `EditableLabel` (task names) no longer stops ENTER working elsewhere on the page.
+**Keyboard:** tasks with subtasks expose `aria-expanded` (`ariaExpanded`), only tasks with subtasks have an expand/collapse TAB stop, toolbar and task buttons have screen-reader names, and scrollbar grips include the category in their name.
 
 ## Series customization
 

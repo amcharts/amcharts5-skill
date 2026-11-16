@@ -29,7 +29,7 @@ What code passes to `.new(root, { … })` goes into `settings` here, unchanged. 
 | Word cloud | `wc.js` |
 | Venn | `venn.js` |
 
-All files are at `https://cdn.amcharts.com/lib/5/`, and since 5.22.0 under the npm package's `dist/` on jsDelivr and unpkg (`https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all; SKILL.md "Plain HTML, no bundler"). Theme files, e.g. `themes/Animated.js`, go after the chart packages.
+All files are at `https://cdn.amcharts.com/lib/5/`, and under the npm package's `dist/` on jsDelivr and unpkg (`https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all; SKILL.md "Plain HTML, no bundler"). Theme files, e.g. `themes/Animated.js`, go after the chart packages.
 
 ## The rules
 
@@ -100,7 +100,7 @@ XY axes live in `refs`. The chart lists them, and each series points at them:
 
 A legend lists XY series as `"data": ["#series-0", "#series-1"]`, and pie slices as `"data": "#series-0.dataItems"`.
 
-**What a ref can reach (5.22.0+).** A ref steps only through chart objects and data:
+**What a ref can reach.** A ref steps only through chart objects and data:
 - amCharts objects: elements, data items, and objects such as `interfaceColors` and a `ColorSet`;
 - templates and lists;
 - colors and percents;
@@ -117,9 +117,9 @@ A `properties` block sets only public keys, on the same kinds of objects. A `__p
 | `am5.color(0xe05a47)` | `{ "type": "Color", "value": "#e05a47" }` |
 | `am5.percent(50)` | `{ "type": "Percent", "value": 50 }` |
 | `root.verticalLayout` | `"vertical"` (also `"horizontal"`, `"grid"`) |
-| `root.interfaceColors.get("background")` | `"@root.interfaceColors.get('background')"` (5.21.0+) |
-| `chart.get("colors").getIndex(3)` | `"@colors.getIndex(3)"` (5.21.3+, in settings, not in data rows) |
-| `chart.appear(1000, 100)`, `series.appear(1000)` | `"autoAppear": true, "appearDuration": 1000, "appearDelay": 100` in the chart's and series' `settings` (5.21.0+) |
+| `root.interfaceColors.get("background")` | `"@root.interfaceColors.get('background')"` |
+| `chart.get("colors").getIndex(3)` | `"@colors.getIndex(3)"` (in settings, not in data rows) |
+| `chart.appear(1000, 100)`, `series.appear(1000)` | `"autoAppear": true, "appearDuration": 1000, "appearDelay": 100` in the chart's and series' `settings` |
 
 A bare hex string is wrong: `"fill": "#e05a47"` is read as a ref and fails with "Could not find ref #e05a47". `"50%"` stays a string, not a percent. As in code, use the theme's colors unless the user asks for specific ones. Serialized configs write layouts as `{ "type": "VerticalLayout" }`, which also works.
 
@@ -148,8 +148,8 @@ Built-in `@` refs: `@root` (the Root), `@colors` (the theme's palette), `@series
 
 - `"geoJSON": "am5geodata_worldLow"` (a string) names the geodata. The name is `am5geodata_` plus the path under `geodata/`, with `/` written as `_` (`geodata/region/usa/caLow.js` → `am5geodata_region_usa_caLow`; see `references/map.md`).
   - With script tags, load the geodata's script (`geodata/worldLow.js`) first; it defines a global of that name.
-  - With npm, import it and pass it in `resources` (5.21.4+): `JsonParser.new(root).parse(config, { parent: root.container, resources: { am5geodata_worldLow } })`, `element.resources = { am5geodata_worldLow }` on an `<am5-chart>`, or the framework packages' `resources` prop (react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3). Before 5.21.4, set `window.am5geodata_worldLow = am5geodata_worldLow` after importing it.
-  - If the geodata isn't found, the map is blank. Since 5.21.4 the parser logs a warning; before that, no error appears.
+  - With npm, import it and pass it in `resources`: `JsonParser.new(root).parse(config, { parent: root.container, resources: { am5geodata_worldLow } })`, `element.resources = { am5geodata_worldLow }` on an `<am5-chart>`, or the framework packages' `resources` prop (react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3).
+  - If the geodata isn't found, the map is blank and the parser logs a warning.
 - The projection is a name in `settings`: `"projectionName": "geoNaturalEarth1"` for `am5map.geoNaturalEarth1()`. Next to `type` it is ignored.
 - Heat rules are plain objects, not amCharts objects, so each one needs `"__parse": true`. Without it, `target` and the colors stay unread and the chart throws. The series also needs `"calculateAggregates": true` unless the rule sets `minValue` and `maxValue`. Without either, every country gets the middle color. The `target` is a `Template` in `refs`, which the series also uses as its `mapPolygons` template (see "Countries colored by value" under "Maps").
 - Complete map configs (countries colored by value, a few countries highlighted) are in "Maps" below.
@@ -158,28 +158,28 @@ Built-in `@` refs: `@root` (the Root), `@colors` (the theme's palette), `@series
 
 An optional top-level `"root": { "settings": { … }, "properties": { … } }` applies to the Root before the chart is built. `"properties": { "locale": "am5locales_de_DE" }` names the locale, found the same way as geodata (rule 8):
 - with script tags, load `locales/de_DE.js` first; it defines a global of that name;
-- with npm, import it and pass it in `resources` (5.21.4+), e.g. `resources: { am5locales_de_DE }`. Before 5.21.4, set `window.am5locales_de_DE = am5locales_de_DE` after importing it.
+- with npm, import it and pass it in `resources`, e.g. `resources: { am5locales_de_DE }`.
 
-Since 5.21.4 a locale that isn't found logs a warning.
+A locale that isn't found logs a warning.
 
-`"settings"` takes Root settings, e.g. `"root": { "settings": { "direction": "rtl" } }` for a right-to-left chart (5.22.0). `ChartSerializer` with `includeRoot: true` writes it back.
+`"settings"` takes Root settings, e.g. `"root": { "settings": { "direction": "rtl" } }` for a right-to-left chart. `ChartSerializer` with `includeRoot: true` writes it back.
 
-Since 5.22.0 the `root` section is limited:
+The `root` section is limited:
 - `properties` takes `locale`, `utc`, `fps`, `tabindex`, `numberFormatter`, `dateFormatter`, `durationFormatter` and `interfaceColors`, the ones `ChartSerializer` writes. The locale must be a name, as above, not an object of translations.
 - `settings` takes any Root setting, but `sanitizeHTML` only as `true`. A config serialized from a page with `sanitizeHTML: false` loses that setting when parsed.
 
 Anything else is left out with a warning, and `trusted: true` lifts this too.
 
-**Configs from others.** Since 5.22.0 the parser reads a config as data, so one from users or another site cannot run script. Its refs and `properties` reach only chart objects and data (rule 4). Its `root` section sets only the properties above, and never turns HTML sanitizing off.
+**Configs from others.** The parser reads a config as data, so one from users or another site cannot run script. Its refs and `properties` reach only chart objects and data (rule 4). Its `root` section sets only the properties above, and never turns HTML sanitizing off.
 
 What it may not set or follow is left out:
 - `properties` keys and `__proto__` keys;
 - root entries;
 - the setting, property, list item or child that holds a refused ref.
 
-The parser logs one console warning for each thing refused, pointing to `trusted: true`. For a config of your own that needs more, parse it as code: `parser.parse(config, { parent: root.container, trusted: true })`. `<am5-chart>` and the framework packages' `config` prop have no such option, so from 5.22.0 they always read the config as data; build a chart that needs `trusted: true` with `JsonParser` in code instead.
+The parser logs one console warning for each thing refused, pointing to `trusted: true`. For a config of your own that needs more, parse it as code: `parser.parse(config, { parent: root.container, trusted: true })`. `<am5-chart>` and the framework packages' `config` prop have no such option, so they always read the config as data; build a chart that needs `trusted: true` with `JsonParser` in code instead.
 
-Before 5.22.0, and with `trusted: true`, the parser treats a config as code:
+With `trusted: true`, the parser treats a config as code:
 - refs can reach any object from `@root`;
 - an adapter's `callback` that is a ref to an existing function runs it;
 - `root.settings` can set `sanitizeHTML: false`, after which an `html` setting's event handlers run.
@@ -213,7 +213,7 @@ parser.parse(config, { parent: root.container }).then(function (chart) {
 
 ## Complete configs
 
-Each config below was parsed with amCharts 5.21.3 and checked to build its chart. Copy the structure, then change the data and settings.
+Each config below was checked to build its chart. Copy the structure, then change the data and settings.
 
 ### XY: column chart with a category axis, legend and cursor
 
@@ -378,7 +378,7 @@ Needs `index.js`, `plugins/json.js`, `hierarchy.js`. The Treemap is the top-leve
 
 ## Maps
 
-A map config needs `index.js`, `plugins/json.js`, `map.js` and the geodata, e.g. `geodata/worldLow.js` (rule 8). Rows and `include`/`exclude` match countries by `id`, the ISO 3166-1 alpha-2 code. Each config below was parsed with amCharts 5.21.3, built through `<am5-chart>`, and opened in Chart Maker.
+A map config needs `index.js`, `plugins/json.js`, `map.js` and the geodata, e.g. `geodata/worldLow.js` (rule 8). Rows and `include`/`exclude` match countries by `id`, the ISO 3166-1 alpha-2 code. Each config below was built through `<am5-chart>` and opened in Chart Maker.
 
 ### Countries colored by value
 
@@ -492,7 +492,7 @@ In an `<am5-chart>` element, any of these configs goes in the `config` attribute
 
 ## Delivering a config
 
-### `<am5-chart>` element (5.21.0+)
+### `<am5-chart>` element
 
 Load the scripts, then put the config in the `config` attribute:
 
@@ -515,8 +515,8 @@ Load the scripts, then put the config in the `config` attribute:
 - Load the files each family needs (see "Where a config goes").
 - The attribute is single-quoted, so write a `'` inside the config as `&#39;`, e.g. `get(&#39;background&#39;)`.
 - For a long config, use `src="chart.json"` or set the element's `config` property from a script: `document.querySelector("am5-chart").config = { … }`.
-- A theme with its settings (5.21.4) goes in the attribute as JSON: `themes='["Animated", "ResponsiveMax", ["Adaptive", { "baseColor": "#4150a0" }]]'`.
-- With npm, import `defineChartElement` from `@amcharts/amcharts5/element` and call it. A bare `import "@amcharts/amcharts5/element"` works too from 5.21.5; before that, esbuild dropped it. Then set the properties: `element.themes = [am5themes_Animated, am5themes_ResponsiveMax]`, `element.resources = { am5geodata_worldLow }` for a map (5.21.4, rule 8), and `element.config = config`.
+- A theme with its settings goes in the attribute as JSON: `themes='["Animated", "ResponsiveMax", ["Adaptive", { "baseColor": "#4150a0" }]]'`.
+- With npm, import `defineChartElement` from `@amcharts/amcharts5/element` and call it. A bare `import "@amcharts/amcharts5/element"` works too. Then set the properties: `element.themes = [am5themes_Animated, am5themes_ResponsiveMax]`, `element.resources = { am5geodata_worldLow }` for a map (rule 8), and `element.config = config`.
 - See SKILL.md "Serializing to JSON" for `renderer="svg"`, `whenReady()` and the `ready`/`error` events.
 
 ### Chart Maker link
@@ -537,5 +537,5 @@ const url = "https://live.amcharts.com/open#config=" + encodeURIComponent(JSON.s
 
 `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte` and `-react-native` each take a config as a prop or input, plus themes beside it. See SKILL.md "Frameworks".
 
-- For a map in React, Vue, Angular or Svelte, give the chart its geodata as in rule 8: the `resources` prop (5.21.4+), or a global set before the chart is built.
+- For a map in React, Vue, Angular or Svelte, give the chart its geodata as in rule 8: the `resources` prop, or a global set before the chart is built.
 - React Native loads the geodata a config names by itself, but not a locale: give it `modules={["locales/de_DE"]}`.

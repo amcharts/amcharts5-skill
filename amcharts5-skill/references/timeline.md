@@ -4,7 +4,7 @@
 
 Docs: https://docs.amcharts.com/v5/charts/timeline/
 
-Timeline charts are "curved XY charts" — they use XY-style axes and series but bend the chart into serpentine, spiral, or custom shapes. Added in amCharts 5.12.0.
+Timeline charts are "curved XY charts" — they use XY-style axes and series but bend the chart into serpentine, spiral, or custom shapes.
 
 ## Key differences from XY charts
 
@@ -125,7 +125,7 @@ const xRenderer = am5timeline.AxisRendererCurveX.new(root, {
 });
 ```
 
-On a `CurveChart` the `AxisRendererCurveX` `points` are scaled and centered to fit the plot area. Before 5.21.1 a path scaled down this way got far too many labels and grid lines.
+On a `CurveChart` the `AxisRendererCurveX` `points` are scaled and centered to fit the plot area.
 
 ## Axes
 

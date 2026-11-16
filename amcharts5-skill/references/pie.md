@@ -61,7 +61,7 @@ chart.appear(1000, 100);
 | Setting | Type | Description |
 |---------|------|-------------|
 | `radius` | percent/number | Outer radius (default: `am5.percent(80)`) |
-| `innerRadius` | percent/number | Inner hole for donut (default: 0). Percent is relative to radius. `am5.percent(0)` broke the chart before 5.21.0 — use `0` (or omit it) for a plain pie |
+| `innerRadius` | percent/number | Inner hole for donut (default: 0). Percent is relative to radius. Use `0` (or omit it) for a plain pie |
 | `startAngle` | number | Start angle in degrees (default: -90) |
 | `endAngle` | number | End angle in degrees (default: 270) |
 
@@ -108,7 +108,7 @@ series.labels.template.set("forceHidden", true);
 series.ticks.template.set("forceHidden", true);
 ```
 
-**Labels that fit: `autoLabels: true` (5.22.0)** on the `PieSeries` fits the labels into the chart, a step at a time as room runs out:
+**Labels that fit: `autoLabels: true`** on the `PieSeries` fits the labels into the chart, a step at a time as room runs out:
 1. The pie moves aside so each side gets the room its widest label needs. Then it gets smaller, down to half the chart's shorter side.
 2. A label too wide for its column wraps onto up to three lines where there is height to spare, and is shortened where there is not.
 3. The labels of the smallest slices are hidden where a column can't hold them all.
@@ -300,7 +300,7 @@ am5percent.PictorialStackedSeries.new(root, {
 ```js
 series.bullets.push(function(root, series, dataItem) {
   return am5.Bullet.new(root, {
-    locationX: 0.5, locationY: 0.5,          // fractions of the slice (funnel/pyramid: along the sloping edges since 5.20.2)
+    locationX: 0.5, locationY: 0.5,          // fractions of the slice (funnel/pyramid: along the sloping edges)
     sprite: am5.Circle.new(root, {
       radius: 6,
       fill: am5.color(0xffffff)              // set a paint — an unpainted bullet takes its own slice's color and is invisible
@@ -309,7 +309,7 @@ series.bullets.push(function(root, series, dataItem) {
 });
 ```
 
-Percent series have **no series-level `fill`**: a bullet `Graphics` with no `fill`/`stroke` is auto-colored per data item from its own slice (5.20.0+), so it blends in unless stroked, offset, or given a contrasting fill. Slice tooltips need no `am5.Tooltip` instance — `series.slices.template.set("tooltipText", "{category}: {value}")` uses the root's shared tooltip.
+Percent series have **no series-level `fill`**: a bullet `Graphics` with no `fill`/`stroke` is auto-colored per data item from its own slice, so it blends in unless stroked, offset, or given a contrasting fill. Slice tooltips need no `am5.Tooltip` instance — `series.slices.template.set("tooltipText", "{category}: {value}")` uses the root's shared tooltip.
 
 ## Legend (for all percent charts)
 
@@ -355,9 +355,9 @@ outerSeries.data.setAll(outerData);
 innerSeries.data.setAll(innerData);
 ```
 
-A negative `innerRadius` (pixels in from the outer edge, a fixed-width ring) with several series sizes the rings correctly since 5.21.0.
+A negative `innerRadius` (pixels in from the outer edge) gives a fixed-width ring, also with several series.
 
-**`calculateAggregates` on pie/funnel series (5.21.0):** with `calculateAggregates: true` the change fields — `{valueChange}`/`{valueChangePercent}` (vs. the first slice) and `{valueChangePrevious}`/`{valueChangePreviousPercent}` (vs. the previous one) — are real numbers; before 5.21.0 they were `NaN` on non-XY series (pie, map heat maps). `{valuePercentTotal}` and the totals were not affected.
+**`calculateAggregates` on pie/funnel series:** with `calculateAggregates: true` the change fields — `{valueChange}`/`{valueChangePercent}` (vs. the first slice) and `{valueChangePrevious}`/`{valueChangePreviousPercent}` (vs. the previous one) — are real numbers, as on map heat maps.
 
 ## Data-driven slice colors (templateField)
 
@@ -386,14 +386,14 @@ series.slices.template.events.on("pointerout", function(ev) {
   ev.target.set("scale", 1);
 });
 
-// Open a URL on click without a handler (5.20.7) — pie, funnel, pyramid and pictorial slices (and bullets)
+// Open a URL on click without a handler — pie, funnel, pyramid and pictorial slices (and bullets)
 series.set("urlField", "url");          // data row: { category: "A", value: 40, url: "https://…" }
 series.set("linkTarget", "_blank");     // default "_self"
 ```
 
 `urlField` has no default (links off until set); the pointer cursor is set automatically unless you set `cursorOverStyle`; `javascript:`/`data:`/`vbscript:` URLs are never opened; override `series.openUrl(dataItem)` to intercept.
 
-**Keyboard (5.21.0):** `series.slices.template.set("focusable", true)` makes slices TAB-reachable — before 5.21.0 focusable pie slices could not be focused. A focusable slice that toggles on click is exposed as a toggle button (`aria-pressed`).
+**Keyboard:** `series.slices.template.set("focusable", true)` makes slices TAB-reachable. A focusable slice that toggles on click is exposed as a toggle button (`aria-pressed`).
 
 ## Disposal
 
