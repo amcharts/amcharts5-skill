@@ -1013,7 +1013,7 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 
 **Framework packages (5.0.0, 2026-10-22):** `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte`, `-react-native`. See "Frameworks".
 
-**5.22.0:**
+**5.22.0 (2026-11-16):**
 - The npm package has the script files in `dist/` (jsDelivr, unpkg), and geodata 5.2.0 does too (unpkg).
 - New: `autoLabels` (axis renderers, series), `keepInView` on axis labels, `autoFit` on `Legend`, `autoHide` on chart scrollbars, and `am5themes_ResponsiveMax` (see "Available themes").
 - JSON configs are read as data; use `trusted: true` for your own.

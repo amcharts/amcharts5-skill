@@ -84,7 +84,7 @@ Docs: https://docs.amcharts.com/v5/
 - **Maps:** the package's `dist/geodata/` has only `worldLow.js` and `usaLow.js`. Other maps are in the `@amcharts/amcharts5-geodata` package's `dist/`, at the same path as below `geodata/` on the amCharts CDN (`dist/worldLow.js`, `dist/region/world/europeLow.js`), on unpkg (`https://unpkg.com/@amcharts/amcharts5-geodata@5.2.0/dist/worldLow.js`) but not jsDelivr, which refuses a package that large.
 - **PDF fonts** (`am5fonts_*`) are only on cdn.amcharts.com.
 
-**Bundling.** Keep code splitting on (esbuild: `splitting: true`, `format: "esm"`). With the stock toolbar's drawing or indicator controls, `<am5-chart>`, the JSON plugin or the exporting plugin, a single-file bundle inlines the exporting plugin's lazy parts (PDF, Excel, annotations), about 1 MB gzipped more: a stock chart with those controls loads about 265 KB gzipped split, 1.4 MB as one file (the toolbar itself and `PeriodSelector` add almost nothing). So does `import * as am5stock` when the whole namespace object is kept (assigned to a variable or `window`); `am5stock.StockChart` and the like keep only what they use. A stock chart without those controls bundles to about 120–190 KB, core + `xy` to about 160 KB. The script files gzipped (5.21.5): `index.js` + `xy.js` 190 KB, + `stock.js` 268 KB. Docs: https://docs.amcharts.com/v5/getting-started/#bundling.
+**Bundling.** Keep code splitting on (esbuild: `splitting: true`, `format: "esm"`). With the stock toolbar's drawing or indicator controls, `<am5-chart>`, the JSON plugin or the exporting plugin, a single-file bundle inlines the exporting plugin's lazy parts (PDF, Excel, annotations), about 1 MB gzipped more: a stock chart with those controls loads about 275 KB gzipped split, 1.4 MB as one file (the toolbar itself and `PeriodSelector` add almost nothing). So does `import * as am5stock` when the whole namespace object is kept (assigned to a variable or `window`); `am5stock.StockChart` and the like keep only what they use. A stock chart without those controls bundles to about 130–200 KB, core + `xy` to about 170 KB. The script files gzipped (5.22.0): `index.js` + `xy.js` 182 KB, + `stock.js` 260 KB. Docs: https://docs.amcharts.com/v5/getting-started/#bundling.
 
 ## Which reference to read
 
@@ -1254,7 +1254,7 @@ Skip this step entirely if you cannot execute code (e.g., chat-only context with
 
 ## Recent API changes
 
-Latest release covered here: **5.22.0**, with geodata 5.2.0, and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 (2026-10-23) and react-native 5.0.3. These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
+Latest release covered here: **5.22.0** (2026-11-16), with geodata 5.2.0, and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 (2026-10-23) and react-native 5.0.3 (2026-11-16). These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
 
 **Renamed settings (old name still works but is deprecated — use the new one):**
 
@@ -1273,7 +1273,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 
 **Framework packages (5.0.0, 2026-10-22):** `@amcharts/amcharts5-react`, `@amcharts/amcharts5-vue`, `@amcharts/amcharts5-angular`, `@amcharts/amcharts5-svelte` and `@amcharts/amcharts5-react-native`. They make and dispose the chart with the component and work with server rendering. Prefer them over hand-written `Root.new()`/`dispose()` code in those frameworks. See "Frameworks".
 
-**New in 5.22.0:**
+**New in 5.22.0 (2026-11-16):**
 - **Script files on npm CDNs:** the npm package has the script files in `dist/`, so jsDelivr and unpkg serve them (see "Plain HTML, no bundler"). Geodata 5.2.0 has `dist/` too, on unpkg.
 - **Fitting small charts:** `autoLabels` on axis renderers, `PieSeries` and other series; `keepInView` on axis labels; `autoFit` on `Legend`; `autoHide` on chart scrollbars; and the theme `am5themes_ResponsiveMax`, which turns them on (`keepInView` on charts 400 px or smaller). See "Responsive rules".
 - **JSON:** a config is read as data, so one from users or another site cannot run script. Parse a config of your own that needs more with `trusted: true`. See `references/json.md`, "Configs from others".
