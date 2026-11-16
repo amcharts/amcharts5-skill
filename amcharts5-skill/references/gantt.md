@@ -15,6 +15,7 @@ import * as am5xy from "@amcharts/amcharts5/xy";
 import * as am5gantt from "@amcharts/amcharts5/gantt";
 import am5plugins_colorPicker from "@amcharts/amcharts5/plugins/colorPicker";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import am5themes_ResponsiveMax from "@amcharts/amcharts5/themes/ResponsiveMax";
 ```
 
 ### CDN / script tags
@@ -24,6 +25,7 @@ import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
 <script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/gantt.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 ```
 
 From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
@@ -32,7 +34,7 @@ From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://c
 
 ```js
 var root = am5.Root.new("chartdiv");
-root.setThemes([am5themes_Animated.new(root)]);
+root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
 
 var chart = root.container.children.push(
   am5gantt.Gantt.new(root, {
@@ -286,6 +288,7 @@ chart.series.data.setAll(restored.series);
   <script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/gantt.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
   <style>
     #chartdiv { width: 100%; height: 500px; }
   </style>
@@ -294,7 +297,7 @@ chart.series.data.setAll(restored.series);
   <div id="chartdiv"></div>
   <script>
     var root = am5.Root.new("chartdiv");
-    root.setThemes([am5themes_Animated.new(root)]);
+    root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
 
     var chart = root.container.children.push(
       am5gantt.Gantt.new(root, {
@@ -352,6 +355,7 @@ chart.series.data.setAll(restored.series);
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
   <style>
     #chartdiv { width: 100%; height: 400px; }
   </style>
@@ -360,7 +364,7 @@ chart.series.data.setAll(restored.series);
   <div id="chartdiv"></div>
   <script>
     var root = am5.Root.new("chartdiv");
-    root.setThemes([am5themes_Animated.new(root)]);
+    root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
 
     var chart = root.container.children.push(am5xy.XYChart.new(root, {
       panX: false,

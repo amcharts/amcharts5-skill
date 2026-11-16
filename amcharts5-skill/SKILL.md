@@ -43,8 +43,9 @@ Docs: https://docs.amcharts.com/v5/
 11. **DateAxis values must be timestamps** — use `new Date().getTime()`, not Date objects.
 12. **Disposal is mandatory in SPAs** — in React, Vue, Angular, Svelte or React Native use amCharts' framework package, which creates and disposes the root for you (see "Frameworks"); without one, call `root.dispose()` on component unmount. Not `chart.dispose()`.
 13. **Style through amCharts, not CSS** — charts draw on canvas by default, so CSS cannot reach chart internals. Even with the optional SVG renderer (5.21.0) the shapes carry no per-element classes or ids, are rewritten as the chart redraws, and exports ignore page CSS. Use amCharts settings/templates/themes instead.
-14. **Dark backgrounds require Dark theme** — If the user requests or the page clearly has a dark background, always add `am5themes_Dark.new(root)` to `root.setThemes()` alongside Animated. Without it, labels, grid, and tooltips will be invisible. If the background is not clearly dark, default to white/light and do NOT add the Dark theme unless asked.
+14. **Dark backgrounds require Dark theme** — If the user requests or the page clearly has a dark background, always add `am5themes_Dark.new(root)` to `root.setThemes()` after Animated and ResponsiveMax. Without it, labels, grid, and tooltips will be invisible. If the background is not clearly dark, default to white/light and do NOT add the Dark theme unless asked.
 15. **Use default amCharts colors** — Do NOT invent custom color palettes unless the user explicitly asks for specific colors. amCharts assigns colors automatically from its built-in ColorSet. If you need a color programmatically, use `chart.get("colors").getIndex(index)` or `chart.get("colors").next()`. For pie/percent charts, use `series.get("colors")` instead. With 3 or more series in one XY chart, the default colors are close blues and violets (hues 18° apart): set `chart.get("colors").set("step", 3)` before adding series, or use the `Colorblind` theme (see "ColorSet").
+16. **Every chart gets `Animated` and `ResponsiveMax` (5.22.0+)** — `root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)])`, with a palette or `Dark` theme after them. ResponsiveMax fits labels and legends at any size and adapts the chart on small screens: axis labels are spaced to fit, legends shrink and then scroll, and scrollbars give way to pinch zoom on phones. Import `@amcharts/amcharts5/themes/ResponsiveMax`, or load `themes/ResponsiveMax.js` after `themes/Animated.js`. The theme is new in 5.22.0: for an older version, leave it out. Two exceptions: a `Micro` sparkline keeps `Micro` alone, and React Native keeps `["Animated"]` (see "Frameworks").
 
 ## Package / module map
 
@@ -63,7 +64,7 @@ Docs: https://docs.amcharts.com/v5/
 | Venn | `@amcharts/amcharts5/venn` | `venn.js` | Venn |
 | Gantt | `@amcharts/amcharts5/gantt` | `gantt.js` | Gantt (also needs `xy.js` and `plugins/colorPicker.js`, both before `gantt.js`) |
 | Geodata | `@amcharts/amcharts5-geodata/*` | `geodata/*.js` | worldLow, usaLow, etc. |
-| Themes | `@amcharts/amcharts5/themes/Animated` | `themes/Animated.js` | am5themes_Animated |
+| Themes | `@amcharts/amcharts5/themes/Animated`, `@amcharts/amcharts5/themes/ResponsiveMax` (5.22.0) | `themes/Animated.js`, `themes/ResponsiveMax.js` | am5themes_Animated, am5themes_ResponsiveMax |
 | Exporting | `@amcharts/amcharts5/plugins/exporting` | `plugins/exporting.js` | Exporting, ExportingMenu |
 | JSON | `@amcharts/amcharts5/plugins/json` | `plugins/json.js` | ChartSerializer, JsonParser |
 | Chart element (5.21.0) | `@amcharts/amcharts5/element` | `element.js` (after `plugins/json.js`) | `<am5-chart>` — see "Serializing to JSON" |
@@ -75,6 +76,7 @@ Docs: https://docs.amcharts.com/v5/
 <script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/xy.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/themes/Animated.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/themes/ResponsiveMax.js"></script>
 ```
 
 - **Which CDN:** cdn.amcharts.com by default. Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), use jsDelivr or unpkg (`https://unpkg.com/@amcharts/amcharts5@5.22.0/dist/index.js`). The files are also at `node_modules/@amcharts/amcharts5/dist/`.
@@ -113,8 +115,8 @@ If the user asks about core setup (theming, colors, exporting, legends, tooltips
 ```js
 const root = am5.Root.new("chartdiv"); // div id or HTMLElement reference
 
-// Apply theme(s)
-root.setThemes([am5themes_Animated.new(root)]);
+// Apply theme(s): Animated and ResponsiveMax on every chart (ResponsiveMax from 5.22.0); a palette or Dark after them
+root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
 
 // Set locale (optional)
 import am5locales_de_DE from "@amcharts/amcharts5/locales/de_DE";
@@ -141,12 +143,12 @@ Charts look and behave the same with either (text is measured the same way, inte
 
 | Kind | Themes |
 |------|--------|
-| Behavioral | `Animated` (animations), `Micro` (stripped-down micro charts), `Responsive` (size-based rules), `ResponsiveMax` (5.22.0: fits labels, legends and scrollbars to small charts; see "Responsive rules") |
+| Behavioral | `Animated` (animations), `ResponsiveMax` (5.22.0, on every chart: fits labels, legends and scrollbars; see "Responsive rules"), `Micro` (stripped-down micro charts, alone), `Responsive` (the older size-based theme, which mostly hides parts on small charts) |
 | Light palettes | `Dataviz`, `Frozen`, `Kelly`, `Material`, `Moonrise`, `Spirited`, `Ember`, `Nord`, `Pastel`, `Petroleum`, `Savanna`, `Colorblind` (Okabe-Ito, color-blindness safe), `Patterns` (pattern fills instead of flat colors) |
 | Dark | `Dark`, `Midnight`, plus a dark variant of most palettes: `DatavizDark`, `FrozenDark`, `KellyDark`, `MaterialDark`, `MoonriseDark`, `SpiritedDark`, `NordDark`, `PastelDark`, `ColorblindDark`, `PatternsDark` |
 | Parameterized (5.20.0) | `Monochrome`, `Adaptive` — see below |
 
-Palette themes are additive: combine with `Animated`, e.g. `root.setThemes([am5themes_Animated.new(root), am5themes_Nord.new(root)])`. The `*Dark` variants already carry dark interface colors, so do NOT also add `Dark`.
+Palette themes are additive: put them after `Animated` and `ResponsiveMax`, e.g. `root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root), am5themes_Nord.new(root)])`. The `*Dark` variants already carry dark interface colors, so do NOT also add `Dark`.
 
 ## Colors
 
@@ -214,7 +216,7 @@ const root = am5.Root.new("chartdiv", { direction: "rtl" });
 ```
 
 - Text with no `direction` of its own is drawn right to left.
-- A legend's rows start on the right, and each item reads from the right: the marker, then the name, then the value.
+- Legends start on the right: a row's first item is on the right, and a vertical legend lines its items up on its right edge. Each item reads from the right: the marker, then the name, then the value.
 - `"ltr"` keeps everything left to right, e.g. an English chart on a `dir="rtl"` page.
 - Not set, text follows the CSS direction of the chart's element, and legends stay left to right.
 
@@ -375,7 +377,7 @@ Options: `width`, `height`, `precision` (default `3`), `idPrefix` (`"am5-"`; var
 
 ## Responsive rules
 
-**Small or resizing charts: `am5themes_ResponsiveMax` (5.22.0).** One theme fits the chart to its space, and hides parts only as the last step. Prefer it for dashboards, cards and phones:
+**`am5themes_ResponsiveMax` (5.22.0) goes on every chart** (Critical rule 16). It fits labels and legends at any size, and adapts the chart on small screens, hiding parts only as the last step:
 
 ```js
 import am5themes_ResponsiveMax from "@amcharts/amcharts5/themes/ResponsiveMax";   // script tag: themes/ResponsiveMax.js
@@ -406,14 +408,12 @@ The settings also work on their own. All are off by default:
 
 `ChartSerializer` saves these settings when you set them in code. It does not save what they decide (hidden labels, a smaller legend, the pinch zoom), nor what a theme turns on, so a config saved from a small chart opens full size.
 
-**Rules of your own** go on `am5themes_Responsive` (or `am5themes_ResponsiveMax`):
+**Rules of your own** go on the `am5themes_ResponsiveMax` instance (before 5.22.0, on `am5themes_Responsive`, which also hides parts of its own):
 
 ```js
-import am5themes_Responsive from "@amcharts/amcharts5/themes/Responsive";
-
-const responsive = am5themes_Responsive.new(root);
+const responsive = am5themes_ResponsiveMax.new(root);
 responsive.addRule({
-  relevant: am5themes_Responsive.widthXS,  // <= 200px
+  relevant: am5themes_ResponsiveMax.widthXS,  // <= 200px
   applying: function() {
     legend.setAll({ visible: false });
   },
@@ -772,6 +772,7 @@ import am5themes_Adaptive from "@amcharts/amcharts5/themes/Adaptive";
 // Monochrome — single-hue lightness ramp
 root.setThemes([
   am5themes_Animated.new(root),
+  am5themes_ResponsiveMax.new(root),
   am5themes_Monochrome(root, {
     color: 0x2c6e91,   // base hue (default: blue #2e7c9e)
     accent: 0xff7f0e,  // optional — applied to the FIRST series only, so it pops
@@ -783,6 +784,7 @@ root.setThemes([
 // Adaptive — full palette generated from one or two base colors
 root.setThemes([
   am5themes_Animated.new(root),
+  am5themes_ResponsiveMax.new(root),
   am5themes_Adaptive(root, {
     baseColor: 0x2c6e91,   // first generated color IS this color (good for brand colors)
     baseColor2: 0xffdd00,  // optional — palette spans the two colors
@@ -806,7 +808,7 @@ am5themes_Adaptive(root, { baseColor: 0x2c6e91, baseColor2: 0xffdd00, count: 10,
 const myTheme = am5.Theme.new(root);
 myTheme.rule("Label").setAll({ fontSize: 12, fill: am5.color(0x555555) });
 myTheme.rule("Grid").setAll({ stroke: am5.color(0xe0e0e0) });
-root.setThemes([am5themes_Animated.new(root), myTheme]);
+root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root), myTheme]);
 // Theme order matters: later themes override earlier ones
 ```
 
@@ -817,7 +819,8 @@ When the page has a dark background, add the Dark theme so labels, grid, and too
 ```js
 root.setThemes([
   am5themes_Animated.new(root),
-  am5themes_Dark.new(root)        // must come after Animated
+  am5themes_ResponsiveMax.new(root),
+  am5themes_Dark.new(root)        // must come after Animated and ResponsiveMax
 ]);
 ```
 
@@ -865,7 +868,7 @@ colors.set("colors", [
 // Every ColorSet on the root, through a theme rule
 var noLighter = am5.Theme.new(root);
 noLighter.rule("ColorSet").set("repeatLightness", 0);
-root.setThemes([am5themes_Animated.new(root), am5themes_Nord.new(root), noLighter]);
+root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root), am5themes_Nord.new(root), noLighter]);
 
 // Adaptive and Monochrome: a theme setting (true = 0.1, or a number)
 am5themes_Adaptive.new(root, { repeatLightness: false });
@@ -918,7 +921,7 @@ Without `dateFormat`, since 5.21.1 the browser's `Date` parses the strings, so I
 - **Not captured by `ChartSerializer` (as of 5.21.0)** — re-apply these in code after `parse()`: a `ZoomTools` you added to a hand-made `ZoomableContainer` (its `target` is written as a copy, so the parsed buttons drive a different container — re-point `target`, or use `am5.SerialChartContainer`, which wires its own `zoomTools`); Venn `hoverGraphics` (Venn slice-template `states` do round-trip); data items added with `pushDataItem()` (only `series.data` rows are written — map points on lines can be data rows since 5.20.6, see `references/map.md`).
 - **Bullets** are captured by calling the factory with a sample data item — write factories as `function(root, series, dataItem)` (pitfall #36).
 
-**`<am5-chart>` — a chart as an HTML element (5.21.0).** Builds a chart from a JSON config with no root or chart code. With script tags, load `index.js`, `plugins/json.js`, `element.js`, then every chart package the config uses; with npm, `import { defineChartElement } from "@amcharts/amcharts5/element"` and call `defineChartElement()`, which does nothing if the element already exists. A bare `import "@amcharts/amcharts5/element"` also works from 5.21.5; before that, esbuild dropped it and the element was never defined. Chart packages are loaded on demand. Then set `element.themes = [am5themes_Animated]`, for a map `element.resources = { am5geodata_worldLow }` (5.21.4), and `element.config = {…}`, as properties:
+**`<am5-chart>` — a chart as an HTML element (5.21.0).** Builds a chart from a JSON config with no root or chart code. With script tags, load `index.js`, `plugins/json.js`, `element.js`, then every chart package the config uses; with npm, `import { defineChartElement } from "@amcharts/amcharts5/element"` and call `defineChartElement()`, which does nothing if the element already exists. A bare `import "@amcharts/amcharts5/element"` also works from 5.21.5; before that, esbuild dropped it and the element was never defined. Chart packages are loaded on demand. Then set `element.themes = [am5themes_Animated, am5themes_ResponsiveMax]`, for a map `element.resources = { am5geodata_worldLow }` (5.21.4), and `element.config = {…}`, as properties:
 
 ```html
 <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
@@ -926,8 +929,9 @@ Without `dateFormat`, since 5.21.1 the browser's `Date` parses the strings, so I
 <script src="https://cdn.amcharts.com/lib/5/element.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 
-<am5-chart themes="Animated" renderer="svg" style="height: 400px" config='{
+<am5-chart themes="Animated ResponsiveMax" renderer="svg" style="height: 400px" config='{
   "type": "PieChart",
   "properties": { "series": [{ "type": "PieSeries",
     "settings": { "valueField": "value", "categoryField": "category", "autoAppear": true },
@@ -941,7 +945,7 @@ document.querySelector("am5-chart").whenReady().then(function (r) {
 </script>
 ```
 
-Attributes: `config` (JSON) or `src` (URL of a JSON file), `themes`, `renderer="svg"` (default canvas). The `themes` attribute takes names, space- or comma-separated, or since 5.21.4 JSON with a theme's settings: `themes='["Animated", ["Adaptive", { "baseColor": "#4150a0" }]]'`. It works with script tags only. With npm, the `themes` property takes theme classes, or since 5.21.4 a class with its settings: `[am5themes_Animated, [am5themes_Adaptive, { baseColor: "#4150a0" }]]`. Without a height from CSS or its parent it is 400 px high. Themes are not part of a config. Changing `config`/`themes` rebuilds the chart; removing the element disposes it.
+Attributes: `config` (JSON) or `src` (URL of a JSON file), `themes`, `renderer="svg"` (default canvas). The `themes` attribute takes names, space- or comma-separated, or since 5.21.4 JSON with a theme's settings: `themes='["Animated", "ResponsiveMax", ["Adaptive", { "baseColor": "#4150a0" }]]'`. It works with script tags only. With npm, the `themes` property takes theme classes, e.g. `[am5themes_Animated, am5themes_ResponsiveMax]`, or since 5.21.4 a class with its settings: `[am5themes_Animated, am5themes_ResponsiveMax, [am5themes_Adaptive, { baseColor: "#4150a0" }]]`. Without a height from CSS or its parent it is 400 px high. Themes are not part of a config. Changing `config`/`themes` rebuilds the chart; removing the element disposes it.
 
 ## Accessibility
 
@@ -989,7 +993,7 @@ container.setAll({
 
 Use layouts to arrange charts, legends, controls, and labels within containers.
 
-**Right to left: `direction: "rtl"` (5.22.0).** On a container with a horizontal or grid layout, it places the children from right to left, as a mirror image: a child's `marginLeft` ends up on its right. Rows of a grid still go top to bottom. For a right-to-left language, set the Root's `direction` instead, which also turns the text and lays out the legends (see "Legend"). `reverseChildren: true` only reverses the order, so a grid starts at the bottom row; don't use it for RTL.
+**Right to left: `direction: "rtl"` (5.22.0).** On a container with a horizontal or grid layout, it places the children from right to left, as a mirror image: a child's `marginLeft` ends up on its right. Rows of a grid still go top to bottom. In a vertical layout, children with no `x` of their own line up on the right. For a right-to-left language, set the Root's `direction` instead, which also turns the text and lays out the legends (see "Legend"). `reverseChildren: true` only reverses the order, so a grid starts at the bottom row; don't use it for RTL.
 
 ## UI Elements
 
@@ -1040,7 +1044,7 @@ In a framework app, use amCharts' package for that framework instead of writing 
 
 | Framework | Package | A chart in code | A chart from a JSON config |
 |---|---|---|---|
-| React 18+ (Next.js, React Router, Astro) | `@amcharts/amcharts5-react` | `const { ref, root, result } = useAmChart((root) => { … }, [data])`, `<div ref={ref} style={{ height: "500px" }} />` | `<AmChart config={config} themes={[am5themes_Animated]} onReady={({ root, chart }) => …} />` |
+| React 18+ (Next.js, React Router, Astro) | `@amcharts/amcharts5-react` | `const { ref, root, result } = useAmChart((root) => { … }, [data])`, `<div ref={ref} style={{ height: "500px" }} />` | `<AmChart config={config} themes={[am5themes_Animated, am5themes_ResponsiveMax]} onReady={({ root, chart }) => …} />` |
 | Vue 3.5.2+ (Nuxt) | `@amcharts/amcharts5-vue` | `const { root, result } = useAmChart(useTemplateRef("chart"), (root) => { … }, { watch: () => props.data })`, `<div ref="chart" style="height: 500px">`; `root`/`result` are shallow refs | `<AmChart :config="config" :themes="themes" @ready="onReady" />` |
 | Angular 19+ | `@amcharts/amcharts5-angular` | `AmChartDirective`: `<div [amChart]="buildChart" [amChartDeps]="[data()]" (amChartReady)="…" style="height: 500px">`, with `buildChart = (root: Root) => { … }` as an arrow-function property so `this` is the component | `AmChartComponent`: `<am5-chart [config]="config" [themes]="themes" (amChartReady)="…">` |
 | Svelte 4+ (SvelteKit) | `@amcharts/amcharts5-svelte` | Svelte 5.29+: `<div {@attach attachAmChart(buildChart)} style="height: 500px">`; Svelte 4 and older 5: `<div use:amChart={{ setup: buildChart, deps: [data] }}>` | `<am5-chart {@attach attachAmChartConfig({ config, themes })}>`, or `use:amChartConfig={{ config, themes }}`; events `onready`/`onerror` (`on:ready` in Svelte 4) |
@@ -1054,10 +1058,11 @@ import { useEffect } from "react";
 import { useAmChart } from "@amcharts/amcharts5-react";
 import * as am5xy from "@amcharts/amcharts5/xy";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import am5themes_ResponsiveMax from "@amcharts/amcharts5/themes/ResponsiveMax";
 
 function Chart({ data }) {
   const { ref, result } = useAmChart((root) => {
-    root.setThemes([am5themes_Animated.new(root)]);
+    root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
     const chart = root.container.children.push(am5xy.XYChart.new(root, {}));
     const xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
       categoryField: "category",
@@ -1088,7 +1093,7 @@ function Chart({ data }) {
 - **The chart's element needs a height.** The JSON-config components are 400 px high without one.
 - **Deps make the chart again from scratch:** `[data]` in React, `watch` in Vue (what Vue's `watch()` takes; add `deep: true` to also catch `push()`), `[amChartDeps]` in Angular, `deps` in Svelte actions. A Svelte attachment runs again when state read in its own expression changes. To change data without rebuilding, return what you need and use it from `result` (React, Vue), from `(amChartReady)`'s `{ root, result }` (Angular), or from a `$state.raw` variable set in the function (Svelte).
 - **SVG:** `useAmChart(setup, deps, { renderer: "svg" })` in React, `{ renderer: "svg" }` in Vue's options, `[amChartRenderer]="'svg'"` in Angular, and `attachAmChart(setup, { renderer: "svg" })` or `renderer: "svg"` in Svelte's action parameter. The JSON-config components take a `renderer` prop or input.
-- **Themes for the JSON-config components are classes** (`[am5themes_Animated]`, not `.new(root)`): themes are not part of a config. A theme with its settings is a pair (5.21.4): `[am5themes_Animated, [am5themes_Adaptive, { baseColor: "#4150a0" }]]`. React Native takes theme **names** (`["Animated", "Dark"]`), and the pair as `["Adaptive", { baseColor: "#4150a0" }]`.
+- **Themes for the JSON-config components are classes** (`[am5themes_Animated, am5themes_ResponsiveMax]`, not `.new(root)`): themes are not part of a config. A theme with its settings is a pair (5.21.4): `[am5themes_Animated, am5themes_ResponsiveMax, [am5themes_Adaptive, { baseColor: "#4150a0" }]]`. React Native takes theme **names** (`["Animated", "Dark"]`), and the pair as `["Adaptive", { baseColor: "#4150a0" }]`. Leave `"ResponsiveMax"` out there: the WebView loads theme files from the amCharts CDN at the library version the package was built with, which has no ResponsiveMax yet. To use it anyway, point `libraryUrl` at 5.22.0 or later, e.g. `"https://cdn.amcharts.com/lib/version/5.22.0/"`.
 - **Maps and locales in a JSON config** (5.21.4): the config names its geodata (`"geoJSON": "am5geodata_worldLow"`) and locale (`"am5locales_de_DE"`), and with npm imports those aren't globals, so pass them in the `resources` prop: `<AmChart config={config} resources={{ am5geodata_worldLow }} />` in React (import it from `@amcharts/amcharts5-geodata/worldLow`), `:resources` in Vue, `[resources]` in Angular, and `resources` in Svelte's `attachAmChartConfig({ config, resources })` / `use:amChartConfig`. Without it the map is blank, with a console warning that names the pack. React Native loads the geodata a config names by itself, but not a locale: give it `modules={["locales/de_DE"]}`.
 - **Give amCharts plain data.** In Vue, keep amCharts objects out of reactive state: use `shallowRef()` for data, or pass `toRaw(data)`. In Svelte 5, use `$state.snapshot(data)`.
 - **License:** call `am5.addLicense("AM5C-…")` once when the app starts, before any chart is made, never in the setup function, because the logo is decided when the root is made. Put it in `main.ts`/`main.jsx`, before `createApp()` or `bootstrapApplication()`. In Next.js, put it at the top of a client component's file; in Nuxt, in a client plugin (`plugins/amcharts.client.ts`); in SvelteKit, in `src/hooks.client.ts`. React Native takes `licenses={["AM5C-…"]}` on each chart.
@@ -1301,7 +1306,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - **Word cloud:** a number as a category (a year) no longer throws, but shows formatted, `2,025`. See `references/wordcloud.md`.
 - **Right to left:**
   - `am5.Root.new("chartdiv", { direction: "rtl" })` draws text right to left and lays out legends from the right. See "Legend".
-  - Containers take `direction: "rtl"`, which lays out a horizontal or grid layout from right to left.
+  - Containers take `direction: "rtl"`, which lays out a horizontal or grid layout from right to left and lines a vertical layout's children up on the right.
   - On a `dir="rtl"` page, labels are placed right as well as drawn right to left (each sat off by its own width).
   - A `Label` with a `width` keeps its text inside its box for every `textAlign` and `direction`.
 - **Text:** font names with spaces, and font lists such as `[fontFamily: 'Source Code Pro', monospace]`, are read right. Center- or right-aligned wrapped text no longer draws its bold or colored parts out of place.

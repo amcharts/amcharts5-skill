@@ -10,6 +10,7 @@
 import * as am5 from "@amcharts/amcharts5";
 import * as am5map from "@amcharts/amcharts5/map";
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import am5themes_ResponsiveMax from "@amcharts/amcharts5/themes/ResponsiveMax";
 import am5geodata_worldLow from "@amcharts/amcharts5-geodata/worldLow";
 ```
 
@@ -19,6 +20,7 @@ import am5geodata_worldLow from "@amcharts/amcharts5-geodata/worldLow";
 <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 ```
 
 From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
@@ -62,7 +64,7 @@ Pattern: camelCase country name + detail level. E.g. `germanyLow`, `canadaHigh`,
 
 ```js
 const root = am5.Root.new("chartdiv");
-root.setThemes([am5themes_Animated.new(root)]);
+root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
 
 const chart = root.container.children.push(
   am5map.MapChart.new(root, {
@@ -1117,13 +1119,14 @@ root.dispose();
   <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
   <style>#chartdiv { width: 100%; height: 500px; }</style>
 </head>
 <body>
   <div id="chartdiv"></div>
   <script>
     var root = am5.Root.new("chartdiv");
-    root.setThemes([am5themes_Animated.new(root)]);
+    root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
 
     var chart = root.container.children.push(am5map.MapChart.new(root, {
       panX: "rotateX",
@@ -1193,13 +1196,14 @@ root.dispose();
   <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
   <style>#chartdiv { width: 100%; height: 500px; }</style>
 </head>
 <body>
   <div id="chartdiv"></div>
   <script>
     var root = am5.Root.new("chartdiv");
-    root.setThemes([am5themes_Animated.new(root)]);
+    root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
 
     var chart = root.container.children.push(am5map.MapChart.new(root, {
       panX: "translateX",
@@ -1268,13 +1272,14 @@ root.dispose();
   <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/geodata/usaLow.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
   <style>#chartdiv { width: 100%; height: 500px; }</style>
 </head>
 <body>
   <div id="chartdiv"></div>
   <script>
     var root = am5.Root.new("chartdiv");
-    root.setThemes([am5themes_Animated.new(root)]);
+    root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
 
     var chart = root.container.children.push(am5map.MapChart.new(root, {
       panX: "translateX",
@@ -1345,13 +1350,14 @@ Demonstrates: orthographic projection, single-segment lines for per-segment anim
   <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/geodata/continentsLow.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
   <style>#chartdiv { width: 100%; height: 600px; background: #0a0a1a; }</style>
 </head>
 <body>
   <div id="chartdiv"></div>
   <script>
     var root = am5.Root.new("chartdiv");
-    root.setThemes([am5themes_Animated.new(root)]);
+    root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
     var orange = am5.color(0xff6b35);
     var cityColor = am5.color(0xcc4a1a);
 
@@ -1596,6 +1602,7 @@ Demonstrates: `MapSankeySeries` with `sourceId`/`targetId` data (country codes),
   <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
   <style>body { margin: 0; background: #f0e6d6; } #chartdiv { width: 100%; height: 600px; }</style>
 </head>
 <body>
@@ -1618,7 +1625,7 @@ Demonstrates: `MapSankeySeries` with `sourceId`/`targetId` data (country codes),
       background: am5.color(0xe8d5b7),
       text: am5.color(0x3c1e0e)
     });
-    root.setThemes([am5themes_Animated.new(root), coffeeTheme]);
+    root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root), coffeeTheme]);
 
     // Grainy paper background
     root.container.set("background", am5.Rectangle.new(root, {
@@ -1905,6 +1912,7 @@ Demonstrates: `MapSankeySeries` with explicit `sourceLongitude`/`sourceLatitude`
   <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
   <style>body { margin: 0; background: #0a0e12; } #chartdiv { width: 100%; height: 600px; }</style>
 </head>
 <body>
@@ -1927,7 +1935,7 @@ Demonstrates: `MapSankeySeries` with explicit `sourceLongitude`/`sourceLatitude`
       background: am5.color(0x0a0e12),
       text: am5.color(0xf5d090)
     });
-    root.setThemes([am5themes_Animated.new(root), oilTheme]);
+    root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root), oilTheme]);
 
     // Palette
     var deepCrude = am5.color(0x141a1a);

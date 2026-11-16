@@ -10,7 +10,7 @@ What code passes to `.new(root, { … })` goes into `settings` here, unchanged. 
 |---|---|
 | HTML page | `<am5-chart config='…'>` or `<am5-chart src="chart.json">` (see "Delivering a config") |
 | JavaScript | `am5plugins_json.JsonParser.new(root).parse(config, { parent: root.container })`. It returns a promise of the chart. |
-| React, Vue, Angular, Svelte, React Native | the package's `config` prop or input, e.g. `<AmChart config={config} themes={[am5themes_Animated]} />` (SKILL.md "Frameworks") |
+| React, Vue, Angular, Svelte, React Native | the package's `config` prop or input, e.g. `<AmChart config={config} themes={[am5themes_Animated, am5themes_ResponsiveMax]} />` (SKILL.md "Frameworks") |
 | Chart Maker (live.amcharts.com) | a link that carries the config (see "Delivering a config") |
 
 **Themes are not part of a config.** Pass them separately: the element's `themes` attribute, the packages' `themes` prop, `root.setThemes()` in code, or the link's `theme` parameter. Never put `"themes"` in a config.
@@ -502,8 +502,9 @@ Load the scripts, then put the config in the `config` attribute:
 <script src="https://cdn.amcharts.com/lib/5/element.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/percent.js"></script>
 <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 
-<am5-chart themes="Animated" style="height: 400px" config='{
+<am5-chart themes="Animated ResponsiveMax" style="height: 400px" config='{
   "type": "PieChart",
   "properties": { "series": [{ "type": "PieSeries",
     "settings": { "valueField": "value", "categoryField": "category", "autoAppear": true },
@@ -514,8 +515,8 @@ Load the scripts, then put the config in the `config` attribute:
 - Load the files each family needs (see "Where a config goes").
 - The attribute is single-quoted, so write a `'` inside the config as `&#39;`, e.g. `get(&#39;background&#39;)`.
 - For a long config, use `src="chart.json"` or set the element's `config` property from a script: `document.querySelector("am5-chart").config = { … }`.
-- A theme with its settings (5.21.4) goes in the attribute as JSON: `themes='["Animated", ["Adaptive", { "baseColor": "#4150a0" }]]'`.
-- With npm, import `defineChartElement` from `@amcharts/amcharts5/element` and call it. A bare `import "@amcharts/amcharts5/element"` works too from 5.21.5; before that, esbuild dropped it. Then set the properties: `element.themes = [am5themes_Animated]`, `element.resources = { am5geodata_worldLow }` for a map (5.21.4, rule 8), and `element.config = config`.
+- A theme with its settings (5.21.4) goes in the attribute as JSON: `themes='["Animated", "ResponsiveMax", ["Adaptive", { "baseColor": "#4150a0" }]]'`.
+- With npm, import `defineChartElement` from `@amcharts/amcharts5/element` and call it. A bare `import "@amcharts/amcharts5/element"` works too from 5.21.5; before that, esbuild dropped it. Then set the properties: `element.themes = [am5themes_Animated, am5themes_ResponsiveMax]`, `element.resources = { am5geodata_worldLow }` for a map (5.21.4, rule 8), and `element.config = config`.
 - See SKILL.md "Serializing to JSON" for `renderer="svg"`, `whenReady()` and the `ready`/`error` events.
 
 ### Chart Maker link
