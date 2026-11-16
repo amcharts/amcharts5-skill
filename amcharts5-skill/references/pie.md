@@ -61,7 +61,7 @@ chart.appear(1000, 100);
 | Setting | Type | Description |
 |---------|------|-------------|
 | `radius` | percent/number | Outer radius (default: `am5.percent(80)`) |
-| `innerRadius` | percent/number | Inner hole for donut (default: 0). Percent is relative to radius. Use `0` (or omit it) for a plain pie |
+| `innerRadius` | percent/number | Inner hole for donut (default: 0, a plain pie). Percent is relative to radius |
 | `startAngle` | number | Start angle in degrees (default: -90) |
 | `endAngle` | number | End angle in degrees (default: 270) |
 

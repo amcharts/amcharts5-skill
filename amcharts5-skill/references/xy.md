@@ -425,14 +425,6 @@ const series = chart.series.push(am5xy.CandlestickSeries.new(root, {
 }));
 ```
 
-**Candlesticks on a `ValueAxis` X** (e.g. candle index; the `CandlestickSeries` takes the body width from `openValueXField` + `valueXField`): the wick is drawn at the `valueXField` edge, not the middle, because a `ValueAxis` ignores the cell location. Shift the wick by half the body, or use a `DateAxis`:
-
-```js
-["lowX0", "lowX1", "highX0", "highX1"].forEach(function (k) {
-  series.columns.template.adapters.add(k, function (v, target) { return v - target.width() / 2; });
-});
-```
-
 ## XYCursor
 
 Adds crosshair and enables tooltips on hover.
@@ -910,7 +902,7 @@ series.data.setAll(data);
 
 - `templateField` is a setting of `series.columns.template`. Set on the series, it does nothing and the columns stay plain.
 - A pattern's `color` is the color of its lines, dots or squares. The gaps show the column's `fill`, or the pattern's own `fill` (with `fillOpacity`) when it has one. A `color` equal to what shows in the gaps makes the column look solid. Always set `color`: without one, the shapes are black whatever the column's colors.
-- `LinePattern`: set the line direction with `angle` (5.14+; 0 is horizontal, 90 upright). `rotation` turns the whole tile instead, and at 45° the tile edges show as broken lines.
+- `LinePattern`: set the line direction with `angle` (0 is horizontal, 90 upright). `rotation` turns the whole tile instead, and at 45° the tile edges show as broken lines.
 - Make each pattern once, as above. An adapter that returns `am5.LinePattern.new(…)` makes a new pattern every time the setting is read.
 - In a JSON config, a row that holds a pattern needs `"__parse": true`, and so does its settings object (`references/json.md`, rule 3): `{ "source": "Search", "visits": 4200, "columnSettings": { "fillPattern": { "type": "LinePattern", "settings": { "color": { "type": "Color", "value": "#000000" }, "angle": 45 } }, "__parse": true }, "__parse": true }`.
 

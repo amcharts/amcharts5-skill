@@ -118,7 +118,7 @@ A `properties` block sets only public keys, on the same kinds of objects. A `__p
 | `am5.percent(50)` | `{ "type": "Percent", "value": 50 }` |
 | `root.verticalLayout` | `"vertical"` (also `"horizontal"`, `"grid"`) |
 | `root.interfaceColors.get("background")` | `"@root.interfaceColors.get('background')"` |
-| `chart.get("colors").getIndex(3)` | `"@colors.getIndex(3)"` (in settings, not in data rows) |
+| `chart.get("colors").getIndex(3)` | `"@colors.getIndex(3)"` (in a data row, only inside an object with `"__parse": true`) |
 | `chart.appear(1000, 100)`, `series.appear(1000)` | `"autoAppear": true, "appearDuration": 1000, "appearDelay": 100` in the chart's and series' `settings` |
 
 A bare hex string is wrong: `"fill": "#e05a47"` is read as a ref and fails with "Could not find ref #e05a47". `"50%"` stays a string, not a percent. As in code, use the theme's colors unless the user asks for specific ones. Serialized configs write layouts as `{ "type": "VerticalLayout" }`, which also works.

@@ -295,7 +295,7 @@ Changing column colors after creation recolors the columns already drawn — `in
 
 ### Custom indicator editable settings
 
-`IIndicatorEditableSetting` gained three properties for the settings modal:
+`IIndicatorEditableSetting` has three more properties for the settings modal:
 
 ```js
 _editableSettings: [{
