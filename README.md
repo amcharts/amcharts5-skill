@@ -1,6 +1,8 @@
 # amcharts5-skill
 
 > **Using Claude?** Install the [amCharts 5 plugin](https://claude.ai/customize/plugins/id/88417dfb-479c-409d-8571-796c3a299aac%40anthropic-plugin-directory): it bundles this skill and the amCharts MCP server. In Claude Code: `/plugin install amcharts5@anthropic-plugin-directory`.
+>
+> **Using ChatGPT?** Install the [amCharts 5 plugin](https://chatgpt.com/plugins/plugin_asdk_app_6ada25db53b4819184e6dc760cb5daf5): it bundles this skill and the amCharts MCP server.
 
 An AI skill for building [amCharts 5](https://docs.amcharts.com/v5/) charts and data visualizations. Works with Claude, Cursor, GitHub Copilot, and any AI assistant that supports custom context or skill files.
 
