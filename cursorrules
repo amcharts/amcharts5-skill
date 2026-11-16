@@ -177,7 +177,7 @@ root.setThemes([
   am5themes_Monochrome(root, { color: 0x2c6e91, accent: 0xff7f0e, count: 7, dark: false })
 ]);
 
-// Full palette generated from one or two base colors (first color IS baseColor)
+// Full palette generated from one or two base colors (first color IS baseColor, unless keepContrast has to move it)
 root.setThemes([
   am5themes_Animated.new(root),
   am5themes_ResponsiveMax.new(root),

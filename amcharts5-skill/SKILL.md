@@ -786,7 +786,7 @@ root.setThemes([
   am5themes_Animated.new(root),
   am5themes_ResponsiveMax.new(root),
   am5themes_Adaptive(root, {
-    baseColor: 0x2c6e91,   // first generated color IS this color (good for brand colors)
+    baseColor: 0x2c6e91,   // first generated color IS this color (good for brand colors), unless keepContrast has to move it
     baseColor2: 0xffdd00,  // optional — palette spans the two colors
     count: 10,             // number of series colors (default 10)
     dark: false
@@ -796,7 +796,7 @@ root.setThemes([
 
 Both are additive (they do not modify built-in themes) and both handle dark mode themselves via `dark: true` — do not also add the `Dark` theme.
 
-**More settings (5.21.2, both themes, all off by default):** `interleave: true` takes the colors in the order 1, 4, 2, 5, 3, 6, so series next to each other differ more (Monochrome keeps `accent` first); `mapShade: true` fills map land with a mid shade of the base color, as light as default map land, instead of the color itself; `keepContrast: true` keeps the series colors and primary buttons at least 3:1 against the background (or give a ratio, e.g. `4.5`). A branded palette:
+**More settings (5.21.2, both themes, all off by default):** `interleave: true` takes the colors in the order 1, 4, 2, 5, 3, 6, so series next to each other differ more (Monochrome keeps `accent` first); `mapShade: true` fills map land with a mid shade of the base color, as light as default map land, instead of the color itself; `keepContrast: true` keeps the series colors and primary buttons at least 3:1 against the background (or give a ratio, e.g. `4.5`). In Adaptive it moves `baseColor` and `baseColor2` themselves, so the first color is then not exactly the brand color; in Monochrome it moves the end of the shades nearest the background. A branded palette:
 
 ```js
 am5themes_Adaptive(root, { baseColor: 0x2c6e91, baseColor2: 0xffdd00, count: 10, interleave: true, mapShade: true, keepContrast: true })
