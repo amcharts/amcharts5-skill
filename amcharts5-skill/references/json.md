@@ -162,6 +162,8 @@ An optional top-level `"root": { "settings": { … }, "properties": { … } }` a
 
 Since 5.21.4 a locale that isn't found logs a warning.
 
+`"settings"` takes Root settings, e.g. `"root": { "settings": { "direction": "rtl" } }` for a right-to-left chart (5.22.0). `ChartSerializer` with `includeRoot: true` writes it back.
+
 Since 5.22.0 the `root` section is limited:
 - `properties` takes `locale`, `utc`, `fps`, `tabindex`, `numberFormatter`, `dateFormatter`, `durationFormatter` and `interfaceColors`, the ones `ChartSerializer` writes. The locale must be a name, as above, not an object of translations.
 - `settings` takes any Root setting, but `sanitizeHTML` only as `true`. A config serialized from a page with `sanitizeHTML: false` loses that setting when parsed.

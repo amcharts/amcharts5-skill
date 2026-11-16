@@ -155,6 +155,10 @@ Access: `chart.xAxis` (primary) and `chart.xAxisMinor` (secondary).
 chart.xAxisMinor.hide();
 ```
 
+Since 5.22.0 the date rows' labels have `keepInView: true`: a month or week running out of view keeps its label in the part still showing (see `references/xy.md`, "keepInView").
+
+**Small Gantt charts (5.22.0):** with `am5themes_ResponsiveMax`, a chart 600 px wide or less drops the expand, collapse and color buttons, keeping add, link and clear. Both scrollbars hide at 500 px wide or less, and the horizontal one also at 400 px tall or less; the plot is dragged to move through time and tasks.
+
 ## Weekend & holiday configuration
 
 ```js

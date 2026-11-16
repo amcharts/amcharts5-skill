@@ -207,18 +207,18 @@ legend.data.setAll(series.dataItems);
 
 Above or below the chart it takes at most 30% of the chart's height, beside it at most 40% of its width. A `width`, `height`, `maxWidth`, `maxHeight`, `scale` or `verticalScrollbar` you set on the legend is kept. Without it, a long legend below a pie can take the whole chart and leave the pie no room.
 
-**A right-to-left legend (5.22.0)**, for Hebrew or Arabic: the first item on the right, and in each item the marker, then the name, then the value:
+**A right-to-left chart (5.22.0)**, for Hebrew or Arabic: set the Root's `direction` when you create it.
 
 ```js
-const legend = chart.children.push(am5.Legend.new(root, {
-  centerX: am5.percent(50),
-  x: am5.percent(50),
-  direction: "rtl"                                         // items from right to left
-}));
-legend.itemContainers.template.set("direction", "rtl");     // marker on the right of the name
-legend.labels.template.set("direction", "rtl");             // right-to-left text in the names
-legend.valueLabels.template.set("textAlign", "right");      // the value next to its name ("left" lines values up at the far left)
+const root = am5.Root.new("chartdiv", { direction: "rtl" });
 ```
+
+- Text with no `direction` of its own is drawn right to left.
+- A legend's rows start on the right, and each item reads from the right: the marker, then the name, then the value.
+- `"ltr"` keeps everything left to right, e.g. an English chart on a `dir="rtl"` page.
+- Not set, text follows the CSS direction of the chart's element, and legends stay left to right.
+
+Set it in `Root.new()` (or a JSON config's `root` section), not later. Drop `reverseChildren` from legend items in older code, or the legend flips back.
 
 A `Label` with a `width` keeps its text inside its box for every `textAlign` and `direction` since 5.22.0: `left` and `right` are the box's sides, `start` and `end` follow the direction.
 
@@ -388,6 +388,8 @@ What it does:
 - When the chart's div is 400 px or less in either direction, text is drawn at 85% of its size (`fontSize: "0.85em"`).
 - Scrollbar margins shrink too: a horizontal scrollbar's when the div is 400 px tall or less, a vertical one's when it is 400 px wide or less.
 - Labels you add with your own `fontSize`, such as a title, shrink when the div is smaller than 600 × 450 px, down to three quarters of their size.
+- Axis labels get `keepInView`: x axis labels on a chart 400 px wide or less, y axis labels on one 400 px tall or less.
+- A Gantt chart 600 px wide or less drops its expand, collapse and color buttons. Its two scrollbars hide at 500 px wide or less, and the horizontal one also at 400 px tall or less; its plot is dragged to move.
 
 A setting you set in code wins over the theme: `autoLabels: false` on one series or renderer turns that part off. The theme also has `addRule()`, as below.
 
@@ -398,6 +400,7 @@ The settings also work on their own. All are off by default:
 | `autoLabels: true` | any axis renderer (`AxisRendererX`, `AxisRendererY`, radar's) | Spaces labels by their own size. A short axis gets more labels (up to about eight). A category axis shows every label that fits, even closer than `minGridDistance`. Long labels are spaced by their width, so there can be fewer than without it. A label that would be cut off, or overlap another axis's labels, is hidden. |
 | `autoLabels: true` | `PieSeries` | Moves the pie aside or makes it smaller (down to half the chart's shorter side) to make room. Labels then wrap, are shortened or are hidden, smallest slices first. See `references/pie.md`, "Labels". |
 | `autoLabels: true` | any other series | Hides a bullet's label while it overlaps an earlier label or is cut off. The bullet's shape stays. |
+| `keepInView: true` | axis labels (`renderer.labels.template`) | A label whose category or date period is only partly in view, such as the first month after zooming, moves into the part in view instead of hiding. It hides only where that part is too short for it. For unrotated labels inside their cell (`location` or `multiLocation` between 0 and 1), as they are by default when every category or period has a label. Where the grid steps over several (every 2 months), labels sit on grid lines unless `multiLocation` is set, e.g. `0.5`. Not for value axis labels. On by default for a Gantt chart's date rows. |
 | `autoFit: true` | `Legend` | See "Legend". |
 | `autoHide: 300` | a chart's `scrollbarX` / `scrollbarY` | Hides the scrollbar when the chart is that many pixels across it or less: a `scrollbarX` by the chart's height, a `scrollbarY` by its width. Meanwhile it turns on `pinchZoomX` / `pinchZoomY`, unless that is set in code. |
 
@@ -986,7 +989,7 @@ container.setAll({
 
 Use layouts to arrange charts, legends, controls, and labels within containers.
 
-**Right to left: `direction: "rtl"` (5.22.0).** On a container with a horizontal or grid layout, it places the children from right to left, as a mirror image: a child's `marginLeft` ends up on its right. Rows of a grid still go top to bottom. For right-to-left languages, see "Legend". `reverseChildren: true` only reverses the order, so a grid starts at the bottom row; don't use it for RTL.
+**Right to left: `direction: "rtl"` (5.22.0).** On a container with a horizontal or grid layout, it places the children from right to left, as a mirror image: a child's `marginLeft` ends up on its right. Rows of a grid still go top to bottom. For a right-to-left language, set the Root's `direction` instead, which also turns the text and lays out the legends (see "Legend"). `reverseChildren: true` only reverses the order, so a grid starts at the bottom row; don't use it for RTL.
 
 ## UI Elements
 
@@ -1267,7 +1270,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 
 **New in 5.22.0:**
 - **Script files on npm CDNs:** the npm package has the script files in `dist/`, so jsDelivr and unpkg serve them (see "Plain HTML, no bundler"). Geodata 5.2.0 has `dist/` too, on unpkg.
-- **Fitting small charts:** `autoLabels` on axis renderers, `PieSeries` and other series; `autoFit` on `Legend`; `autoHide` on chart scrollbars; and the theme `am5themes_ResponsiveMax`, which turns them all on. See "Responsive rules".
+- **Fitting small charts:** `autoLabels` on axis renderers, `PieSeries` and other series; `keepInView` on axis labels; `autoFit` on `Legend`; `autoHide` on chart scrollbars; and the theme `am5themes_ResponsiveMax`, which turns them on (`keepInView` on charts 400 px or smaller). See "Responsive rules".
 - **JSON:** a config is read as data, so one from users or another site cannot run script. Parse a config of your own that needs more with `trusted: true`. See `references/json.md`, "Configs from others".
 - **Map zooming:** `zoomToGeoBounds()`, `zoomToDataItem()` and click zoom fit what is drawn, also on globes and curved projections.
   - Bounds with `right` less than `left`, or past ±180, cross the date line. On a flat map the two sides meet only with a rotation passed, e.g. `zoomToGeoBounds(bounds, 500, -180)`.
@@ -1292,10 +1295,15 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
   - Bullets that take the series color follow it when it changes.
   - Setting `minBulletDistance` back to 0 shows the bullets again.
   - `data.setIndex()` and `updateData()` apply the row's `templateField` settings.
-- **Pie labels:** a label hidden with `forceHidden` no longer leaves a gap in its column.
+- **Pie labels:** a label hidden with `forceHidden` no longer leaves a gap in its column. `PyramidSeries` and `PictorialStackedSeries` with `alignLabels: false` keep their labels on their slices.
+- **Gantt:** charts with many tasks load several times faster and scroll two to three times as fast. The date rows' labels use `keepInView`, and on a narrow chart a view of two to four weeks shows months in the top row instead of labels on top of each other.
 - **Hierarchy:** after `data.setAll()`, a `VoronoiTreemap` draws again, and a drilled-down Treemap or Sunburst shows the new data from the top.
 - **Word cloud:** a number as a category (a year) no longer throws, but shows formatted, `2,025`. See `references/wordcloud.md`.
-- **Right to left:** containers take `direction: "rtl"`, which lays out a horizontal or grid layout from right to left. A `Label` with a `width` keeps its text inside its box for every `textAlign` and `direction`. See "Legend" for a right-to-left legend.
+- **Right to left:**
+  - `am5.Root.new("chartdiv", { direction: "rtl" })` draws text right to left and lays out legends from the right. See "Legend".
+  - Containers take `direction: "rtl"`, which lays out a horizontal or grid layout from right to left.
+  - On a `dir="rtl"` page, labels are placed right as well as drawn right to left (each sat off by its own width).
+  - A `Label` with a `width` keeps its text inside its box for every `textAlign` and `direction`.
 - **Text:** font names with spaces, and font lists such as `[fontFamily: 'Source Code Pro', monospace]`, are read right. Center- or right-aligned wrapped text no longer draws its bold or colored parts out of place.
 - **TypeScript:** `am5.IGraphics` and `am5.Animation` work as types.
 - **Size:** the script builds are smaller (`index.js` by about 50 KB, 10 KB gzipped), and they no longer define the global `regeneratorRuntime`. The npm package installs only the d3 modules it uses, not the whole `d3`.

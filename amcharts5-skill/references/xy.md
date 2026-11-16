@@ -286,6 +286,14 @@ am5xy.AxisRendererX.new(root, {
 
 `am5themes_ResponsiveMax` turns it on for every axis (SKILL.md "Responsive rules").
 
+**`keepInView: true` (5.22.0)** on axis labels keeps the label of a category or date period that is only partly in view. After a zoom, the first month on a date axis keeps "Feb" in the part still showing, instead of hiding it once the label's center leaves the plot:
+
+```js
+xAxis.get("renderer").labels.template.set("keepInView", true);
+```
+
+The label hides only where the visible part is too short for it. It applies to unrotated labels inside their cell (`location` or `multiLocation` between 0 and 1). They are inside by default when every category or period has a label. Where the grid steps over several (every 2 months), labels sit on grid lines; set `multiLocation: 0.5` to center them in their span. Not for value axis labels. `am5themes_ResponsiveMax` turns it on for x axis labels on charts 400 px wide or less and y axis labels on charts 400 px tall or less. A Gantt chart's date rows have it by default.
+
 **Configuring grid lines:**
 ```js
 const renderer = yAxis.get("renderer");

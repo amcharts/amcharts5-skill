@@ -151,10 +151,11 @@ root.setThemes([
   - `autoLabels: true` on axis renderers: labels spaced by their size, with cut-off and overlapping ones hidden;
   - `autoLabels: true` on a `PieSeries`: the pie moves aside or shrinks, and labels wrap, shorten or hide, smallest slices first;
   - `autoLabels: true` on other series: overlapping bullet labels are hidden;
+  - `keepInView: true` on axis labels (`renderer.labels.template`): a category or date period partly in view keeps its label in the part that is (unrotated labels inside their cell; with a grid step of several periods add `multiLocation: 0.5`); the theme sets it for x axis labels on charts 400 px wide or less and y axis labels on charts 400 px tall or less;
   - `autoFit: true` on a `Legend`: smaller (down to three quarters), or if that is not enough, scrolling, usually at full size; at most 30% of the chart's height above or below it;
   - `autoHide` on a chart's scrollbars, in px: the theme uses 400 for `scrollbarY` (chart width) and 300 for `scrollbarX` (chart height), and pinch zoom takes over.
 
-  When the chart's div is 400 px or less in either direction, text is at 85%. A setting set in code wins over the theme.
+  When the chart's div is 400 px or less in either direction, text is at 85%. A Gantt chart 600 px wide or less drops its expand, collapse and color buttons; its scrollbars hide at 500 px wide or less, the horizontal one also at 400 px tall or less. A setting set in code wins over the theme.
 - **Light palettes:** `Dataviz`, `Frozen`, `Kelly`, `Material`, `Moonrise`, `Spirited`, `Ember`, `Nord`, `Pastel`, `Petroleum`, `Savanna`, `Colorblind` (Okabe-Ito, color-blindness safe), `Patterns` (pattern fills instead of flat colors)
 - **Dark:** `Dark`, `Midnight`, plus dark variants of most palettes — `DatavizDark`, `FrozenDark`, `KellyDark`, `MaterialDark`, `MoonriseDark`, `SpiritedDark`, `NordDark`, `PastelDark`, `ColorblindDark`, `PatternsDark`
 
@@ -679,7 +680,7 @@ const legend = chart.children.push(am5.Legend.new(root, {
   centerX: am5.percent(50),
   x: am5.percent(50)
   // autoFit: true   // (5.22.0) a legend that does not fit gets smaller, or scrolls; long names are shortened
-  // direction: "rtl" // (5.22.0) right to left; also itemContainers.template and labels.template direction "rtl", valueLabels.template textAlign "right"
+  // for a right-to-left language set am5.Root.new("chartdiv", { direction: "rtl" }) (5.22.0): legends then start on the right, marker right of the name
 }));
 legend.data.setAll(chart.series.values);
 ```
@@ -1009,11 +1010,12 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 
 **5.22.0:**
 - The npm package has the script files in `dist/` (jsDelivr, unpkg), and geodata 5.2.0 does too (unpkg).
-- New: `autoLabels` (axis renderers, series), `autoFit` on `Legend`, `autoHide` on chart scrollbars, and `am5themes_ResponsiveMax` (see "Available themes").
+- New: `autoLabels` (axis renderers, series), `keepInView` on axis labels, `autoFit` on `Legend`, `autoHide` on chart scrollbars, and `am5themes_ResponsiveMax` (see "Available themes").
 - JSON configs are read as data; use `trusted: true` for your own.
 - Map zooms fit what is drawn (globes, curved projections, across the date line). GeoJSON feature properties are read as data fields (set `valueField`), heat rules included. `zoomToGeoPoint()` before the map is drawn zooms once it is. When `include` and `exclude` both list an item, `exclude` wins.
 - Heat-rule values outside `minValue` / `maxValue` get `min` / `max`.
-- Containers take `direction: "rtl"` (horizontal and grid layouts from right to left; not `reverseChildren`). A `Label` with a `width` keeps its text in its box for every `textAlign`.
+- Right to left: `am5.Root.new("chartdiv", { direction: "rtl" })` draws text right to left and lays out legends from the right (drop `reverseChildren` on legend items; JSON `"root": { "settings": { "direction": "rtl" } }`). Containers take `direction: "rtl"` too (horizontal and grid layouts from right to left). A `Label` with a `width` keeps its text in its box for every `textAlign`.
+- Gantt charts with many tasks load several times faster; date-row labels use `keepInView`.
 - Fixed: `LinearGradient` takes any `rotation`; an empty `ColorSet` list no longer crashes; `#,###s` keeps its separator; a logarithmic axis with `min: 0` works; `minBulletDistance` back to 0 shows the bullets.
 - A number as a word-cloud category works, shown as `2,025`, so pass years as strings.
 - Nauru is "Naoero" in npm geodata 5.2.0 (on the CDN since 5.20.2; id `NR`).
