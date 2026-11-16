@@ -45,7 +45,7 @@ Docs: https://docs.amcharts.com/v5/
 13. **Style through amCharts, not CSS** — charts draw on canvas by default, so CSS cannot reach chart internals. Even with the optional SVG renderer (5.21.0) the shapes carry no per-element classes or ids, are rewritten as the chart redraws, and exports ignore page CSS. Use amCharts settings/templates/themes instead.
 14. **Dark backgrounds require Dark theme** — If the user requests or the page clearly has a dark background, always add `am5themes_Dark.new(root)` to `root.setThemes()` after Animated and ResponsiveMax. Without it, labels, grid, and tooltips will be invisible. If the background is not clearly dark, default to white/light and do NOT add the Dark theme unless asked.
 15. **Use default amCharts colors** — Do NOT invent custom color palettes unless the user explicitly asks for specific colors. amCharts assigns colors automatically from its built-in ColorSet. If you need a color programmatically, use `chart.get("colors").getIndex(index)` or `chart.get("colors").next()`. For pie/percent charts, use `series.get("colors")` instead. With 3 or more series in one XY chart, the default colors are close blues and violets (hues 18° apart): set `chart.get("colors").set("step", 3)` before adding series, or use the `Colorblind` theme (see "ColorSet").
-16. **Every chart gets `Animated` and `ResponsiveMax` (5.22.0+)** — `root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)])`, with a palette or `Dark` theme after them. ResponsiveMax fits labels and legends at any size and adapts the chart on small screens: axis labels are spaced to fit, legends shrink and then scroll, and scrollbars give way to pinch zoom on phones. Import `@amcharts/amcharts5/themes/ResponsiveMax`, or load `themes/ResponsiveMax.js` after `themes/Animated.js`. The theme is new in 5.22.0: for an older version, leave it out. One exception: a `Micro` sparkline keeps `Micro` alone.
+16. **Every chart gets `Animated` and `ResponsiveMax` (5.22.0+)** — `root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)])`, with a palette or `Dark` theme after them. ResponsiveMax fits labels and legends at any size and adapts the chart on small screens: axis labels are spaced to fit, legends shrink and then scroll, and scrollbars give way to pinch zoom on phones. Import `@amcharts/amcharts5/themes/ResponsiveMax`, or load `themes/ResponsiveMax.js` after `themes/Animated.js`. The theme is new in 5.22.0: for an older version, leave it out (in React Native, before react-native 5.0.3). One exception: a `Micro` sparkline keeps `Micro` alone.
 
 ## Package / module map
 
@@ -1040,7 +1040,7 @@ button.events.on("click", function() {
 
 ## Frameworks (React, Vue, Angular, Svelte, React Native)
 
-In a framework app, use amCharts' package for that framework instead of writing the mount and dispose code yourself. The packages were first released on 2026-10-22; the current ones (2026-10-23) are react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 and react-native 5.0.1. Each package makes the chart once its element is on the page, disposes it with the component, and loads the library in the browser only, so pages rendered on a server work (Next.js, Nuxt, SvelteKit, Angular SSR). Each takes a chart written in code, or a chart from a JSON config (it wraps the `<am5-chart>` element, see "Serializing to JSON").
+In a framework app, use amCharts' package for that framework instead of writing the mount and dispose code yourself. The packages were first released on 2026-10-22; the current ones are react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 (2026-10-23) and react-native 5.0.3, which loads amCharts 5.22.0. Each package makes the chart once its element is on the page, disposes it with the component, and loads the library in the browser only, so pages rendered on a server work (Next.js, Nuxt, SvelteKit, Angular SSR). Each takes a chart written in code, or a chart from a JSON config (it wraps the `<am5-chart>` element, see "Serializing to JSON").
 
 | Framework | Package | A chart in code | A chart from a JSON config |
 |---|---|---|---|
@@ -1048,7 +1048,7 @@ In a framework app, use amCharts' package for that framework instead of writing 
 | Vue 3.5.2+ (Nuxt) | `@amcharts/amcharts5-vue` | `const { root, result } = useAmChart(useTemplateRef("chart"), (root) => { … }, { watch: () => props.data })`, `<div ref="chart" style="height: 500px">`; `root`/`result` are shallow refs | `<AmChart :config="config" :themes="themes" @ready="onReady" />` |
 | Angular 19+ | `@amcharts/amcharts5-angular` | `AmChartDirective`: `<div [amChart]="buildChart" [amChartDeps]="[data()]" (amChartReady)="…" style="height: 500px">`, with `buildChart = (root: Root) => { … }` as an arrow-function property so `this` is the component | `AmChartComponent`: `<am5-chart [config]="config" [themes]="themes" (amChartReady)="…">` |
 | Svelte 4+ (SvelteKit) | `@amcharts/amcharts5-svelte` | Svelte 5.29+: `<div {@attach attachAmChart(buildChart)} style="height: 500px">`; Svelte 4 and older 5: `<div use:amChart={{ setup: buildChart, deps: [data] }}>` | `<am5-chart {@attach attachAmChartConfig({ config, themes })}>`, or `use:amChartConfig={{ config, themes }}`; events `onready`/`onerror` (`on:ready` in Svelte 4) |
-| React Native 0.72+ | `@amcharts/amcharts5-react-native` (+ `react-native-webview` 13+) | `<AmChart code={code} data={data} />`, where `code` is a **string** (below) | `<AmChart config={config} themes={["Animated"]} />` |
+| React Native 0.72+ | `@amcharts/amcharts5-react-native` (+ `react-native-webview` 13+) | `<AmChart code={code} data={data} />`, where `code` is a **string** (below) | `<AmChart config={config} themes={["Animated", "ResponsiveMax"]} />` |
 
 Install the library with the package: `npm install @amcharts/amcharts5 @amcharts/amcharts5-react`. The current web packages need amCharts 5.21.4 or later (peer dependency `^5.21.4`); 5.0.0 worked with 5.21.0 and later. React Native installs only `@amcharts/amcharts5-react-native react-native-webview`: the WebView loads the library from the amCharts CDN.
 
@@ -1093,7 +1093,7 @@ function Chart({ data }) {
 - **The chart's element needs a height.** The JSON-config components are 400 px high without one.
 - **Deps make the chart again from scratch:** `[data]` in React, `watch` in Vue (what Vue's `watch()` takes; add `deep: true` to also catch `push()`), `[amChartDeps]` in Angular, `deps` in Svelte actions. A Svelte attachment runs again when state read in its own expression changes. To change data without rebuilding, return what you need and use it from `result` (React, Vue), from `(amChartReady)`'s `{ root, result }` (Angular), or from a `$state.raw` variable set in the function (Svelte).
 - **SVG:** `useAmChart(setup, deps, { renderer: "svg" })` in React, `{ renderer: "svg" }` in Vue's options, `[amChartRenderer]="'svg'"` in Angular, and `attachAmChart(setup, { renderer: "svg" })` or `renderer: "svg"` in Svelte's action parameter. The JSON-config components take a `renderer` prop or input.
-- **Themes for the JSON-config components are classes** (`[am5themes_Animated, am5themes_ResponsiveMax]`, not `.new(root)`): themes are not part of a config. A theme with its settings is a pair (5.21.4): `[am5themes_Animated, am5themes_ResponsiveMax, [am5themes_Adaptive, { baseColor: "#4150a0" }]]`. React Native takes theme **names** (`["Animated", "Dark"]`), and the pair as `["Adaptive", { baseColor: "#4150a0" }]`.
+- **Themes for the JSON-config components are classes** (`[am5themes_Animated, am5themes_ResponsiveMax]`, not `.new(root)`): themes are not part of a config. A theme with its settings is a pair (5.21.4): `[am5themes_Animated, am5themes_ResponsiveMax, [am5themes_Adaptive, { baseColor: "#4150a0" }]]`. React Native takes theme **names** (`["Animated", "ResponsiveMax", "Dark"]`), and the pair as `["Adaptive", { baseColor: "#4150a0" }]`.
 - **Maps and locales in a JSON config** (5.21.4): the config names its geodata (`"geoJSON": "am5geodata_worldLow"`) and locale (`"am5locales_de_DE"`), and with npm imports those aren't globals, so pass them in the `resources` prop: `<AmChart config={config} resources={{ am5geodata_worldLow }} />` in React (import it from `@amcharts/amcharts5-geodata/worldLow`), `:resources` in Vue, `[resources]` in Angular, and `resources` in Svelte's `attachAmChartConfig({ config, resources })` / `use:amChartConfig`. Without it the map is blank, with a console warning that names the pack. React Native loads the geodata a config names by itself, but not a locale: give it `modules={["locales/de_DE"]}`.
 - **Give amCharts plain data.** In Vue, keep amCharts objects out of reactive state: use `shallowRef()` for data, or pass `toRaw(data)`. In Svelte 5, use `$state.snapshot(data)`.
 - **License:** call `am5.addLicense("AM5C-…")` once when the app starts, before any chart is made, never in the setup function, because the logo is decided when the root is made. Put it in `main.ts`/`main.jsx`, before `createApp()` or `bootstrapApplication()`. In Next.js, put it at the top of a client component's file; in Nuxt, in a client plugin (`plugins/amcharts.client.ts`); in SvelteKit, in `src/hooks.client.ts`. React Native takes `licenses={["AM5C-…"]}` on each chart.
@@ -1125,7 +1125,7 @@ series.data.setAll(data);
 return (newData) => { xAxis.data.setAll(newData); series.data.setAll(newData); };
 `;
 
-<AmChart code={code} data={visits} themes={["Animated"]} style={{ height: 300 }}
+<AmChart code={code} data={visits} themes={["Animated", "ResponsiveMax"]} style={{ height: 300 }}
   onMessage={(name, value) => console.log(name, value)} />
 ```
 
@@ -1254,7 +1254,7 @@ Skip this step entirely if you cannot execute code (e.g., chat-only context with
 
 ## Recent API changes
 
-Latest release covered here: **5.22.0**, with geodata 5.2.0, and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 (2026-10-23) and react-native 5.0.2 (2026-10-26). These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
+Latest release covered here: **5.22.0**, with geodata 5.2.0, and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 (2026-10-23) and react-native 5.0.3. These are the renames, new settings and behavior changes that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
 
 **Renamed settings (old name still works but is deprecated — use the new one):**
 
@@ -1313,6 +1313,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // was: type
 - **TypeScript:** `am5.IGraphics` and `am5.Animation` work as types.
 - **Size:** the script builds are smaller (`index.js` by about 50 KB, 10 KB gzipped), and they no longer define the global `regeneratorRuntime`. The npm package installs only the d3 modules it uses, not the whole `d3`.
 - **Geodata 5.2.0:** Nauru is named "Naoero" (on the CDN since 5.20.2); its id `NR` is unchanged.
+- react-native 5.0.3 loads 5.22.0, so its `themes` take `"ResponsiveMax"` too.
 
 **New in 5.21.5 (2026-10-26):**
 - `am5.renderToSVG()` writes SVG that design tools such as Figma read correctly, and its new option `includeNonExportable` also writes elements marked `exportable: false`. See "SVG export".
