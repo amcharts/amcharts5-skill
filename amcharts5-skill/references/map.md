@@ -29,7 +29,7 @@ From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://c
 
 NPM: `@amcharts/amcharts5-geodata`
 CDN: `https://cdn.amcharts.com/lib/5/geodata/{mapName}.js`
-npm CDN (AI sandboxes, strict CSPs): unpkg serves the geodata package's `dist/` (`https://unpkg.com/@amcharts/amcharts5-geodata@5.2.0/dist/{mapName}.js`). Files have the same path as below `geodata/` on the amCharts CDN (e.g. `dist/region/world/europeLow.js`) and the same globals. jsDelivr refuses the package (too large); there, only `worldLow.js` and `usaLow.js` are available, in the library's own `…/@amcharts/amcharts5@5.22.0/dist/geodata/`.
+npm CDN (AI sandboxes, strict CSPs): jsDelivr and unpkg serve the geodata package's `dist/` (`https://cdn.jsdelivr.net/npm/@amcharts/amcharts5-geodata@5.2.0/dist/{mapName}.js`). Files have the same path as below `geodata/` on the amCharts CDN (e.g. `dist/region/world/europeLow.js`) and the same globals.
 
 | Map | ES import | CDN global |
 |-----|----------|-----------|
