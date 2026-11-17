@@ -22,6 +22,7 @@ The amCharts MCP server (repo amcharts/amcharts5-mcp) serves SKILL.md and the re
   - Changelog prose is not proof.
 - **Every chart example** starts with `am5themes_Animated` and `am5themes_ResponsiveMax`, with a palette or `Dark` after them. The exception is `Micro` sparklines, which keep `Micro` alone.
 - **Write plainly.** Short sentences, current behaviour, lists and tables for options and steps. Say what to do, not what changed.
+- **Anthropic's plugin directory scans SKILL.md.** It refuses the Claude plugin ("Package registry redirected") when a paragraph has the word "npm" and also sets a config with `=` (e.g. `element.config = {…}`): it reads that as an npm registry setting. In such a paragraph write "ES module imports" or "in a bundled app" instead of "npm". Only the directory's scan of the tracked branch runs this check, not the portal's Validate or `claude plugin validate`.
 
 ## Changing the skill
 
