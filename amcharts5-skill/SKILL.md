@@ -1053,7 +1053,7 @@ In a framework app, use amCharts' package for that framework instead of writing 
 | Svelte 4+ (SvelteKit) | `@amcharts/amcharts5-svelte` | Svelte 5.29+: `<div {@attach attachAmChart(buildChart)} style="height: 500px">`; Svelte 4 and older 5: `<div use:amChart={{ setup: buildChart, deps: [data] }}>` | `<am5-chart {@attach attachAmChartConfig({ config, themes })}>`, or `use:amChartConfig={{ config, themes }}`; events `onready`/`onerror` (`on:ready` in Svelte 4) |
 | React Native 0.72+ | `@amcharts/amcharts5-react-native` (+ `react-native-webview` 13+) | `<AmChart code={code} data={data} />`, where `code` is a **string** (below) | `<AmChart config={config} themes={["Animated", "ResponsiveMax"]} />` |
 
-Install the library with the package: `npm install @amcharts/amcharts5 @amcharts/amcharts5-react`. The current web packages need amCharts 5.21.4 or later (peer dependency `^5.21.4`). React Native installs only `@amcharts/amcharts5-react-native react-native-webview`: the WebView loads the library from the amCharts CDN.
+Install `@amcharts/amcharts5` together with the framework's package, e.g. `@amcharts/amcharts5-react`. The current web packages need amCharts 5.21.4 or later (peer dependency `^5.21.4`). React Native needs only `@amcharts/amcharts5-react-native` and `react-native-webview`: the WebView loads the library from the amCharts CDN.
 
 ```jsx
 // React. Vue, Angular and Svelte work the same way: your function gets the root.
