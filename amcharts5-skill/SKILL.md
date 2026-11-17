@@ -70,14 +70,7 @@ Docs: https://docs.amcharts.com/v5/
 | Chart element | `@amcharts/amcharts5/element` | `element.js` (after `plugins/json.js`) | `<am5-chart>` — see "Serializing to JSON" |
 | Framework packages | `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte`, `-react-native` (separate npm packages) | — | `useAmChart`, `<AmChart>`, `[amChart]`, `attachAmChart` — see "Frameworks" |
 
-**Plain HTML, no bundler.** Load the script files ("CDN script" above) with `<script>` tags: `index.js` first, then the chart packages, then themes. They are on the amCharts CDN (`https://cdn.amcharts.com/lib/5/index.js`), and in the npm package's `dist/` folder, so npm CDNs serve them:
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/index.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/xy.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/themes/Animated.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/themes/ResponsiveMax.js"></script>
-```
+**Plain HTML, no bundler.** Load the script files ("CDN script" above) with `<script>` tags: `index.js` first, then the chart packages, then themes. They are on the amCharts CDN (`https://cdn.amcharts.com/lib/5/index.js`), and in the npm package's `dist/` folder, so npm CDNs serve them. On jsDelivr they are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, with the same file names: `index.js`, `xy.js`, `themes/Animated.js`, `themes/ResponsiveMax.js`.
 
 - **Which CDN:** cdn.amcharts.com by default. Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), use jsDelivr or unpkg (`https://unpkg.com/@amcharts/amcharts5@5.22.0/dist/index.js`). The files are also at `node_modules/@amcharts/amcharts5/dist/`.
 - **Pin one version for every file,** and use classic script tags, not `type="module"`: the lazy parts (PDF, Excel and annotation export) load from the `deps/` folder beside `index.js`.
