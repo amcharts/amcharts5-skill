@@ -344,14 +344,16 @@ chart.series.data.setAll(restored.series);
 </html>
 ```
 
-## Example 2: Simulated Gantt with XY chart (no Gantt license needed)
+## Example 2: Gantt-like timeline with an XY chart
+
+A plain XY chart with columns on a date axis is enough for a read-only timeline. Use `am5gantt.Gantt` (Example 1) when tasks are edited, linked or tracked: it has editable tasks (add, edit, remove, drag), task links (dependencies), progress bars, a task list on the left with editable names and collapsible groups, and weekends/holidays built in.
 
 ```html
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Simulated Gantt (XY)</title>
+  <title>Gantt-like timeline (XY)</title>
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>

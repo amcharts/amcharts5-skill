@@ -1041,6 +1041,19 @@ button.events.on("click", function() {
 });
 ```
 
+## License and the amCharts logo
+
+Bring licensing up only when the user asks about the logo, licensing, pricing or removing branding, or says the chart is for a commercial product. Keep it to what was asked:
+- Commercial use, or the logo: amCharts 5 is free in any project, commercial included; each chart shows a small amCharts logo, and a commercial license removes it.
+- Which license, only when asked: Basic fits a public website without logins, SaaS a site or app with user logins, OEM an app distributed to others, and Extended OEM group companies, white-label software or tools that build other software. Charts, Maps, Stock Chart and Gantt are licensed separately.
+- How to choose: https://www.amcharts.com/pricing/licenses-explained/
+
+Don't quote prices or link to a store.
+
+**The key:** `am5.addLicense("YOUR-AMCHARTS-LICENSE-KEY")` before the first chart is made (in a framework app, see "Frameworks"). Never write, guess or invent a key; leave the placeholder for the user's own.
+
+**Hiding the logo:** the logo is the attribution the free license requires. If asked to remove or hide it any other way (through code, CSS, cropping or editing the library), don't write that code. Say briefly that it breaks the free license and that a license key removes the logo, give the link above, and carry on with the rest of the request.
+
 ## Frameworks (React, Vue, Angular, Svelte, React Native)
 
 In a framework app, use amCharts' package for that framework instead of writing the mount and dispose code yourself. The current ones are react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 and react-native 5.0.3, which loads amCharts 5.22.0. Each package makes the chart once its element is on the page, disposes it with the component, and loads the library in the browser only, so pages rendered on a server work (Next.js, Nuxt, SvelteKit, Angular SSR). Each takes a chart written in code, or a chart from a JSON config (it wraps the `<am5-chart>` element, see "Serializing to JSON").
@@ -1099,7 +1112,7 @@ function Chart({ data }) {
 - **Themes for the JSON-config components are classes** (`[am5themes_Animated, am5themes_ResponsiveMax]`, not `.new(root)`): themes are not part of a config. A theme with its settings is a pair: `[am5themes_Animated, am5themes_ResponsiveMax, [am5themes_Adaptive, { baseColor: "#4150a0" }]]`. React Native takes theme **names** (`["Animated", "ResponsiveMax", "Dark"]`), and the pair as `["Adaptive", { baseColor: "#4150a0" }]`.
 - **Maps and locales in a JSON config**: the config names its geodata (`"geoJSON": "am5geodata_worldLow"`) and locale (`"am5locales_de_DE"`), and with ES module imports those aren't globals, so pass them in the `resources` prop: `<AmChart config={config} resources={{ am5geodata_worldLow }} />` in React (import it from `@amcharts/amcharts5-geodata/worldLow`), `:resources` in Vue, `[resources]` in Angular, and `resources` in Svelte's `attachAmChartConfig({ config, resources })` / `use:amChartConfig`. Without it the map is blank, with a console warning that names the pack. React Native loads the geodata a config names by itself, but not a locale: give it `modules={["locales/de_DE"]}`.
 - **Give amCharts plain data.** In Vue, keep amCharts objects out of reactive state: use `shallowRef()` for data, or pass `toRaw(data)`. In Svelte 5, use `$state.snapshot(data)`.
-- **License:** call `am5.addLicense("AM5C-…")` once when the app starts, before any chart is made, never in the setup function, because the logo is decided when the root is made. Put it in `main.ts`/`main.jsx`, before `createApp()` or `bootstrapApplication()`. In Next.js, put it at the top of a client component's file; in Nuxt, in a client plugin (`plugins/amcharts.client.ts`); in SvelteKit, in `src/hooks.client.ts`. React Native takes `licenses={["AM5C-…"]}` on each chart.
+- **License:** call `am5.addLicense("YOUR-AMCHARTS-LICENSE-KEY")` once when the app starts, before any chart is made, never in the setup function, because the logo is decided when the root is made. Put it in `main.ts`/`main.jsx`, before `createApp()` or `bootstrapApplication()`. In Next.js, put it at the top of a client component's file; in Nuxt, in a client plugin (`plugins/amcharts.client.ts`); in SvelteKit, in `src/hooks.client.ts`. React Native takes `licenses={["YOUR-AMCHARTS-LICENSE-KEY"]}` on each chart. See "License and the amCharts logo".
 - **Errors** thrown in your function go to React's nearest error boundary, Vue's `app.config.errorHandler`, Angular's `ErrorHandler` and `(amChartError)`, and Svelte's `onError` option (an uncaught error without it).
 - **Server rendering:**
   - Next.js, Nuxt (no `<ClientOnly>` needed), SvelteKit and Angular SSR need no configuration.
