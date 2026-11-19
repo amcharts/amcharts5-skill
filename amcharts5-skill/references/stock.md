@@ -25,7 +25,7 @@ import am5themes_ResponsiveMax from "@amcharts/amcharts5/themes/ResponsiveMax";
 <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.23.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Core setup
 
@@ -37,6 +37,7 @@ From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://c
 ```js
 const root = am5.Root.new("chartdiv");
 root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
+root.numberFormatter.set("numberFormat", "#,###.00##"); // prices: cents, and up to 4 decimals for small ones
 
 // 1. Stock chart (wrapper)
 const stockChart = root.container.children.push(
@@ -60,7 +61,10 @@ const dateAxis = mainPanel.xAxes.push(am5xy.DateAxis.new(root, {
 }));
 
 const valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
-  renderer: am5xy.AxisRendererY.new(root, {})
+  renderer: am5xy.AxisRendererY.new(root, {}),
+  tooltip: am5.Tooltip.new(root, {}), // shows the cursor's price on the axis...
+  extraTooltipPrecision: 2,           // ...with two more decimals than the grid step
+  preferredDecimals: [0, 2]           // labels: whole numbers, or cents
 }));
 
 // 4. Main series (candlestick)
@@ -170,7 +174,8 @@ const volumeSeries = volumePanel.series.push(am5xy.ColumnSeries.new(root, {
   xAxis: volDateAxis,
   yAxis: volValueAxis,
   valueXField: "Date",
-  valueYField: "Volume"
+  valueYField: "Volume",
+  legendValueText: "{valueY.formatNumber('#,###.0a')}" // shortened, such as 25.3M, not in the price format
 }));
 
 stockChart.set("volumeSeries", volumeSeries);
@@ -348,6 +353,8 @@ var data = [
 | Reset | `am5stock.ResetControl` | Reset chart to defaults |
 | Interval | `am5stock.IntervalControl` | Switch time interval |
 
+**Fitting:** with ResponsiveMax, the toolbar's `autoFit` is on: controls that don't fit in one row fold, first to their icons, then the period buttons into one button that lists them. Set `autoFit: false` on the `StockToolbar` to keep them in full.
+
 **Keyboard:** `StockToolbar` `focusable` defaults to `true` — toolbar buttons are TAB stops and lists work with arrow keys; set `focusable: false` on the `StockToolbar` to turn that off. The settings dialog (`am5.Modal`) traps focus while open and gives it back on close; panel and legend icon buttons and overbought/oversold grips have screen-reader names.
 
 **`PeriodSelector` labels:** a period without a `name` is labeled from its unit and count — `{ timeUnit: "month" }` shows `MONTH1`, `{ timeUnit: "ytd" }` shows `YTD`. Give each period a `name` for nicer labels.
@@ -404,6 +411,7 @@ root.dispose();
   <script>
     var root = am5.Root.new("chartdiv");
     root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
+    root.numberFormatter.set("numberFormat", "#,###.00##"); // prices: cents, and up to 4 decimals for small ones
 
     // Stock chart wrapper
     var stockChart = root.container.children.push(
@@ -427,7 +435,10 @@ root.dispose();
     }));
 
     var valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
-      renderer: am5xy.AxisRendererY.new(root, {})
+      renderer: am5xy.AxisRendererY.new(root, {}),
+      tooltip: am5.Tooltip.new(root, {}),
+      extraTooltipPrecision: 2,
+      preferredDecimals: [0, 2] // labels: whole numbers, or cents
     }));
 
     // Candlestick series

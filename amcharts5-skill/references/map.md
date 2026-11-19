@@ -23,7 +23,7 @@ import am5geodata_worldLow from "@amcharts/amcharts5-geodata/worldLow";
 <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.23.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Geodata (map files)
 
@@ -118,6 +118,9 @@ const polygonSeries = chart.series.push(
     calculateAggregates: true   // needed for heat rules
   })
 );
+// GeoJSON feature properties are data fields too: with valueField "value", a custom GeoJSON's
+// "properties": { "value": 12 } gives the polygon its value without data rows.
+// When include and exclude both list an item, exclude wins.
 
 // Polygon appearance
 polygonSeries.mapPolygons.template.setAll({
@@ -161,7 +164,7 @@ chart.zoomToGeoBounds({ left: -8.6, right: 1.8, top: 60.9, bottom: 49.9 }, 500);
 
 The area check makes this safe on data that is already clockwise, where a blind reverse floods the map. It also catches small rings that simplifying or rounding turned over, even in clockwise data: a flipped 4-point islet measured 4π and filled the whole map, while no worldLow country exceeds 0.42.
 
-`zoomToGeoBounds(bounds, duration?)` is the most direct way to fit custom polygons. It uses the `duration` you pass and leaves the bounds object unchanged; `goHome()` also works when called before the map is ready or on a rotated map, and `autoHome: true` does the initial trip for you (see "Zoom controls").
+`zoomToGeoBounds(bounds, duration?, rotationX?, rotationY?)` is the most direct way to fit custom polygons. Bounds with `right` less than `left`, or past ±180, cross the date line; on a flat map the two sides meet only with a rotation passed, e.g. `zoomToGeoBounds(bounds, 500, -180)`. It uses the `duration` you pass and leaves the bounds object unchanged; `goHome()` also works when called before the map is ready or on a rotated map, and `autoHome: true` does the initial trip for you (see "Zoom controls").
 
 ### Choropleth (heat map) via heat rules
 

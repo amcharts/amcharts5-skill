@@ -70,9 +70,9 @@ Docs: https://docs.amcharts.com/v5/
 | Chart element | `@amcharts/amcharts5/element` | `element.js` (after `plugins/json.js`) | `<am5-chart>` — see "Serializing to JSON" |
 | Framework packages | `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte`, `-react-native` (separate npm packages) | — | `useAmChart`, `<AmChart>`, `[amChart]`, `attachAmChart` — see "Frameworks" |
 
-**Plain HTML, no bundler.** Load the script files ("CDN script" above) with `<script>` tags: `index.js` first, then the chart packages, then themes. They are on the amCharts CDN (`https://cdn.amcharts.com/lib/5/index.js`), and in the npm package's `dist/` folder, so npm CDNs serve them. On jsDelivr they are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.22.0/dist/`, with the same file names: `index.js`, `xy.js`, `themes/Animated.js`, `themes/ResponsiveMax.js`.
+**Plain HTML, no bundler.** Load the script files ("CDN script" above) with `<script>` tags: `index.js` first, then the chart packages, then themes. They are on the amCharts CDN (`https://cdn.amcharts.com/lib/5/index.js`), and in the npm package's `dist/` folder, so npm CDNs serve them. On jsDelivr they are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.23.0/dist/`, with the same file names: `index.js`, `xy.js`, `themes/Animated.js`, `themes/ResponsiveMax.js`.
 
-- **Which CDN:** cdn.amcharts.com by default. Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), use jsDelivr or unpkg (`https://unpkg.com/@amcharts/amcharts5@5.22.0/dist/index.js`). The files are also at `node_modules/@amcharts/amcharts5/dist/`.
+- **Which CDN:** cdn.amcharts.com by default. Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), use jsDelivr or unpkg (`https://unpkg.com/@amcharts/amcharts5@5.23.0/dist/index.js`). The files are also at `node_modules/@amcharts/amcharts5/dist/`.
 - **Pin one version for every file,** and use classic script tags, not `type="module"`: the lazy parts (PDF, Excel and annotation export) load from the `deps/` folder beside `index.js`.
 - **Maps:** the package's `dist/geodata/` has only `worldLow.js` and `usaLow.js`. Other maps are in the `@amcharts/amcharts5-geodata` package's `dist/`, at the same path as below `geodata/` on the amCharts CDN (`dist/worldLow.js`, `dist/region/world/europeLow.js`), on jsDelivr (`https://cdn.jsdelivr.net/npm/@amcharts/amcharts5-geodata@5.2.0/dist/worldLow.js`) and unpkg.
 - **PDF fonts** (`am5fonts_*`) are only on cdn.amcharts.com.
@@ -307,16 +307,16 @@ Numbers in `{placeholders}` use `root.numberFormatter`'s `numberFormat` (default
 
 | Format | 6708.044000000005 | 1.125 | 2024 |
 |---|---|---|---|
-| `#,###` | 6,708.044000000005 | 1.125 | 2,024 |
+| `#,###` | 6,708.044 | 1.125 | 2,024 |
 | `#,###.` | 6,708 | 1 | 2,024 |
 | `#,###.#` | 6,708 | 1.1 | 2,024 |
 | `#,###.00` | 6,708.04 | 1.13 | 2,024.00 |
-| `#` | 6708.044000000005 | 1.125 | 2024 |
+| `#` | 6708.044 | 1.125 | 2024 |
 
-- The part after `.` decides rounding. With no `.` nothing is rounded, unlike Excel's `#,###`; a format ending in `.` rounds to a whole number. For animated values (`{valueXWorking}` in a bar race) use `'#,###.'`.
+- The part after `.` decides rounding. With no `.` the decimals stay, unlike Excel's `#,###`, and only floating-point noise is dropped; a format ending in `.` rounds to a whole number. For animated values (`{valueXWorking}` in a bar race) use `'#,###.'`.
 - Every number placeholder gets a thousands separator, so a year `{year}` shows `2,024`. Use `{year.formatNumber('#')}`, or keep the year a string in the data.
 - Positive, negative and zero formats are split by `|`, not `;` (`"#,###;'-'#,###;0"` prints `500;-500;0`). The negative part still gets a minus unless it has the `s` modifier: `"#,###|(#,###s)|'-'"` gives `1,000`, `(1,000)`, `-`.
-- On a value axis with fractional steps, a trailing `.` makes duplicate labels (`1, 1, 2, 2`); use `maxPrecision: 0` there.
+- Prices: `root.numberFormatter.set("numberFormat", "#,###.00##")` shows cents, and up to four decimals for small prices (`48.50`, `0.0123`). A value axis formats its labels by its grid step instead; `preferredDecimals: [0, 2]` on it makes them whole numbers or cents (`80`, `100`; `48.50`, `49.00`). See `references/stock.md`.
 
 ## Chart title
 
@@ -384,8 +384,10 @@ root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]
 ```
 
 What it does:
-- It turns on the settings in the table below: `autoLabels` on axis renderers and on series (pie labels included), `autoFit` on legends, and `autoHide` on a chart's scrollbars.
-- A vertical scrollbar hides on a chart 400 px wide or less, a horizontal one on a chart 300 px tall or less. A stock chart is measured whole, not by panel.
+- It turns on the settings in the table below: `autoLabels` on axis renderers and on series (pie labels included), `autoFit` on legends and stock toolbars, and `autoHide` on a chart's scrollbars.
+- It sets the root's `touchGestures` to `"auto"`: on a phone, a vertical swipe over the chart scrolls the page. See "Touch" below.
+- A vertical scrollbar hides on a chart 400 px wide or less, a horizontal one on a chart 300 px tall or less, or 400 px wide or less. Pinching zooms instead. A stock chart is measured whole, not by panel.
+- A stock chart 400 px wide or less gets less padding, and less space above each panel.
 - When the chart's div is 400 px or less in either direction, text is drawn at 85% of its size (`fontSize: "0.85em"`).
 - Scrollbar margins shrink too: a horizontal scrollbar's when the div is 400 px tall or less, a vertical one's when it is 400 px wide or less.
 - Labels you add with your own `fontSize`, such as a title, shrink when the div is smaller than 600 × 450 px, down to three quarters of their size.
@@ -403,7 +405,15 @@ The settings also work on their own. All are off by default:
 | `autoLabels: true` | any other series | Hides a bullet's label while it overlaps an earlier label or is cut off. The bullet's shape stays. |
 | `keepInView: true` | axis labels (`renderer.labels.template`) | A label whose category or date period is only partly in view, such as the first month after zooming, moves into the part in view instead of hiding. It hides only where that part is too short for it. For unrotated labels inside their cell (`location` or `multiLocation` between 0 and 1), as they are by default when every category or period has a label. Where the grid steps over several (every 2 months), labels sit on grid lines unless `multiLocation` is set, e.g. `0.5`. Not for value axis labels. On by default for a Gantt chart's date rows. |
 | `autoFit: true` | `Legend` | See "Legend". |
+| `autoFit: true` | `StockToolbar` | Folds the controls that don't fit in one row, a step at a time: first the labels of Indicators, Draw, Comparison and the series type control (their icons stay), then the period buttons into one button that lists them. Needs the toolbar's default CSS. |
 | `autoHide: 300` | a chart's `scrollbarX` / `scrollbarY` | Hides the scrollbar when the chart is that many pixels across it or less: a `scrollbarX` by the chart's height, a `scrollbarY` by its width. Meanwhile it turns on `pinchZoomX` / `pinchZoomY`, unless that is set in code. |
+
+**Touch: `root.touchGestures`** decides who gets a touch gesture that starts on the chart:
+- `"chart"` (default): the chart, wherever it drags, pans, zooms or selects, so the page doesn't scroll by a swipe there.
+- `"tap"`: the page, until the chart is tapped; then the chart, until `tapToActivateTimeout` passes without a touch.
+- `"auto"`: a vertical swipe scrolls the page. A swipe that starts sideways, or uses two fingers, works the chart. Scrollbar grips, buttons, stock drawing tools and radar charts take any swipe that starts on them.
+
+ResponsiveMax sets `"auto"` unless `touchGestures` or `tapToActivate` is set in code. So with ResponsiveMax, don't set `root.tapToActivate`: `true` is the same as `"tap"`. To keep the chart taking every gesture, set `root.touchGestures = "chart"`.
 
 `ChartSerializer` saves these settings when you set them in code. It does not save what they decide (hidden labels, a smaller legend, the pinch zoom), nor what a theme turns on, so a config saved from a small chart opens full size.
 
@@ -471,7 +481,10 @@ A `radius` rule is linear in radius: areas grow with the square of the value, an
 | `stops` | array | Values for a scale through more than two, in place of `min`/`max`: the lowest data value gets the first, the highest the last, blended between. Numbers, percents or colors, all of one kind |
 | `minValue` | number | Override auto-calculated min (skips `calculateAggregates`; `0` is honored) |
 | `maxValue` | number | Override auto-calculated max (skips `calculateAggregates`; `0` is honored) |
+| `logarithmic` | boolean | Spreads the values between `min` and `max` on a logarithmic scale; zero and below get `min` (default `false`) |
 | `customFunction` | function | `(sprite, min, max, value)` — full control over the rule |
+
+Values outside `minValue` / `maxValue` get `min` / `max`.
 
 **Using heat rules on bullets** — bullets need an explicit `am5.Template`, and the series must track the field the rule reads:
 
@@ -1056,7 +1069,7 @@ Don't quote prices or link to a store.
 
 ## Frameworks (React, Vue, Angular, Svelte, React Native)
 
-In a framework app, use amCharts' package for that framework instead of writing the mount and dispose code yourself. The current ones are react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 and react-native 5.0.3, which loads amCharts 5.22.0. Each package makes the chart once its element is on the page, disposes it with the component, and loads the library in the browser only, so pages rendered on a server work (Next.js, Nuxt, SvelteKit, Angular SSR). Each takes a chart written in code, or a chart from a JSON config (it wraps the `<am5-chart>` element, see "Serializing to JSON").
+In a framework app, use amCharts' package for that framework instead of writing the mount and dispose code yourself. The current ones are react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 and react-native 5.0.4, which loads amCharts 5.23.0. Each package makes the chart once its element is on the page, disposes it with the component, and loads the library in the browser only, so pages rendered on a server work (Next.js, Nuxt, SvelteKit, Angular SSR). Each takes a chart written in code, or a chart from a JSON config (it wraps the `<am5-chart>` element, see "Serializing to JSON").
 
 | Framework | Package | A chart in code | A chart from a JSON config |
 |---|---|---|---|
@@ -1225,7 +1238,7 @@ onMount(() => { const root = am5.Root.new(chartdiv); /* ... */ return () => root
 41. **A JSON-config map that draws nothing with ES module imports** — the config names its geodata (`"geoJSON": "am5geodata_worldLow"`), and with ES module imports there is no global of that name. Pass the pack in `resources`: `JsonParser.parse(config, { parent, resources: { am5geodata_worldLow } })`, `element.resources`, or the framework packages' `resources` prop. The same goes for a locale (`am5locales_de_DE`). A console warning names the missing pack. A config serialized from such a chart copies the whole pack unless `ChartSerializer` gets the same `resources`.
 42. **An `am5.Graphics` redraws only when `draw` changes** — `graphics.set("draw", fn)` with the function it already has does nothing. Pass a new closure that captures the new points: `graphics.set("draw", (display) => paint(display, points))`.
 43. **A legend value without a cursor needs `calculateAggregates`** — `legendValueText` is used only under a cursor; otherwise the value label shows `legendRangeValueText`, which has no data item: `{valueY}` is empty there, and `{valueYClose}` (the latest value), `{valueYSum}`, `{valueYHigh}` and the other range values are empty unless the series has `calculateAggregates: true` (no warning). See `references/xy.md` → Legend.
-44. **`#,###` does not round** — a number format without a `.` keeps every decimal (`6,708.044000000005` while animating); end it with `.` for whole numbers (`'#,###.'`) or give the decimals (`'#,###.00'`). Every number placeholder also gets a thousands separator, so `{year}` shows `2,024`: use `{year.formatNumber('#')}`. Sections are split by `|`, not `;`. See "Number formats".
+44. **`#,###` does not round** — a number format without a `.` keeps every decimal (`6,708.044`); end it with `.` for whole numbers (`'#,###.'`) or give the decimals (`'#,###.00'`). Every number placeholder also gets a thousands separator, so `{year}` shows `2,024`: use `{year.formatNumber('#')}`. Sections are split by `|`, not `;`. See "Number formats".
 
 ## Easing functions
 
@@ -1270,7 +1283,7 @@ Skip this step entirely if you cannot execute code (e.g., chat-only context with
 
 ## Recent API changes
 
-Latest release covered here: **5.22.0** (2026-11-16), with geodata 5.2.0, and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 and react-native 5.0.3. These are the renames, new settings and behaviors that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
+Latest release covered here: **5.23.0** (2026-11-19), with geodata 5.2.0, and the framework packages react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3 and react-native 5.0.4. These are the renames, new settings and behaviors that code written from older knowledge most often gets wrong — prefer these names/settings. For exact types and defaults, use the typings (`*.d.ts`) or the amCharts MCP server's `get_api_reference`, which is generated from them; for anything newer, verify against the live docs (see next section).
 
 **Renamed settings (old name still works but is deprecated — use the new one):**
 
@@ -1289,33 +1302,13 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // not type
 
 **Framework packages:** `@amcharts/amcharts5-react`, `@amcharts/amcharts5-vue`, `@amcharts/amcharts5-angular`, `@amcharts/amcharts5-svelte` and `@amcharts/amcharts5-react-native`. They make and dispose the chart with the component and work with server rendering. Prefer them over hand-written `Root.new()`/`dispose()` code in those frameworks. See "Frameworks".
 
-**New in 5.22.0 (2026-11-16):**
-- **Script files on npm CDNs:** the npm package has the script files in `dist/`, so jsDelivr and unpkg serve them (see "Plain HTML, no bundler"). Geodata 5.2.0 has `dist/` too, on both.
-- **Fitting small charts:** `autoLabels` on axis renderers, `PieSeries` and other series; `keepInView` on axis labels; `autoFit` on `Legend`; `autoHide` on chart scrollbars; and the theme `am5themes_ResponsiveMax`, which turns them on (`keepInView` on charts 400 px or smaller). See "Responsive rules".
-- **JSON:** a config is read as data, so one from users or another site cannot run script. Parse a config of your own that needs more with `trusted: true`. See `references/json.md`, "Configs from others".
-- **Map zooming:** `zoomToGeoBounds()`, `zoomToDataItem()` and click zoom fit what is drawn, also on globes and curved projections.
-  - Bounds with `right` less than `left`, or past ±180, cross the date line. On a flat map the two sides meet only with a rotation passed, e.g. `zoomToGeoBounds(bounds, 500, -180)`.
-  - A `zoomToGeoBounds()`, `zoomToDataItem()` or `zoomToGeoPoint()` call before the map is drawn zooms once it is.
-  - Zooms keep `rotationZ`.
-- **Maps, data:**
-  - GeoJSON feature properties are read as data fields: with `valueField: "value"` set, a custom GeoJSON with `"properties": { "value": 12 }` gives each polygon its value without data rows, and heat rules their range.
-  - When `include` and `exclude` both list an item, `exclude` wins.
-  - A map with panning and `pinchZoom` off lets the page scroll on touch screens.
-- **Heat rules:** values outside `minValue` / `maxValue` get `min` / `max`. On a `logarithmic` rule, zero and below get `min`.
-- **Number formats:** a modifier right after the digits, as in `#,###s`, keeps the thousands separator.
-- **ValueAxis:** a `logarithmic` axis with `min: 0` starts at `treatZeroAs`, or where the data starts.
-- **Gantt:** the date rows' labels use `keepInView`, and on a narrow chart a view of two to four weeks shows months in the top row.
-- **Hierarchy:** after `data.setAll()`, a drilled-down Treemap or Sunburst shows the new data from the top.
-- **Word cloud:** a number as a category (a year) shows formatted, `2,025`, so pass years as strings. See `references/wordcloud.md`.
-- **Right to left:**
-  - `am5.Root.new("chartdiv", { direction: "rtl" })` draws text right to left and lays out legends from the right. See "Legend".
-  - Containers take `direction: "rtl"`, which lays out a horizontal or grid layout from right to left and lines a vertical layout's children up on the right.
-  - On a `dir="rtl"` page, labels are placed and drawn right to left.
-  - A `Label` with a `width` keeps its text inside its box for every `textAlign` and `direction`.
-- **Text:** font names with spaces, and font lists such as `[fontFamily: 'Source Code Pro', monospace]`, work in text markup.
-- **TypeScript:** `am5.IGraphics` and `am5.Animation` work as types.
-- **Geodata 5.2.0:** Nauru is named "Naoero"; its id is `NR`.
-- react-native 5.0.3 loads 5.22.0, so its `themes` take `"ResponsiveMax"`.
+**New in 5.23.0 (2026-11-19):**
+- **Touch:** `root.touchGestures` is `"chart"` (default), `"tap"` or `"auto"`. With `"auto"`, which ResponsiveMax sets, a vertical swipe over the chart scrolls the page and a sideways or two-finger swipe works the chart, so phones need no tap first. With ResponsiveMax, don't set `root.tapToActivate`. See "Responsive rules".
+- **Value axis decimals:** `preferredDecimals` lists the decimal counts labels may show. With `[0, 2]`, labels read `48.50` and `49.00` instead of `48.5` and `49.0`, and whole prices stay whole. The axis tooltip shows the step's decimals plus `extraTooltipPrecision`, rounded up to the list. Not used with the axis's own `numberFormat`, nor on logarithmic axes. See `references/stock.md`.
+- **Stock toolbar:** `autoFit` folds the controls that don't fit in one row. ResponsiveMax turns it on.
+- **ResponsiveMax** on charts 400 px wide or less: horizontal chart scrollbars hide too, and pinching zooms instead; stock charts get less padding.
+- **Number formats** without decimals drop floating-point noise: `#,###` shows 6708.044000000005 as `6,708.044`.
+- react-native 5.0.4 loads 5.23.0.
 
 **Settings and methods worth knowing** (newer than most training data):
 
@@ -1382,7 +1375,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // not type
 *All entities*
 - `onDebounced(key, cb, delay)` / `offDebounced(key, cb?)` and `onPrivateDebounced` / `offDebouncedPrivate` — fire once after rapid changes settle.
 - `once(key, cb)` and `onceDebounced(key, cb, delay)` — like `on()`/`onDebounced()` for a **settings** key, but the callback fires only the first time that setting changes, then removes itself. Both return an `IDisposer`. (Distinct from `events.once("eventName", …)` for events.)
-- `Label`: `fontFamily: "inherit"` uses the chart container's computed font.
+- `Label`: `fontFamily: "inherit"` uses the chart container's computed font. Text markup takes font names with spaces and font lists: `[fontFamily: 'Source Code Pro', monospace]`.
 
 ## Verify unfamiliar API before using it
 
