@@ -174,8 +174,7 @@ const volumeSeries = volumePanel.series.push(am5xy.ColumnSeries.new(root, {
   xAxis: volDateAxis,
   yAxis: volValueAxis,
   valueXField: "Date",
-  valueYField: "Volume",
-  legendValueText: "{valueY.formatNumber('#,###.0a')}" // shortened, such as 25.3M, not in the price format
+  valueYField: "Volume"
 }));
 
 stockChart.set("volumeSeries", volumeSeries);
@@ -462,6 +461,7 @@ root.dispose();
     var legend = mainPanel.plotContainer.children.push(
       am5stock.StockLegend.new(root, { stockChart: stockChart })
     );
+    legend.data.setAll([valueSeries]);
 
     // Cursor
     mainPanel.set("cursor", am5xy.XYCursor.new(root, {

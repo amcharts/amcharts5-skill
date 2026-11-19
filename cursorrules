@@ -519,7 +519,7 @@ Once a state has changed a setting, the `"default"` state keeps the value from b
 
 ## Heat rules
 
-Color or size elements by data value. Requires `calculateAggregates: true` on the series (unless `minValue`/`maxValue` are set). Values outside `minValue` / `maxValue` get `min` / `max`.
+Color or size elements by data value. Requires `calculateAggregates: true` on the series (unless `minValue`/`maxValue` are set). Values outside `minValue` / `maxValue` get `min` / `max`. `logarithmic: true` spreads values on a log scale; zero and below get `min`.
 
 ```js
 // Color columns by value

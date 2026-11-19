@@ -408,14 +408,14 @@ The settings also work on their own. All are off by default:
 | `autoFit: true` | `StockToolbar` | Folds the controls that don't fit in one row, a step at a time: first the labels of Indicators, Draw, Comparison and the series type control (their icons stay), then the period buttons into one button that lists them. Needs the toolbar's default CSS. |
 | `autoHide: 300` | a chart's `scrollbarX` / `scrollbarY` | Hides the scrollbar when the chart is that many pixels across it or less: a `scrollbarX` by the chart's height, a `scrollbarY` by its width. Meanwhile it turns on `pinchZoomX` / `pinchZoomY`, unless that is set in code. |
 
+`ChartSerializer` saves these settings when you set them in code. It does not save what they decide (hidden labels, a smaller legend, the pinch zoom), nor what a theme turns on, so a config saved from a small chart opens full size.
+
 **Touch: `root.touchGestures`** decides who gets a touch gesture that starts on the chart:
 - `"chart"` (default): the chart, wherever it drags, pans, zooms or selects, so the page doesn't scroll by a swipe there.
 - `"tap"`: the page, until the chart is tapped; then the chart, until `tapToActivateTimeout` passes without a touch.
 - `"auto"`: a vertical swipe scrolls the page. A swipe that starts sideways, or uses two fingers, works the chart. Scrollbar grips, buttons, stock drawing tools and radar charts take any swipe that starts on them.
 
 ResponsiveMax sets `"auto"` unless `touchGestures` or `tapToActivate` is set in code. So with ResponsiveMax, don't set `root.tapToActivate`: `true` is the same as `"tap"`. To keep the chart taking every gesture, set `root.touchGestures = "chart"`.
-
-`ChartSerializer` saves these settings when you set them in code. It does not save what they decide (hidden labels, a smaller legend, the pinch zoom), nor what a theme turns on, so a config saved from a small chart opens full size.
 
 **Rules of your own** go on the `am5themes_ResponsiveMax` instance (`am5themes_Responsive` takes them too, but also hides parts of its own):
 

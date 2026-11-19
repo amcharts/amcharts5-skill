@@ -164,7 +164,7 @@ chart.zoomToGeoBounds({ left: -8.6, right: 1.8, top: 60.9, bottom: 49.9 }, 500);
 
 The area check makes this safe on data that is already clockwise, where a blind reverse floods the map. It also catches small rings that simplifying or rounding turned over, even in clockwise data: a flipped 4-point islet measured 4π and filled the whole map, while no worldLow country exceeds 0.42.
 
-`zoomToGeoBounds(bounds, duration?, rotationX?, rotationY?)` is the most direct way to fit custom polygons. Bounds with `right` less than `left`, or past ±180, cross the date line; on a flat map the two sides meet only with a rotation passed, e.g. `zoomToGeoBounds(bounds, 500, -180)`. It uses the `duration` you pass and leaves the bounds object unchanged; `goHome()` also works when called before the map is ready or on a rotated map, and `autoHome: true` does the initial trip for you (see "Zoom controls").
+`zoomToGeoBounds(bounds, duration?, rotationX?, rotationY?)` is the most direct way to fit custom polygons. Bounds with `right` less than `left`, or past ±180, cross the date line; on a flat map the two sides meet only with a rotation passed, e.g. `zoomToGeoBounds(bounds, 500, -180)`. Called before the map is drawn, `zoomToGeoBounds()` and `zoomToGeoPoint()` zoom once it is. It uses the `duration` you pass and leaves the bounds object unchanged; `goHome()` also works when called before the map is ready or on a rotated map, and `autoHome: true` does the initial trip for you (see "Zoom controls").
 
 ### Choropleth (heat map) via heat rules
 

@@ -211,14 +211,11 @@ const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
 - `markUnitChange: true` — highlights when time unit changes on axis labels (e.g., new month)
 - `tooltipDateFormat` — format string for cursor tooltip
 
-**Live updates — two settings that do not refresh on `set()`:**
-- **Date format maps** (`dateFormats`, `periodChangeDateFormats`, `minorDateFormats`): after `axis.set("dateFormats", {...})` already-rendered labels keep their old text. `axis.markDirtyValues()` is not enough — call **`axis.markDirtySize()`** to make the axis re-run label formatting.
-- **`groupIntervals`** (with `groupData: true`): amCharts only (re)computes grouping when a series' data is set, so changing the allowed intervals on an already-grouped axis does nothing until you re-set the data on every series bound to the axis: `series.data.setAll(series.data.values.slice())`.
+**Live updates:** after `axis.set("dateFormats", {...})` (or `periodChangeDateFormats`, `minorDateFormats`) already-rendered labels keep their old text. `axis.markDirtyValues()` is not enough — call **`axis.markDirtySize()`** to make the axis re-run label formatting. Changing `groupIntervals` regroups the data.
 
-**Large data: first-render cost (laptop CPU).** Expect about 6 s per million points with `groupData: true`: 4 series × 250,000 took 5.8 s, and 4 × 1,250,000 took 34 s with a 3.5 GB heap. Zooming and panning are fast afterwards.
-- **Grouping** doesn't shorten the load, because every listed group interval is computed up front. A short `groupIntervals` list cut the load by about 30%.
-- **`groupData: false`** loads as fast, but zooms 2–8× slower.
-- **To open fast,** send fewer points: pre-aggregate on the server, or load detail as the user zooms (example `candlestick-ohlc/on-demand-data-loading`).
+**Large data.** With `groupData: true`, only the group interval in view is made at first, and the others when they are first needed: a series of 250,000 points opens in about 0.3 s on a laptop CPU. Zooming and panning are fast afterwards.
+- **`groupData: false`** draws every point in view, so zooming and panning a large data set are slower.
+- **For millions of points,** send fewer: pre-aggregate on the server, or load detail as the user zooms (example `candlestick-ohlc/on-demand-data-loading`).
 
 **Data format:**
 ```js
