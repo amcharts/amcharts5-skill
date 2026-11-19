@@ -546,5 +546,5 @@ root.dispose();
 
 ## More examples
 
-Longer complete examples are in the amCharts MCP server's examples:
+Longer complete examples are in the amCharts MCP server's examples (https://mcp.amcharts.com/mcp; the same files are in the amcharts/amcharts5-mcp repository, under `extended/examples/`):
 - Stock chart with volume panel and Bollinger Bands indicator: `get_example(path: "examples/stock/stock-chart-with-volume-and-bollinger-bands")`

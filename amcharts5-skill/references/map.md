@@ -399,7 +399,7 @@ sankeySeries.data.setAll([
 ]);
 ```
 
-**Waypoints** — route flows through intermediate points:
+**Waypoints** — route flows through intermediate points, each `{ longitude, latitude }` (not `lon`/`lat`):
 ```js
 sankeySeries.data.setAll([
   {
@@ -1336,7 +1336,7 @@ root.dispose();
 
 ## More examples
 
-Longer complete examples are in the amCharts MCP server's examples:
+Longer complete examples are in the amCharts MCP server's examples (https://mcp.amcharts.com/mcp; the same files are in the amcharts/amcharts5-mcp repository, under `extended/examples/`):
 - Globe with animated flight path (positionOnLine + globe rotation): `get_example(path: "examples/maps/globe-with-animated-flight-path")`
 - Map Sankey — Global Coffee Supply Chain (sourceId/targetId): `get_example(path: "examples/maps/map-sankey-coffee-supply-chain")`
 - Map Sankey — Oil Export Flows with Waypoints (explicit coordinates): `get_example(path: "examples/maps/map-sankey-oil-export-flows")`
