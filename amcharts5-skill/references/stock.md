@@ -62,8 +62,7 @@ const dateAxis = mainPanel.xAxes.push(am5xy.DateAxis.new(root, {
 
 const valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
   renderer: am5xy.AxisRendererY.new(root, {}),
-  tooltip: am5.Tooltip.new(root, {}), // shows the cursor's price on the axis...
-  extraTooltipPrecision: 2,           // ...with two more decimals than the grid step
+  tooltip: am5.Tooltip.new(root, {}), // shows the cursor's price on the axis
   preferredDecimals: [0, 2]           // labels: whole numbers, or cents
 }));
 
@@ -436,7 +435,6 @@ root.dispose();
     var valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
       renderer: am5xy.AxisRendererY.new(root, {}),
       tooltip: am5.Tooltip.new(root, {}),
-      extraTooltipPrecision: 2,
       preferredDecimals: [0, 2] // labels: whole numbers, or cents
     }));
 

@@ -364,7 +364,6 @@ const dateAxis = mainPanel.xAxes.push(am5xy.DateAxis.new(root, {
 const valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
   renderer: am5xy.AxisRendererY.new(root, {}),
   tooltip: am5.Tooltip.new(root, {}),
-  extraTooltipPrecision: 2,  // the axis tooltip: two more decimals than the grid step
   preferredDecimals: [0, 2]  // labels: whole numbers, or cents
 }));
 
