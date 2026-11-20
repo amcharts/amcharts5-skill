@@ -1304,7 +1304,7 @@ am5hierarchy.VoronoiTreemap.new(root, { shapeType: "rectangle" }); // not type
 
 **New in 5.23.0 (2026-11-19):**
 - **Touch:** `root.touchGestures` is `"chart"` (default), `"tap"` or `"auto"`. With `"auto"`, which ResponsiveMax sets, a vertical swipe over the chart scrolls the page and a sideways or two-finger swipe works the chart, so phones need no tap first. With ResponsiveMax, don't set `root.tapToActivate`. See "Responsive rules".
-- **Value axis decimals:** `preferredDecimals` lists the decimal counts labels may show. With `[0, 2]`, labels read `48.50` and `49.00` instead of `48.5` and `49.0`, and whole prices stay whole. The axis tooltip shows the step's decimals plus `extraTooltipPrecision`, rounded up to the list. Not used with the axis's own `numberFormat`, nor on logarithmic axes. See `references/stock.md`.
+- **Value axis decimals:** `preferredDecimals` lists the decimal counts labels may show. With `[0, 2]`, labels read `48.50` and `49.00` instead of `48.5` and `49.0`, and whole prices stay whole. The axis tooltip shows the labels' decimals. Not used with the axis's own `numberFormat`, nor on logarithmic axes. See `references/stock.md`.
 - **Stock toolbar:** `autoFit` folds the controls that don't fit in one row. ResponsiveMax turns it on.
 - **ResponsiveMax** on charts 400 px wide or less: horizontal chart scrollbars hide too, and pinching zooms instead; stock charts get less padding.
 - **Number formats** without decimals drop floating-point noise: `#,###` shows 6708.044000000005 as `6,708.044`.
