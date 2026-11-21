@@ -762,6 +762,19 @@ markerItem.get("grid").setAll({ stroke: am5.color(0x8e44ad), strokeOpacity: 1, s
 markerItem.get("label").setAll({ text: "Incident", inside: true, rotation: -90, centerX: 0, centerY: am5.p100, dx: -2, dy: -6 });
 ```
 
+### A value in the middle of a gauge
+Put the label in `chart.radarContainer`, whose (0, 0) is the center. `chart.seriesContainer` is masked to the ring, so a label there isn't drawn:
+```js
+chart.radarContainer.children.push(am5.Label.new(root, { text: "82%", fontSize: 44, centerX: am5.p50, centerY: am5.p100 }));
+```
+
+### A click on a flow node
+By default a click also hides the node and its links, and the diagram is laid out again. Turn that off for a click of your own:
+```js
+series.nodes.nodes.template.set("toggleKey", "none");
+series.nodes.nodes.template.events.on("click", (ev) => { /* ev.target.dataItem.get("id") */ });
+```
+
 ## Key differences from amCharts 4 (common AI mistakes)
 
 | amCharts 4 (WRONG) | amCharts 5 (CORRECT) |

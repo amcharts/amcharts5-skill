@@ -210,6 +210,17 @@ var hand = handDataItem.set("bullet", am5xy.AxisBullet.new(root, {
 chart.appear(1000, 100);
 ```
 
+**A value in the middle:** put the label in `chart.radarContainer`, whose (0, 0) is the center. `chart.seriesContainer` is masked to the ring, so a label there isn't drawn:
+
+```js
+chart.radarContainer.children.push(am5.Label.new(root, {
+  text: "82%",
+  fontSize: 44,
+  centerX: am5.p50,
+  centerY: am5.p100
+}));
+```
+
 **Tip: Avoiding needle/label overlap** — When adding a value label in the gauge center, the clock hand pin and inner portion will overlap the label. Hide the pin and increase `innerRadius` to leave space:
 
 ```js

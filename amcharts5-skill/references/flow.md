@@ -275,7 +275,9 @@ var data = [
 ## Events on flow elements
 
 ```js
-// Node click
+// Node click. By default a click also hides the node and its links, and the
+// diagram is laid out again: turn that off for a click of your own
+series.nodes.nodes.template.set("toggleKey", "none");
 series.nodes.nodes.template.events.on("click", function(ev) {
   console.log("Node:", ev.target.dataItem.get("id"));
 });
