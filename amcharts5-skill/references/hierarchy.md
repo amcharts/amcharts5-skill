@@ -334,7 +334,7 @@ series.nodes.template.events.on("click", function (ev) {
   var selected = series.get("selectedDataItem");
   var di = ev.target.dataItem;
   if (di === selected) {                           // the open node's own header band: up a level
-    if (di.get("parent")) series.selectDataItem(di);
+    if (di.get("parent")) series.selectDataItem(di);   // selecting the open node again opens its parent
     return;
   }
   while (di && di.get("parent") !== selected) di = di.get("parent");   // climb to a child of the open node
@@ -349,7 +349,8 @@ Add it before `series.data.setAll()` (template events reach only the nodes made 
 amCharts 5 provides a built-in `BreadcrumbBar` component for hierarchy navigation:
 
 ```js
-const breadcrumbs = container.children.push(am5hierarchy.BreadcrumbBar.new(root, {
+// unshift: before the series in the container's vertical layout, so above the chart
+const breadcrumbs = container.children.unshift(am5hierarchy.BreadcrumbBar.new(root, {
   series: series
 }));
 ```

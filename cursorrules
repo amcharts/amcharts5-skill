@@ -456,9 +456,9 @@ chart.yAxis.data.setAll([
   { id: "taskB", name: "Task B", parentId: "phase1" }
 ]);
 chart.series.data.setAll([
-  { id: "phase1", start: new Date(2024, 0, 1).getTime(), duration: 10, progress: 100 },
-  { id: "taskA", start: new Date(2024, 0, 1).getTime(), duration: 5, progress: 100 },
-  { id: "taskB", start: new Date(2024, 0, 6).getTime(), duration: 5, progress: 80 }
+  { id: "phase1", start: new Date(2024, 0, 1).getTime(), duration: 10, progress: 1 },
+  { id: "taskA", start: new Date(2024, 0, 1).getTime(), duration: 5, progress: 1 },
+  { id: "taskB", start: new Date(2024, 0, 6).getTime(), duration: 5, progress: 0.8 }
 ]);
 ```
 
@@ -731,6 +731,21 @@ root.container.set("layout", root.verticalLayout);
 var chart = root.container.children.push(am5xy.XYChart.new(root, { ... }));
 ```
 
+### Exporting
+```js
+const exporting = am5plugins_exporting.Exporting.new(root, {
+  menu: am5plugins_exporting.ExportingMenu.new(root, {}),
+  filePrefix: "my-chart"
+});
+// Only some formats: the menu lists exactly these entries, in this order
+exporting.get("menu").set("items", [
+  { type: "format", format: "png", label: "PNG" },
+  { type: "format", format: "pdf", label: "PDF" },
+  { type: "format", format: "xlsx", label: "Excel" }
+]);
+```
+`root.locale = am5locales_de_DE` (script `locales/de_DE.js`) sets number separators (1.234,56), month names and the menu's labels.
+
 ## Key differences from amCharts 4 (common AI mistakes)
 
 | amCharts 4 (WRONG) | amCharts 5 (CORRECT) |
@@ -856,8 +871,8 @@ chart.yAxis.data.setAll([
   { id: "task1", name: "Task 1", parentId: "phase1" }
 ]);
 chart.series.data.setAll([
-  { id: "phase1", start: timestamp, duration: 10, progress: 50 },
-  { id: "task1", start: timestamp, duration: 5, progress: 100, linkTo: ["phase1"] }
+  { id: "phase1", start: timestamp, duration: 10, progress: 0.5 },
+  { id: "task1", start: timestamp, duration: 5, progress: 1, linkTo: ["phase1"] }
 ]);
 ```
 

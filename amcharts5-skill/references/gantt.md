@@ -77,12 +77,12 @@ chart.yAxis.data.setAll([
 // 2. Task/series data → chart.series.data.setAll()
 //    Each item's id must match a category id from above
 chart.series.data.setAll([
-  { id: "design", start: new Date(2024, 0, 1).getTime(), duration: 10, progress: 100 },
-  { id: "wireframes", start: new Date(2024, 0, 1).getTime(), duration: 4, progress: 100 },
-  { id: "mockups", start: new Date(2024, 0, 7).getTime(), duration: 6, progress: 100 },
-  { id: "dev", start: new Date(2024, 0, 15).getTime(), duration: 20, progress: 60 },
-  { id: "frontend", start: new Date(2024, 0, 15).getTime(), duration: 15, progress: 80 },
-  { id: "backend", start: new Date(2024, 0, 20).getTime(), duration: 15, progress: 40 }
+  { id: "design", start: new Date(2024, 0, 1).getTime(), duration: 10, progress: 1 },
+  { id: "wireframes", start: new Date(2024, 0, 1).getTime(), duration: 4, progress: 1 },
+  { id: "mockups", start: new Date(2024, 0, 7).getTime(), duration: 6, progress: 1 },
+  { id: "dev", start: new Date(2024, 0, 15).getTime(), duration: 20, progress: 0.6 },
+  { id: "frontend", start: new Date(2024, 0, 15).getTime(), duration: 15, progress: 0.8 },
+  { id: "backend", start: new Date(2024, 0, 20).getTime(), duration: 15, progress: 0.4 }
 ]);
 ```
 
@@ -114,8 +114,8 @@ chart.yAxis.setAll({
 | `idField` | `"id"` | Must match a category id |
 | `openValueXField` | `"start"` | Start timestamp (ms) |
 | `durationField` | `"duration"` | Duration in durationUnits |
-| `progressField` | `"progress"` | 0–100 completion |
-| `linkToField` | `"linkTo"` | Array of ids to link to |
+| `progressField` | `"progress"` | Completion from `0` to `1` (`0.6` = 60%) |
+| `linkToField` | `"linkTo"` | Ids of the tasks that follow this one: an arrow runs from this task's end to the start of each |
 
 Customize field names:
 ```js
@@ -129,7 +129,7 @@ chart.series.setAll({
 
 ```js
 chart.series.data.setAll([
-  { id: "task1", start: timestamp, duration: 5, progress: 100, linkTo: ["task2"] },
+  { id: "task1", start: timestamp, duration: 5, progress: 1, linkTo: ["task2"] },
   { id: "task2", start: timestamp, duration: 3, progress: 0 }
 ]);
 ```
@@ -325,16 +325,16 @@ chart.series.data.setAll(restored.series);
 
     // Task data (series) — ids must match category ids
     chart.series.data.setAll([
-      { id: "planning", start: new Date(2024, 0, 1).getTime(), duration: 5, progress: 100 },
-      { id: "requirements", start: new Date(2024, 0, 1).getTime(), duration: 3, progress: 100 },
-      { id: "architecture", start: new Date(2024, 0, 4).getTime(), duration: 2, progress: 100, linkTo: ["design"] },
-      { id: "design", start: new Date(2024, 0, 8).getTime(), duration: 10, progress: 80 },
-      { id: "wireframes", start: new Date(2024, 0, 8).getTime(), duration: 4, progress: 100 },
-      { id: "visual", start: new Date(2024, 0, 14).getTime(), duration: 6, progress: 60, linkTo: ["dev"] },
-      { id: "dev", start: new Date(2024, 0, 22).getTime(), duration: 25, progress: 40 },
-      { id: "frontend", start: new Date(2024, 0, 22).getTime(), duration: 20, progress: 50 },
-      { id: "backend", start: new Date(2024, 0, 22).getTime(), duration: 18, progress: 45 },
-      { id: "integration", start: new Date(2024, 1, 15).getTime(), duration: 7, progress: 10, linkTo: ["launch"] },
+      { id: "planning", start: new Date(2024, 0, 1).getTime(), duration: 5, progress: 1 },
+      { id: "requirements", start: new Date(2024, 0, 1).getTime(), duration: 3, progress: 1 },
+      { id: "architecture", start: new Date(2024, 0, 4).getTime(), duration: 2, progress: 1, linkTo: ["design"] },
+      { id: "design", start: new Date(2024, 0, 8).getTime(), duration: 10, progress: 0.8 },
+      { id: "wireframes", start: new Date(2024, 0, 8).getTime(), duration: 4, progress: 1 },
+      { id: "visual", start: new Date(2024, 0, 14).getTime(), duration: 6, progress: 0.6, linkTo: ["dev"] },
+      { id: "dev", start: new Date(2024, 0, 22).getTime(), duration: 25, progress: 0.4 },
+      { id: "frontend", start: new Date(2024, 0, 22).getTime(), duration: 20, progress: 0.5 },
+      { id: "backend", start: new Date(2024, 0, 22).getTime(), duration: 18, progress: 0.45 },
+      { id: "integration", start: new Date(2024, 1, 15).getTime(), duration: 7, progress: 0.1, linkTo: ["launch"] },
       { id: "launch", start: new Date(2024, 2, 1).getTime(), duration: 0, progress: 0 }
     ]);
 

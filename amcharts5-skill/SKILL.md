@@ -113,7 +113,8 @@ const root = am5.Root.new("chartdiv"); // div id or HTMLElement reference
 // Apply theme(s): Animated and ResponsiveMax on every chart; a palette or Dark after them
 root.setThemes([am5themes_Animated.new(root), am5themes_ResponsiveMax.new(root)]);
 
-// Set locale (optional)
+// Set locale (optional): number separators (1.234,56), month names and the
+// export menu's labels follow it
 import am5locales_de_DE from "@amcharts/amcharts5/locales/de_DE";
 root.locale = am5locales_de_DE;
 
@@ -361,6 +362,18 @@ const exporting = am5plugins_exporting.Exporting.new(root, {
   pdfOptions: { addURL: true }
 });
 ```
+
+**Only some formats:** set the menu's `items`, which lists exactly those entries, in that order:
+
+```js
+exporting.get("menu").set("items", [
+  { type: "format", format: "png", label: "PNG" },
+  { type: "format", format: "pdf", label: "PDF" },
+  { type: "format", format: "xlsx", label: "Excel" }
+]);
+```
+
+Or keep the default menu and turn formats off on `Exporting`: `jpgOptions: { disabled: true }`, and the same for `svgOptions`, `pdfdataOptions`, `jsonOptions`, `csvOptions`, `htmlOptions` and `printOptions`.
 
 **SVG export** works whichever renderer draws the chart. The `ExportingMenu` lists "SVG" by default (`svgOptions: { disabled: true }` removes it; `svgOptions: { precision: 3 }` sets the decimals); in code use `exporting.download("svg")`, `exporting.getSVG()` (markup) or `exporting.exportSVG()` (data URI). Without the plugin, the core has `am5.renderToSVG()`:
 
