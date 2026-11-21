@@ -41,7 +41,7 @@ const chart = root.container.children.push(
 );
 
 // 4. Create axes, series, etc.
-// 5. Set data LAST (important!): a template.events.on() added after data.setAll() never reaches pie and funnel slices, hierarchy nodes or map polygons
+// 5. Set data LAST (important!): a template.events.on() added after data.setAll() never reaches pie and funnel slices, hierarchy and flow nodes or map polygons
 series.data.setAll([...]);
 
 // 6. Play animations

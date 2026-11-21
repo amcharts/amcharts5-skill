@@ -35,7 +35,7 @@ Docs: https://docs.amcharts.com/v5/
 3. **Always use amCharts 5** — never v3 or v4. The APIs are completely different.
 4. **Use `.new()` factory** — never `new ClassName()`. Every object is created via `ClassName.new(root, { settings })`.
 5. **Root is always the first argument** to `.new()` (except Root itself, which takes a div ID).
-6. **Set data last** — once data is set, objects are created. Configuration applied after may not take effect: a `template.events.on()` added after `data.setAll()` never reaches pie and funnel slices, hierarchy nodes or map polygons.
+6. **Set data last** — once data is set, objects are created. Configuration applied after may not take effect: a `template.events.on()` added after `data.setAll()` never reaches pie and funnel slices, hierarchy and flow nodes or map polygons.
 7. **Colors use `am5.color()`** — e.g. `am5.color(0xff0000)`, `am5.color("#ff0000")`, or `am5.color("rgb(255,0,0)")`. Never raw hex strings.
 8. **Percent values use `am5.percent()`** — e.g. `am5.percent(50)`, not `50` or `"50%"`.
 9. **Every axis needs a renderer** — `am5xy.AxisRendererX.new(root, {})` or `AxisRendererY`.
