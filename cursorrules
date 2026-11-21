@@ -41,7 +41,7 @@ const chart = root.container.children.push(
 );
 
 // 4. Create axes, series, etc.
-// 5. Set data LAST (important!)
+// 5. Set data LAST (important!): a template.events.on() added after data.setAll() never reaches pie and funnel slices, hierarchy nodes or map polygons
 series.data.setAll([...]);
 
 // 6. Play animations
@@ -735,16 +735,32 @@ var chart = root.container.children.push(am5xy.XYChart.new(root, { ... }));
 ```js
 const exporting = am5plugins_exporting.Exporting.new(root, {
   menu: am5plugins_exporting.ExportingMenu.new(root, {}),
-  filePrefix: "my-chart"
+  filePrefix: "my-chart",
+  dataSource: data  // the rows for XLSX, CSV, JSON, HTML and PDF data: those formats need it
 });
-// Only some formats: the menu lists exactly these entries, in this order
+// Only some formats: the menu lists these entries, in this order
 exporting.get("menu").set("items", [
   { type: "format", format: "png", label: "PNG" },
   { type: "format", format: "pdf", label: "PDF" },
   { type: "format", format: "xlsx", label: "Excel" }
 ]);
 ```
+Or keep the default menu and turn formats off on `Exporting`: `jpgOptions: { disabled: true }`, and the same for `svgOptions`, `pdfdataOptions`, `jsonOptions`, `csvOptions`, `htmlOptions` and `printOptions`.
 `root.locale = am5locales_de_DE` (script `locales/de_DE.js`) sets number separators (1.234,56), month names and the menu's labels.
+
+### Reference lines (axis ranges)
+A labelled line at a value and a marker at a date, with the labels in the plot (`inside: true` alone leaves a range's label over the axis):
+```js
+const lineItem = yAxis.makeDataItem({ value: 300 });
+yAxis.createAxisRange(lineItem);
+lineItem.get("grid").setAll({ stroke: am5.color(0x333333), strokeOpacity: 1, strokeDasharray: [5, 4] });
+lineItem.get("label").setAll({ text: "SLA 300 ms", inside: true, centerX: 0, centerY: am5.p100, dy: -2 });
+
+const markerItem = xAxis.makeDataItem({ value: new Date(2026, 1, 10).getTime() });
+xAxis.createAxisRange(markerItem);
+markerItem.get("grid").setAll({ stroke: am5.color(0x8e44ad), strokeOpacity: 1, strokeDasharray: [2, 2] });
+markerItem.get("label").setAll({ text: "Incident", inside: true, rotation: -90, centerX: 0, centerY: am5.p100, dx: -2, dy: -6 });
+```
 
 ## Key differences from amCharts 4 (common AI mistakes)
 
@@ -868,11 +884,13 @@ chart.data.setAll([{ name: "Task", children: [...] }]);
 // CORRECT — two separate calls with flat parentId hierarchy
 chart.yAxis.data.setAll([
   { id: "phase1", name: "Phase 1", color: am5.color(0x297373) },
-  { id: "task1", name: "Task 1", parentId: "phase1" }
+  { id: "task1", name: "Task 1", parentId: "phase1" },
+  { id: "task2", name: "Task 2", parentId: "phase1" }
 ]);
 chart.series.data.setAll([
   { id: "phase1", start: timestamp, duration: 10, progress: 0.5 },
-  { id: "task1", start: timestamp, duration: 5, progress: 1, linkTo: ["phase1"] }
+  { id: "task1", start: timestamp, duration: 5, progress: 1, linkTo: ["task2"] },
+  { id: "task2", start: laterTimestamp, duration: 5, progress: 0 }
 ]);
 ```
 

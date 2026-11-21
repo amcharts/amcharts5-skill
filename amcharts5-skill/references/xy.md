@@ -567,6 +567,20 @@ rangeDataItem.get("axisFill").setAll({
 rangeDataItem.get("label").setAll({ text: "Target", fill: am5.color(0xff0000) });
 ```
 
+A labelled line at a value and a marker at a date, with the labels in the plot. `inside: true` alone leaves a range's label over the axis, so set the centers too:
+
+```js
+const lineItem = yAxis.makeDataItem({ value: 300 });
+yAxis.createAxisRange(lineItem);
+lineItem.get("grid").setAll({ stroke: am5.color(0x333333), strokeOpacity: 1, strokeDasharray: [5, 4] });
+lineItem.get("label").setAll({ text: "SLA 300 ms", inside: true, centerX: 0, centerY: am5.p100, dy: -2 });
+
+const markerItem = xAxis.makeDataItem({ value: new Date(2026, 1, 10).getTime() });
+xAxis.createAxisRange(markerItem);
+markerItem.get("grid").setAll({ stroke: am5.color(0x8e44ad), strokeOpacity: 1, strokeDasharray: [2, 2] });
+markerItem.get("label").setAll({ text: "Incident", inside: true, rotation: -90, centerX: 0, centerY: am5.p100, dx: -2, dy: -6 });
+```
+
 ## Scatter / Bubble chart
 
 Use `ValueAxis` on both X and Y with `LineSeries` (no connecting line) or `ColumnSeries`.
