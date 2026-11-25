@@ -679,7 +679,7 @@ Generated code routinely spells out settings that equal the amCharts default (ve
 | Class | Setting(s) that are already the default |
 |-------|------------------------------------------|
 | All hierarchy series | `childDataField: "children"`, `downDepth: 1`, `initialDepth: 5` |
-| `Sunburst`, `Partition`, `Treemap`, `VoronoiTreemap` | `singleBranchOnly: true` (`Partition`/`Treemap` also `upDepth: 0`; `VoronoiTreemap` also `shapeType: "polygon"`; `Sunburst` ignores the setting — always single-branch) |
+| `Sunburst`, `Partition`, `Treemap`, `VoronoiTreemap`, `Pack` | `singleBranchOnly: true` (`Partition`/`Treemap` also `upDepth: 0`; `VoronoiTreemap` also `shapeType: "polygon"`; `Sunburst` ignores the setting — always single-branch) |
 | `Tree`, `ForceDirected` | `singleBranchOnly: false`, `upDepth: Infinity`, `topDepth: 0` (`Tree` also `orientation: "vertical"`) |
 | `PieSeries`, `FunnelSeries`, `PyramidSeries`, `PictorialStackedSeries` | `alignLabels: true` (`PieSeries` also `startAngle: -90`, `endAngle: 270`; `FunnelSeries` also `orientation: "vertical"`, `startLocation: 0`, `endLocation: 1`, `bottomRatio: 0`) |
 | `Chord` | `sort: "none"` (data order) |
@@ -992,7 +992,8 @@ chart.setAll({
 series.columns.template.setAll({
   focusable: true,
   focusableGroup: "sales",
-  ariaLabel: "{categoryX}: {valueY}"   // no role needed: "img" by default
+  // no role needed: "img" by default
+  ariaLabel: "{categoryX}: {valueY}. Use the up and down arrow keys to move through the columns"
 });
 // Keyboard: TAB to the next element or group, ENTER to click
 ```
@@ -1002,13 +1003,13 @@ series.columns.template.setAll({
 **Descriptions and data:**
 - `ariaDescription` (any element, placeholders work) is read after the `ariaLabel`: the chart's main point, or how to use it.
 - `ariaSummary: true` on a chart needs `focusable: true`. The summary becomes the chart's `ariaDescription`, so one set in code replaces it. Each series' summary also goes to its legend item. `ariaSummary: false` on a series leaves it out of the summary, and `ariaDataTable: false` out of the table.
-- Hierarchy, flow and word cloud series are not in a chart: set `ariaSummary` or `ariaDataTable` on the series, which needs `focusable: true` for the summary.
+- Hierarchy, flow, word cloud and Venn series are not in a chart: set `ariaSummary` or `ariaDataTable` on the series, which needs `focusable: true` for the summary.
 - `series.getSummary()` returns the summary as data: `{ count, highest, lowest, first, last, text }`, where `first` and `last` are for XY series only and each item has `label`, `value` and `text`. It returns `undefined` when the series has no values.
-- In a group's `ariaLabel`, tell users to use the up and down arrow keys: in a screen reader's browse mode they step from item to item, while left and right read letter by letter.
+- In the `ariaLabel` of a group's members, tell users to use the up and down arrow keys: in a screen reader's browse mode they step from item to item, while left and right read letter by letter.
 
 **High contrast:** in a forced-colors mode such as Windows High Contrast, labels, grid, axes and buttons take the system colors so they stay visible; series colors are kept. It is on by default — `am5.Root.new("chartdiv", { forcedColors: false })` keeps the chart's own interface colors.
 
-Keyboard/screen-reader behavior: a `focusableGroup` is one TAB stop; arrow keys move between its members even when they are draggable (flow and hierarchy nodes) and SHIFT + arrows drag them; ESC hides a focused element's tooltip and ends a keyboard drag; SPACE clicks a focused element with a button-like `role`. The `ariaExpanded` setting is set by the library on Gantt tasks with subtasks and on hierarchy nodes with children; a focusable element with `toggleKey` is a toggle button that exposes `aria-pressed`. `am5.Modal` is a dialog to screen readers, named by its `ariaLabel` setting (else its first heading).
+Keyboard/screen-reader behavior: a `focusableGroup` is one TAB stop; arrow keys move between its members even when they are draggable (flow and hierarchy nodes) and SHIFT + arrows drag them; ESC hides a focused element's tooltip and ends a keyboard drag; SPACE clicks a focused element whose `role` setting is button-like (`"button"`, `"checkbox"`, `"switch"`, `"radio"`, `"tab"`, `"option"` or a menu item role). The `ariaExpanded` setting is set by the library on Gantt tasks with subtasks and on hierarchy nodes with children; a focusable element with `toggleKey` is a toggle button that exposes `aria-pressed`. `am5.Modal` is a dialog to screen readers, named by its `ariaLabel` setting (else its first heading).
 
 ## Container & Layout
 
