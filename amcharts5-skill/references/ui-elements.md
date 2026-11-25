@@ -15,7 +15,7 @@ All UI elements are in the core package (`am5`) except ColorPicker (and Exportin
 <script src="https://cdn.amcharts.com/lib/5/plugins/colorPicker.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.23.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.24.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ### ES modules
 ```ts

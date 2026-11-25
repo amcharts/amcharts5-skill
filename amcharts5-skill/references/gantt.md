@@ -28,7 +28,7 @@ import am5themes_ResponsiveMax from "@amcharts/amcharts5/themes/ResponsiveMax";
 <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.23.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.24.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Core setup
 
@@ -213,7 +213,12 @@ chart.controls.hide(0);
 chart.editButton.show(0);
 ```
 
-**Keyboard:** tasks with subtasks expose `aria-expanded` (`ariaExpanded`), only tasks with subtasks have an expand/collapse TAB stop, toolbar and task buttons have screen-reader names, and scrollbar grips include the category in their name.
+**Keyboard:** works out of the box. TAB goes through the toolbar buttons first. The task list's expand and collapse buttons (only tasks with subtasks have one) are one TAB stop: arrow keys move between them, each is named after its task, and they expose `aria-expanded` (`ariaExpanded`). While the chart is editable:
+- Task names are one TAB stop; ENTER renames the focused task.
+- Bars, milestones and their start, end and progress grips are sliders that read their dates or progress. TAB goes through the focused task's bar and grips; the up and down arrow keys move to the next or previous task.
+- Left and right arrow keys move the focused task, milestone or grip by one snap step (a day by default, skipping weekends and holidays), or the progress by 5%.
+
+Read-only, bars and milestones have the `"img"` role; a `role` set on their template is kept in both modes. "Expand all" and "Collapse all" are disabled while no task has subtasks. Scrollbar grips include the category in their name.
 
 ## Series customization
 

@@ -89,7 +89,7 @@ CDN script objects use `am5` (core), `am5xy`, `am5percent`, `am5map`, `am5hierar
 Themes: `am5themes_Animated`, `am5themes_Dark`, etc.
 Geodata: `am5geodata_worldLow`, `am5geodata_usaLow`, etc.
 
-Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), the same files are in the npm package's `dist/`: `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.23.0/dist/index.js` (or unpkg, or `node_modules/@amcharts/amcharts5/dist/`). Pin one version for every file; classic `<script>` tags, not `type="module"`. Maps beyond `dist/geodata/worldLow.js`/`usaLow.js`: `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5-geodata@5.2.0/dist/<name>.js` (or unpkg). PDF fonts only on cdn.amcharts.com.
+Where only npm CDNs are allowed (Claude artifacts and other AI sandboxes, strict CSPs), the same files are in the npm package's `dist/`: `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.24.0/dist/index.js` (or unpkg, or `node_modules/@amcharts/amcharts5/dist/`). Pin one version for every file; classic `<script>` tags, not `type="module"`. Maps beyond `dist/geodata/worldLow.js`/`usaLow.js`: `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5-geodata@5.2.0/dist/<name>.js` (or unpkg). PDF fonts only on cdn.amcharts.com.
 
 When bundling, keep code splitting on: with the stock toolbar's drawing/indicator controls, `<am5-chart>`, the JSON plugin or exporting, a single-file bundle inlines PDF/Excel/annotation code, about 1 MB gzipped more.
 
@@ -570,14 +570,21 @@ series.events.on("datavalidated", function() {   // the end labels show these nu
 ## Accessibility
 
 ```js
+chart.setAll({
+  focusable: true,
+  ariaLabel: "Monthly sales by region, 2025",
+  ariaSummary: true,   // read after the label: per series count, first/last (XY), highest/lowest
+  ariaDataTable: true  // the data as a hidden table: a row per category or date, a column per series
+});
 series.columns.template.setAll({
   focusable: true,
-  ariaLabel: "{categoryX}: {valueY}",
-  role: "figure"
+  focusableGroup: "sales",           // one TAB stop; up/down arrow keys move within it
+  ariaLabel: "{categoryX}: {valueY}" // no role needed: "img" by default
 });
-// Keyboard: TAB to navigate focusable elements, ENTER to click
-// focusableGroup: "series1" — TAB to first, arrows within group
+// Keyboard: TAB to the next element or group, ENTER to click
 ```
+
+Roles: charts, focusable data items and bullets are `"img"`; `toggleKey` items are toggle buttons; set `role` only for another meaning (e.g. `"button"` for clickable columns), never `"figure"`/`"group"`/`"region"` (JAWS reads nothing for them). `ariaDescription` (any element) is read after `ariaLabel`; `ariaSummary` fills the chart's, and also goes to legend items; `false` on a series leaves it out (likewise `ariaDataTable`). Hierarchy, flow and word cloud series take `ariaSummary`/`ariaDataTable` themselves (`focusable: true` for the summary). `series.getSummary()` → `{ count, highest, lowest, first, last, text }` (`first`/`last` on XY series; items have `label`, `value`, `text`) or `undefined`. In a group's `ariaLabel`, name the up and down arrow keys (they work in screen readers' browse mode).
 
 Windows High Contrast: interface colors (labels, grid, axes, buttons) follow the system colors by default; `am5.Root.new("chartdiv", { forcedColors: false })` opts out. `am5.Modal` takes an `ariaLabel` (dialog name); `ariaExpanded` is an element setting.
 
@@ -969,7 +976,7 @@ sbSeries.data.setAll(data);   // the preview series needs the data too
 
 ## Frameworks (React, Vue, Angular, Svelte, React Native)
 
-In a framework app, use amCharts' package for it (react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3, react-native 5.0.4, which loads 5.23.0; the web ones need amCharts 5.21.4+) instead of hand-written mount/dispose code. It makes the chart when its element is there, disposes it with the component, and loads the library in the browser only, so server rendering works (Next.js, Nuxt, SvelteKit, Angular SSR). Install it with the library: `npm install @amcharts/amcharts5 @amcharts/amcharts5-react`.
+In a framework app, use amCharts' package for it (react 5.0.1, vue 5.0.2, angular 5.0.1, svelte 5.0.3, react-native 5.0.5, which loads 5.24.0; the web ones need amCharts 5.21.4+) instead of hand-written mount/dispose code. It makes the chart when its element is there, disposes it with the component, and loads the library in the browser only, so server rendering works (Next.js, Nuxt, SvelteKit, Angular SSR). Install it with the library: `npm install @amcharts/amcharts5 @amcharts/amcharts5-react`.
 
 | Framework | Package | A chart in code | A chart from a JSON config |
 |---|---|---|---|
@@ -1065,13 +1072,15 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 
 **Framework packages:** `@amcharts/amcharts5-react`, `-vue`, `-angular`, `-svelte`, `-react-native`. See "Frameworks".
 
-**New in 5.23.0 (2026-11-19):**
-- `root.touchGestures`: `"chart"` (default), `"tap"` or `"auto"` (a vertical swipe scrolls the page, a sideways or two-finger swipe works the chart). ResponsiveMax sets `"auto"`; with it, don't set `root.tapToActivate`.
-- `ValueAxis` `preferredDecimals`: the decimal counts labels may show; `[0, 2]` gives `48.50`, `49.00` and whole `80`, `100`. Not with the axis's own `numberFormat` or on logarithmic axes.
-- `StockToolbar` `autoFit`: controls that don't fit in one row fold; ResponsiveMax turns it on.
-- ResponsiveMax on charts 400 px wide or less: horizontal chart scrollbars hide too (pinch zooms), stock charts get less padding.
-- Number formats without decimals drop floating-point noise: `#,###` shows 6708.044000000005 as `6,708.044`.
-- react-native 5.0.4 loads 5.23.0.
+**New in 5.24.0 (2026-11-25):**
+- Screen readers: `ariaSummary: true` on a `focusable` chart reads each series' count, highest and lowest (first and last for XY series); `series.getSummary()` returns it as data. `ariaDataTable: true` adds the data as a hidden table. `ariaDescription` on any element is read after `ariaLabel`.
+- Roles: charts, focusable data items and bullets are `"img"` by default, `toggleKey` items toggle buttons, `Button` `"button"`. Don't set `role: "figure"`.
+- `DateAxis` `baseInterval` is optional (taken from the smallest gap between dates); `baseMainInterval()` returns the interval in use. TypeScript: `get("baseInterval")` can be `undefined`.
+- `MapLine` `fillToSurface: true` with `altitude` fills down to the map on flat maps.
+- Root `logoPosition`: `"bl"` (default), `"br"`, `"tl"` or `"tr"`, the corner of an unlicensed chart's logo.
+- Stock toolbar CSS: a control's icon and label sit in an inner `.am5stock-control-trigger` (it takes focus); style them through it, not as direct children of `.am5stock-control-button`.
+- Sanitized HTML (`html`, `labelHTML`, `tooltipHTML`, modals) loses `<style>` elements; inline `style` attributes stay.
+- react-native 5.0.5 loads 5.24.0.
 
 **Settings worth knowing** (newer than most training data):
 
@@ -1096,7 +1105,7 @@ A config is the chart as data, in an exact format the parser does not guess at. 
 - `XYSeries`: value fields (`valueYField`, …) can be changed after creation (re-set the data afterwards), and a series can be moved to a different `xAxis`/`yAxis`. Series data need not follow `CategoryAxis` category order (line series connect in data order).
 - `WordCloud`: `svgPath` arranges words into a shape, with `maskByShape` and `shapeTolerance`; `randomizeAngles: false` and `randomness: 0` give a reproducible layout; `allowNesting: false` packs non-overlapping bounding boxes (use with opaque label backgrounds). `angles` accepts **any** angle (e.g. `[0, -30, -45]`).
 - `globalpointerdown` event on all elements (mirrors `globalpointermove`/`globalpointerup`).
-- `Root`: `sanitizeHTML` (default `true`) sanitizes dynamically-set HTML; exports have `escapeFormulas` (default `true`) against CSV/XLSX formula injection.
+- `Root`: `sanitizeHTML` (default `true`) sanitizes dynamically-set HTML (`<style>` elements are removed, inline `style` attributes stay); exports have `escapeFormulas` (default `true`) against CSV/XLSX formula injection.
 - `MapChart`: `projectionName` string setting, e.g. `"geoOrthographic"` — mainly for JSON config; `am5map.registerProjection()` adds more.
 - `Tree`: `fitNodes`, `nodeSeparation` / `clustered`. `Hierarchy`: `parentIdField` + `setFlatData()`. `ValueAxis`: `syncZeros`.
 - All entities: `onDebounced(key, cb, delay)` / `offDebounced()`, and `once(key, cb)` / `onceDebounced(key, cb, delay)` — a settings-change handler that fires once then removes itself. `Label`: `fontFamily: "inherit"`.

@@ -23,7 +23,7 @@ import am5geodata_worldLow from "@amcharts/amcharts5-geodata/worldLow";
 <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.23.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.24.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Geodata (map files)
 
@@ -708,6 +708,15 @@ var pathSeries = chart.series.push(am5map.MapLineSeries.new(root, {}));
 pathSeries.mapLines.template.setAll({ altitude: 0, stroke: am5.color(0xff621f), strokeWidth: 2 });
 pathSeries.data.setAll([{ geometry: { type: "LineString",
   coordinates: [[0, 0, 800000], [20, 10, 400000], [40, 15, 0]] } }]);   // [longitude, latitude, metres]
+```
+
+**Filling to the surface (flat maps):** `fillToSurface: true` on a line with `altitude` set fills the area between the raised line and the ground below it with the line's `fill`, and strokes only the raised line. Lines added later cover earlier ones, so add them from back to front for a ridgeline look. It has no effect on a globe.
+
+```js
+ridgeSeries.mapLines.template.setAll({
+  altitude: 0, fillToSurface: true,   // heights from the third coordinate values
+  fill: am5.color(0x3366cc), fillOpacity: 0.6, stroke: am5.color(0x1a3366)
+});
 ```
 
 **Where a raised point is on screen:** for a `MapPointSeries` point, `dataItem.get("point")` is its raised position (`{ x, y }`) and `dataItem.get("clipped")` says whether it is hidden. For any other longitude, latitude and height `h` (MapUtils' `projectAltitude` is not exported): on a globe, `screen = T + (P − T) × (1 + h / R)`, with `P = chart.convert({ longitude, latitude })` the surface point, `T = chart.get("projection").translate()` the globe's center and `R = 6371008.8` m; on a flat map, `P` moved up by `h / R × projection.scale()`.

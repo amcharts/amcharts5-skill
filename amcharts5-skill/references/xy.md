@@ -21,7 +21,7 @@ import am5themes_ResponsiveMax from "@amcharts/amcharts5/themes/ResponsiveMax";
 <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.23.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.24.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Core setup pattern
 
@@ -204,7 +204,7 @@ const xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
 ```
 
 **Key settings:**
-- `baseInterval` (required) — smallest data granularity: `{ timeUnit: "minute"|"hour"|"day"|"week"|"month"|"year", count: N }`
+- `baseInterval` — the data's interval: `{ timeUnit: "minute"|"hour"|"day"|"week"|"month"|"year", count: N }`. Optional: without it, the axis takes the smallest gap between dates in the data (one day until there are two dates) and updates it when the data changes. Set it when the smallest gap isn't the real interval, e.g. irregular timestamps. `xAxis.baseMainInterval()` returns the interval in use; in TypeScript, `get("baseInterval")` can be `undefined`.
 - `groupData: true` — automatically groups data when zoomed out (e.g., daily → monthly)
 - `groupCount: 500` — target number of data items after grouping
 - `groupIntervals` — array of allowed group intervals

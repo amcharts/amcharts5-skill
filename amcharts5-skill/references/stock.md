@@ -25,7 +25,7 @@ import am5themes_ResponsiveMax from "@amcharts/amcharts5/themes/ResponsiveMax";
 <script src="https://cdn.amcharts.com/lib/5/themes/ResponsiveMax.js"></script>
 ```
 
-From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.23.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
+From an npm CDN (AI sandboxes, strict CSPs), the same files are under `https://cdn.jsdelivr.net/npm/@amcharts/amcharts5@5.24.0/dist/`, one pinned version for all: see SKILL.md "Plain HTML, no bundler".
 
 ## Core setup
 
@@ -353,7 +353,7 @@ var data = [
 
 **Fitting:** with ResponsiveMax, the toolbar's `autoFit` is on: controls that don't fit in one row fold, first to their icons, then the period buttons into one button that lists them. Set `autoFit: false` on the `StockToolbar` to keep them in full.
 
-**Keyboard:** `StockToolbar` `focusable` defaults to `true` — toolbar buttons are TAB stops and lists work with arrow keys; set `focusable: false` on the `StockToolbar` to turn that off. The settings dialog (`am5.Modal`) traps focus while open and gives it back on close; panel and legend icon buttons and overbought/oversold grips have screen-reader names.
+**Keyboard:** `StockToolbar` `focusable` defaults to `true`: toolbar buttons are TAB stops, and opening a dropdown moves focus into it (arrow keys, HOME and END move through it; ESC, picking an item or TAB closes it and returns focus to its button). The period selector is one TAB stop, with arrow keys between its buttons. When dates can be typed in, TAB skips the date range calendars. Screen readers read buttons by their visible text and say whether a dropdown is open. Set `focusable: false` on the `StockToolbar` to turn this off. A control's icon and label sit in an inner `.am5stock-control-trigger` element, which takes focus: style them through it, not as direct children of `.am5stock-control-button`. The settings dialog (`am5.Modal`) traps focus while open and gives it back on close; panel and legend icon buttons and overbought/oversold grips have screen-reader names.
 
 **`PeriodSelector` labels:** a period without a `name` is labeled from its unit and count — `{ timeUnit: "month" }` shows `MONTH1`, `{ timeUnit: "ytd" }` shows `YTD`. Give each period a `name` for nicer labels.
 
